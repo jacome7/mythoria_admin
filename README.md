@@ -88,11 +88,17 @@ Create a `.env.local` file with the following variables:
 ## Development Phases
 
 - ✅ **Phase 1**: Project structure and dependencies
-- ⏳ **Phase 2**: Deployment configuration
+- ✅ **Phase 2**: Deployment configuration and Cloud Run setup
 - ⏳ **Phase 3**: Database connections (mythoria_db, workflows_db, backoffice_db)
 - ⏳ **Phase 4**: Magic link authentication
 - ⏳ **Phase 5**: Admin pages migration
 - ⏳ **Phase 6**: Code cleanup
+
+## Live Deployment
+
+**Production URL**: https://mythoria-admin-803421888801.europe-west9.run.app
+
+The admin portal is now live and accessible. Database connections and authentication will be configured in the next phases.
 
 ## License
 
