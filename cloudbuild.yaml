@@ -41,6 +41,10 @@ steps:
       - '80'
       - '--timeout'
       - '300'
+      - '--vpc-connector'
+      - 'mythoria-vpc-connector'
+      - '--vpc-egress'
+      - 'private-ranges-only'
       - '--set-env-vars'
       - 'NODE_ENV=production'
 
