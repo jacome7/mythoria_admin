@@ -9,7 +9,7 @@ param(
     [string]$Region = "europe-west9",
     
     [switch]$Force = $false,
-    [switch]$Verbose = $false
+    [switch]$VerboseLogging = $false
 )
 
 # Set error action preference
@@ -89,7 +89,7 @@ try {
     Write-Host "[INFO] Starting Cloud Build production deployment with enhanced logging..."
     Write-Host "[INFO] This may take several minutes..."
     
-    if ($Verbose) {
+    if ($VerboseLogging) {
         gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
     } else {
         gcloud beta builds submit --config cloudbuild.yaml
