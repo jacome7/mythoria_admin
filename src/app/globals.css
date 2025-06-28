@@ -1,3 +1,28 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui";
+@plugin "daisyui/theme" {
+  name: "mythoria";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(95.814% 0 0);
+  --color-base-200: oklch(89.107% 0 0);
+  --color-base-300: oklch(82.4% 0 0);
+  --color-base-content: oklch(19.162% 0 0);
+  --color-primary: oklch(39% 0.09 240.876);
+  --color-primary-content: oklch(95% 0.026 236.824);
+  --color-secondary: oklch(90% 0.058 230.902);
+  --color-secondary-content: oklch(12.335% 0.033 23.865);
+  --color-accent: oklch(73.425% 0.094 60.729);
+  --color-accent-content: oklch(14.685% 0.018 60.729);
+  --color-neutral: oklch(54.367% 0.037 51.902);
+  --color-neutral-content: oklch(90.873% 0.007 51.902);
+  --color-info: oklch(69.224% 0.097 207.284);
+  --color-info-content: oklch(12.566% 0.019 207.284);
+  --color-success: oklch(65.69% 0.137 155.029);
+  --color-success-content: oklch(13.138% 0.027 155.029);
+  --color-warning: oklch(78.659% 0.137 83.333);
+  --color-warning-content: oklch(15.732% 0.027 83.333);
+  --color-error: oklch(65.69% 0.137 22.876);
+  --color-error-content: oklch(13.138% 0.027 22.876);
+}
