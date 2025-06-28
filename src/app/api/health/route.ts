@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { isVpcDirectEgress } from "@/lib/database-config";
 
 interface DatabaseStatus {
@@ -123,8 +124,8 @@ export async function GET(request: NextRequest) {
 
 async function testDatabase(
   name: string, 
-  dbInstance: any
-): Promise<{ name: string; result: any }> {
+  dbInstance: ReturnType<typeof drizzle> | null
+): Promise<{ name: string; result: { rows?: any[] } }> {
   if (!dbInstance) {
     throw new Error(`${name} database not initialized`);
   }
@@ -135,7 +136,7 @@ async function testDatabase(
   return { name, result };
 }
 
-function getStatusFromResult(result: PromiseSettledResult<any>): DatabaseStatus {
+function getStatusFromResult(result: PromiseSettledResult<{ name: string; result: { rows?: any[] } }>): DatabaseStatus {
   if (result.status === "fulfilled") {
     return { status: "connected" };
   } else {
