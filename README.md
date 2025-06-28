@@ -59,11 +59,11 @@ npm run db:studio
 ## Deployment
 
 ```bash
-# Deploy to staging
-npm run deploy:staging
-
 # Deploy to production
 npm run deploy:production
+
+# Or use PowerShell script
+./scripts/deploy.ps1
 ```
 
 ## Project Structure

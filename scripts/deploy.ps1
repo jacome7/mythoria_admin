@@ -1,35 +1,40 @@
-# Mythoria Admin Portal - Deployment Script
+# Mythoria Admin Portal - Production Deployment Script
 # This script deploys the admin portal to Google Cloud Run
 
 param(
     [Parameter(Mandatory=$false)]
-    [ValidateSet("staging", "production")]
-    [string]$Environment = "production",
-    
-    [Parameter(Mandatory=$false)]
     [string]$ProjectId = "oceanic-beach-460916-n5",
     
     [Parameter(Mandatory=$false)]
-    [string]$Region = "europe-west9"
+    [string]$Region = "europe-west9",
+    
+    [switch]$Force = $false,
+    [switch]$Verbose = $false
 )
 
 # Set error action preference
 $ErrorActionPreference = "Stop"
 
-Write-Host "[INFO] Starting deployment of Mythoria Admin Portal"
-Write-Host "[INFO] Environment: $Environment"
+Write-Host "[INFO] Starting production deployment of Mythoria Admin Portal"
 Write-Host "[INFO] Project: $ProjectId"
 Write-Host "[INFO] Region: $Region"
 
 try {
+    # Configuration
+    $SERVICE_NAME = "mythoria-admin"
+    
+    Write-Host "[INFO] Project: $ProjectId"
+    Write-Host "[INFO] Service: $SERVICE_NAME"
+    Write-Host "[INFO] Region: $Region"
+    
     # Check if gcloud is installed
     Write-Host "[INFO] Checking gcloud installation..."
-    $gcloudVersion = gcloud version 2>$null
+    $gcloudVersion = gcloud version --format="value(Google Cloud SDK)" 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERR] gcloud CLI not found. Please install Google Cloud SDK."
         exit 1
     }
-    Write-Host "[OK] gcloud CLI found"
+    Write-Host "[OK] Google Cloud SDK found: $gcloudVersion"
 
     # Set the project
     Write-Host "[INFO] Setting Google Cloud project..."
@@ -71,13 +76,23 @@ try {
     }
     Write-Host "[OK] All APIs enabled"
 
-    # Build and deploy
-    if ($Environment -eq "staging") {
-        Write-Host "[INFO] Deploying to staging environment..."
-        gcloud builds submit --config cloudbuild-staging.yaml
+    # Confirm deployment
+    if (-not $Force) {
+        $confirmation = Read-Host "Deploy to production? [y/N]"
+        if ($confirmation -ne 'y' -and $confirmation -ne 'Y') {
+            Write-Host "[INFO] Deployment cancelled by user."
+            exit 0
+        }
+    }
+
+    # Build and deploy using beta for enhanced logging
+    Write-Host "[INFO] Starting Cloud Build production deployment with enhanced logging..."
+    Write-Host "[INFO] This may take several minutes..."
+    
+    if ($Verbose) {
+        gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
     } else {
-        Write-Host "[INFO] Deploying to production environment..."
-        gcloud builds submit --config cloudbuild.yaml
+        gcloud beta builds submit --config cloudbuild.yaml
     }
     
     if ($LASTEXITCODE -ne 0) {
@@ -87,15 +102,18 @@ try {
 
     # Get the service URL
     Write-Host "[INFO] Getting service URL..."
-    $serviceName = if ($Environment -eq "staging") { "mythoria-admin-staging" } else { "mythoria-admin" }
-    $serviceUrl = gcloud run services describe $serviceName --region=$Region --format="value(status.url)" 2>$null
+    $serviceUrl = gcloud run services describe $SERVICE_NAME --region=$Region --format="value(status.url)" 2>$null
     
     if ([string]::IsNullOrEmpty($serviceUrl)) {
         Write-Host "[WARN] Could not retrieve service URL"
     } else {
         Write-Host "[OK] Deployment successful!"
-        Write-Host "[INFO] Service URL: $serviceUrl"
+        Write-Host "[OK] Service URL: $serviceUrl"
         Write-Host "[INFO] Admin Portal is now accessible at the URL above"
+        Write-Host "[INFO] Deployment summary:"
+        Write-Host "  - Service: $SERVICE_NAME"
+        Write-Host "  - Region: $Region"
+        Write-Host "  - URL: $serviceUrl"
     }
 
 } catch {
