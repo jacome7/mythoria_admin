@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Enable standalone output for better Docker performance
   output: 'standalone',
+  
+  // Environment variables for client-side use
+  env: {
+    NEXT_PUBLIC_MYTHORIA_WEBAPP_URL: process.env.MYTHORIA_WEBAPP_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_MYTHORIA_ADMIN_URL: process.env.MYTHORIA_ADMIN_URL || 'http://localhost:3001',
+    NEXT_PUBLIC_STORY_GENERATION_WORKFLOW_URL: process.env.STORY_GENERATION_WORKFLOW_URL || 'http://localhost:8080',
+    NEXT_PUBLIC_NOTIFICATION_ENGINE_URL: process.env.NOTIFICATION_ENGINE_URL || 'http://localhost:8081',
+  },
+  
   // Image configuration to allow external images
   images: {
     remotePatterns: [
@@ -25,13 +34,14 @@ const nextConfig: NextConfig = {
       'drizzle-orm',
       'zod'
     ],
-    // Enable faster builds
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  },
+
+  // Turbopack configuration (moved from experimental.turbo)
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
   },

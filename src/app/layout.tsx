@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import AuthProvider from '@/components/auth-provider';
 
 export const metadata: Metadata = {
   title: 'Mythoria Admin Portal',
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="mythoria">
       <body className="antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -41,17 +41,35 @@ steps:
       - '80'
       - '--timeout'
       - '300'
-      - '--vpc-connector'
-      - 'mythoria-vpc-connector'
+      - '--network'
+      - 'default'
+      - '--subnet'
+      - 'default'
       - '--vpc-egress'
-      - 'private-ranges-only'
+      - 'all-traffic'
       - '--set-env-vars'
-      - 'NODE_ENV=production'
+      - 'NODE_ENV=production,GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},NEXTAUTH_URL=${_NEXTAUTH_URL},AUTH_URL=${_NEXTAUTH_URL},DB_PORT=${_DB_PORT},MYTHORIA_DB_NAME=${_MYTHORIA_DB_NAME},WORKFLOWS_DB_NAME=${_WORKFLOWS_DB_NAME},BACKOFFICE_DB_NAME=${_BACKOFFICE_DB_NAME},GOOGLE_CLOUD_PROJECT_ID=${_GOOGLE_CLOUD_PROJECT_ID},GOOGLE_CLOUD_REGION=${_GOOGLE_CLOUD_REGION},MYTHORIA_WEBAPP_URL=${_MYTHORIA_WEBAPP_URL},MYTHORIA_ADMIN_URL=${_MYTHORIA_ADMIN_URL},STORY_GENERATION_WORKFLOW_URL=${_STORY_GENERATION_WORKFLOW_URL},NOTIFICATION_ENGINE_URL=${_NOTIFICATION_ENGINE_URL},DB_MAX_CONNECTIONS=${_DB_MAX_CONNECTIONS}'
+      - '--set-secrets'
+      - 'AUTH_SECRET=mythoria-auth-secret:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,DB_HOST=mythoria-db-host:latest,DB_USER=mythoria-db-user:latest,DB_PASSWORD=mythoria-db-password:latest'
 
 # Default substitutions
 substitutions:
   _SERVICE_NAME: 'mythoria-admin'
   _REGION: 'europe-west9'
+  # Non-sensitive configuration variables
+  _GOOGLE_CLIENT_ID: '803421888801-fsse90vkqpobthd3runvv60dfijnh63t.apps.googleusercontent.com'
+  _NEXTAUTH_URL: 'https://mythoria-admin-803421888801.europe-west9.run.app'
+  _DB_PORT: '5432'
+  _MYTHORIA_DB_NAME: 'mythoria_db'
+  _WORKFLOWS_DB_NAME: 'workflows_db'
+  _BACKOFFICE_DB_NAME: 'backoffice_db'
+  _GOOGLE_CLOUD_PROJECT_ID: 'oceanic-beach-460916-n5'
+  _GOOGLE_CLOUD_REGION: 'europe-west9'
+  _MYTHORIA_WEBAPP_URL: 'https://mythoria.pt'
+  _MYTHORIA_ADMIN_URL: 'https://mythoria-admin-803421888801.europe-west9.run.app'
+  _STORY_GENERATION_WORKFLOW_URL: 'https://story-generation-workflow-803421888801.europe-west9.run.app'
+  _NOTIFICATION_ENGINE_URL: 'https://notification-engine-803421888801.europe-west9.run.app'
+  _DB_MAX_CONNECTIONS: '10'
 
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -1,4 +1,12 @@
-// Database schemas will be added in Phase 3
-// This file ensures the schema directory exists for Drizzle configuration
+// Main schema export - re-exports all domains needed for admin
 
-export {};
+// Enums
+export * from './enums';
+
+// Domain tables and types
+export * from './authors';
+export * from './stories';
+export * from './print';
+
+// Auth
+export * from './auth';

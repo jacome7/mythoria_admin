@@ -30,7 +30,6 @@ export function isVpcDirectEgress(): boolean {
  */
 function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
   const isVpcConnection = isVpcDirectEgress();
-  const isProduction = process.env.NODE_ENV === "production";
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
   
   // During build time, provide default values to prevent build failures

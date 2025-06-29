@@ -15,7 +15,7 @@ let mythoriaDbInstance: ReturnType<typeof drizzle> | null = null;
 let workflowsDbInstance: ReturnType<typeof drizzle> | null = null;
 let backofficeDbInstance: ReturnType<typeof drizzle> | null = null;
 
-function createPool(poolConfig: any, poolName: string): Pool {
+function createPool(poolConfig: ReturnType<typeof getPoolConfig>, poolName: string): Pool {
   const pool = new Pool(poolConfig);
   
   pool.on('error', (err) => {
@@ -94,6 +94,31 @@ export const mythoriaDb = databases?.mythoria || null;
 export const workflowsDb = databases?.workflows || null;
 export const backofficeDb = databases?.backoffice || null;
 
+// Export getter functions for database connections
+export function getMythoriaDb() {
+  const currentDb = databases?.mythoria || mythoriaDbInstance;
+  if (!currentDb) {
+    throw new Error('Mythoria database not initialized');
+  }
+  return currentDb;
+}
+
+export function getWorkflowsDb() {
+  const currentDb = databases?.workflows || workflowsDbInstance;
+  if (!currentDb) {
+    throw new Error('Workflows database not initialized');
+  }
+  return currentDb;
+}
+
+export function getBackofficeDb() {
+  const currentDb = databases?.backoffice || backofficeDbInstance;
+  if (!currentDb) {
+    throw new Error('Backoffice database not initialized');
+  }
+  return currentDb;
+}
+
 // Export all databases as an object
 export const db = {
   mythoria: mythoriaDb,
@@ -120,5 +145,8 @@ async function closeConnections() {
   );
 }
 
-process.on('SIGINT', closeConnections);
-process.on('SIGTERM', closeConnections);
+// Only register process handlers in Node.js environment (not Edge Runtime)
+if (typeof process !== 'undefined' && process.on) {
+  process.on('SIGINT', closeConnections);
+  process.on('SIGTERM', closeConnections);
+}

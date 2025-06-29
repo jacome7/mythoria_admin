@@ -21,6 +21,12 @@ interface HealthStatus {
     publicDomain?: string;
     error?: string;
   };
+  auth: {
+    googleClientId: "configured" | "missing";
+    googleClientSecret: "configured" | "missing";
+    authSecret: "configured" | "missing";
+    nextAuthUrl: string;
+  };
   timestamp: string;
 }
 
@@ -59,6 +65,12 @@ export async function GET(request: NextRequest) {
       status: overallHealthy ? "healthy" : "unhealthy",
       databases,
       network: networkResult,
+      auth: {
+        googleClientId: process.env.GOOGLE_CLIENT_ID ? "configured" : "missing",
+        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? "configured" : "missing",
+        authSecret: process.env.AUTH_SECRET ? "configured" : "missing",
+        nextAuthUrl: process.env.NEXTAUTH_URL || "not set",
+      },
       timestamp: new Date().toISOString(),
     };
 
@@ -96,6 +108,12 @@ export async function GET(request: NextRequest) {
         status: "disconnected",
         error: "Health check failed",
       },
+      auth: {
+        googleClientId: process.env.GOOGLE_CLIENT_ID ? "configured" : "missing",
+        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? "configured" : "missing",
+        authSecret: process.env.AUTH_SECRET ? "configured" : "missing",
+        nextAuthUrl: process.env.NEXTAUTH_URL || "not set",
+      },
       timestamp: new Date().toISOString(),
     };
 
@@ -125,7 +143,7 @@ export async function GET(request: NextRequest) {
 async function testDatabase(
   name: string, 
   dbInstance: ReturnType<typeof drizzle> | null
-): Promise<{ name: string; result: { rows?: any[] } }> {
+): Promise<{ name: string; result: { rows?: unknown[] } }> {
   if (!dbInstance) {
     throw new Error(`${name} database not initialized`);
   }
@@ -136,7 +154,7 @@ async function testDatabase(
   return { name, result };
 }
 
-function getStatusFromResult(result: PromiseSettledResult<{ name: string; result: { rows?: any[] } }>): DatabaseStatus {
+function getStatusFromResult(result: PromiseSettledResult<{ name: string; result: { rows?: unknown[] } }>): DatabaseStatus {
   if (result.status === "fulfilled") {
     return { status: "connected" };
   } else {
