@@ -303,9 +303,9 @@ DB_HOST=10.19.192.3
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=your-password
-MYTHORIA_DB_NAME=mythoria_db
-WORKFLOWS_DB_NAME=workflows_db
-BACKOFFICE_DB_NAME=backoffice_db
+MYTHORIA_DB=mythoria_db
+WORKFLOWS_DB=workflows_db
+BACKOFFICE_DB=backoffice_db
 ```
 
 ## Integration Points

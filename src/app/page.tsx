@@ -10,9 +10,7 @@ import KPICard from '../components/KPICard';
 interface KPIData {
   users: number;
   stories: number;
-  leads: number;
-  printRequests: number;
-  revenue: number;
+  openTickets: number;
 }
 
 export default function AdminPortal() {
@@ -85,7 +83,7 @@ export default function AdminPortal() {
         <p className="text-center text-gray-600 mb-8">Project main indicators and KPIs</p>
         
         {/* KPI Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto mb-8">
           <KPICard
             title="Users"
             value={kpis?.users || 0}
@@ -96,19 +94,6 @@ export default function AdminPortal() {
             }
             href="/users"
             description="Total registered authors"
-            isLoading={isLoadingKpis}
-          />
-          
-          <KPICard
-            title="Leads"
-            value={kpis?.leads || 0}
-            icon={
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            }
-            href="/leads"
-            description="Total email leads collected"
             isLoading={isLoadingKpis}
           />
           
@@ -126,28 +111,15 @@ export default function AdminPortal() {
           />
           
           <KPICard
-            title="Print Requests"
-            value={kpis?.printRequests || 0}
+            title="Tickets"
+            value={kpis?.openTickets || 0}
             icon={
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
               </svg>
             }
-            href="/print-requests"
-            description="Total print requests"
-            isLoading={isLoadingKpis}
-          />
-          
-          <KPICard
-            title="Revenue"
-            value={`${kpis?.revenue || 6324}€`}
-            icon={
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
-            href="/payments"
-            description="Total revenue generated"
+            href="/tickets"
+            description="Open and in-progress tickets"
             isLoading={isLoadingKpis}
           />
         </div>

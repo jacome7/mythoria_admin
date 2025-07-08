@@ -49,6 +49,13 @@ The Mythoria Admin Portal serves as the centralized hub for platform administrat
 - Cost analysis and optimization
 - Custom report generation
 
+### 🎫 **Ticketing System**
+- Customer request management (contact, print, payment requests)
+- Status tracking (open → in_progress → resolved → closed)
+- Priority management and comment threads
+- Notification system integration
+- Comprehensive ticket analytics
+
 ## Tech Stack
 
 ### Core Framework
@@ -128,9 +135,9 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=your-database-password
-MYTHORIA_DB_NAME=mythoria_dev
-WORKFLOWS_DB_NAME=workflows_dev
-BACKOFFICE_DB_NAME=backoffice_dev
+MYTHORIA_DB=mythoria_dev
+WORKFLOWS_DB=workflows_dev
+BACKOFFICE_DB=backoffice_dev
 
 # Development Settings
 NODE_ENV=development

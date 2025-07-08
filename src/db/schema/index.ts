@@ -7,6 +7,9 @@ export * from './enums';
 export * from './authors';
 export * from './stories';
 export * from './print';
+export * from './tickets';
+export * from './credits';
+export * from './managers';
 
 // Auth
 export * from './auth';

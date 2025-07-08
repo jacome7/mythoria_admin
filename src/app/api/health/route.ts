@@ -85,9 +85,9 @@ export async function GET(request: NextRequest) {
           connectionType,
           environment: process.env.NODE_ENV,
           dbHost: process.env.DB_HOST,
-          mythoriaDbName: process.env.MYTHORIA_DB_NAME || 'mythoria_db',
-          workflowsDbName: process.env.WORKFLOWS_DB_NAME || 'workflows_db',
-          backofficeDbName: process.env.BACKOFFICE_DB_NAME || 'backoffice_db',
+          mythoriaDbName: process.env.MYTHORIA_DB || 'mythoria_db',
+          workflowsDbName: process.env.WORKFLOWS_DB || 'workflows_db',
+          backofficeDbName: process.env.BACKOFFICE_DB || 'backoffice_db',
           isVpcConnection: isVpcDirectEgress(),
         },
       });

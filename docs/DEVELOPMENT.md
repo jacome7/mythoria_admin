@@ -49,9 +49,9 @@ DB_USER=postgres
 DB_PASSWORD=your-database-password
 
 # Database Names
-MYTHORIA_DB_NAME=mythoria_dev
-WORKFLOWS_DB_NAME=workflows_dev
-BACKOFFICE_DB_NAME=backoffice_dev
+MYTHORIA_DB=mythoria_dev
+WORKFLOWS_DB=workflows_dev
+BACKOFFICE_DB=backoffice_dev
 
 # Development Settings
 NODE_ENV=development

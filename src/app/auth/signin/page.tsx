@@ -39,7 +39,7 @@ export default function SignInPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <span className="text-sm">
-                Access restricted to @mythoria.pt and @caravanconcierge.com emails
+                Access restricted to Mythoria users
               </span>
             </div>
 
@@ -61,11 +61,7 @@ export default function SignInPage() {
 
           <div className="text-center">
             <p className="text-sm text-base-content/60">
-              This portal is restricted to Mythoria and Caravan Concierge team members.
-              Please ensure you&apos;re using your work email address.
-            </p>
-            <p className="text-xs text-base-content/40 mt-2">
-              Dev Environment: Port 3001
+              This portal is restricted to Mythoriateam members.
             </p>
           </div>
         </div>

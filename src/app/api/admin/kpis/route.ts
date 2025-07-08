@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
+import { TicketService } from '@/lib/ticketing/service';
 
 export async function GET() {
   try {
@@ -21,19 +22,16 @@ export async function GET() {
     }
 
     // Get KPI data
-    const [usersCount, storiesCount, leadsCount, printRequestsCount] = await Promise.all([
+    const [usersCount, storiesCount, ticketMetrics] = await Promise.all([
       adminService.getTotalAuthorsCount(),
       adminService.getTotalStoriesCount(),
-      adminService.getTotalLeadsCount(),
-      adminService.getTotalPrintRequestsCount()
+      TicketService.getMetrics()
     ]);
 
     const kpis = {
       users: usersCount,
       stories: storiesCount,
-      leads: leadsCount,
-      printRequests: printRequestsCount,
-      revenue: 6324 // Fixed value as requested
+      openTickets: ticketMetrics.openTickets + ticketMetrics.inProgressTickets
     };
 
     return NextResponse.json(kpis);

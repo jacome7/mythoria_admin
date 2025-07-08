@@ -1,37 +1,92 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
 
 interface Story {
-  id: string;
+  storyId: string;
   title: string;
   author: {
-    id: string;
-    name: string;
+    authorId: string;
+    displayName: string;
     email: string;
   };
-  status: 'draft' | 'generating' | 'completed' | 'published' | 'archived';
-  wordCount: number;
-  chapters: number;
+  status: 'draft' | 'writing' | 'published';
+  chapterCount: number;
   createdAt: string;
   updatedAt: string;
-  tags: string[];
   isPublic: boolean;
-  flagged: boolean;
+  isFeatured: boolean;
+  pdfUri: string | null;
+  htmlUri: string | null;
+}
+
+interface PaginationData {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+  limit: number;
+}
+
+interface StoriesResponse {
+  data: Story[];
+  pagination: PaginationData;
 }
 
 export default function StoriesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
+  const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterFlagged, setFilterFlagged] = useState<string>('all');
+  const [filterFeatured, setFilterFeatured] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [inputValue, setInputValue] = useState('');
+
+  // Debounce the search term update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(inputValue);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  const fetchStories = useCallback(async (page: number) => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '100',
+        ...(searchTerm && { search: searchTerm }),
+        ...(filterStatus !== 'all' && { status: filterStatus }),
+        ...(filterFeatured !== 'all' && { featured: filterFeatured }),
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+      
+      const response = await fetch(`/api/admin/stories?${params.toString()}`);
+      if (response.ok) {
+        const data: StoriesResponse = await response.json();
+        setStories(data.data);
+        setPagination(data.pagination);
+      } else {
+        console.error('Failed to fetch stories');
+      }
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchTerm, filterStatus, filterFeatured]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -52,115 +107,65 @@ export default function StoriesPage() {
         return;
       }
 
-      fetchStories();
+      fetchStories(currentPage);
     }
-  }, [status, session, router]);
+  }, [status, session, router, currentPage, fetchStories]);
 
-  const fetchStories = async () => {
-    try {
-      // Mock data for now - replace with actual API call
-      const mockStories: Story[] = [
-        {
-          id: '1',
-          title: 'The Adventures of Sarah in Magical Kingdom',
-          author: {
-            id: '101',
-            name: 'John Smith',
-            email: 'john@example.com'
-          },
-          status: 'completed',
-          wordCount: 5420,
-          chapters: 8,
-          createdAt: '2025-01-01T10:00:00Z',
-          updatedAt: '2025-01-01T15:30:00Z',
-          tags: ['fantasy', 'children', 'adventure'],
-          isPublic: true,
-          flagged: false
-        },
-        {
-          id: '2',
-          title: 'Corporate Warriors: The Tech Startup Story',
-          author: {
-            id: '102',
-            name: 'Maria Garcia',
-            email: 'maria@techcorp.com'
-          },
-          status: 'generating',
-          wordCount: 0,
-          chapters: 0,
-          createdAt: '2025-01-01T14:00:00Z',
-          updatedAt: '2025-01-01T14:00:00Z',
-          tags: ['corporate', 'business', 'startup'],
-          isPublic: false,
-          flagged: false
-        },
-        {
-          id: '3',
-          title: 'Space Explorer Emma',
-          author: {
-            id: '103',
-            name: 'Robert Johnson',
-            email: 'robert@gmail.com'
-          },
-          status: 'completed',
-          wordCount: 3200,
-          chapters: 5,
-          createdAt: '2024-12-30T09:00:00Z',
-          updatedAt: '2024-12-30T16:45:00Z',
-          tags: ['sci-fi', 'space', 'adventure'],
-          isPublic: true,
-          flagged: true
-        },
-        {
-          id: '4',
-          title: 'The Mystery of the Lost Treasure',
-          author: {
-            id: '104',
-            name: 'Lisa Chen',
-            email: 'lisa@example.com'
-          },
-          status: 'draft',
-          wordCount: 1200,
-          chapters: 2,
-          createdAt: '2025-01-01T11:00:00Z',
-          updatedAt: '2025-01-01T12:30:00Z',
-          tags: ['mystery', 'treasure', 'adventure'],
-          isPublic: false,
-          flagged: false
-        }
-      ];
-
-      setStories(mockStories);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-      setIsLoading(false);
-    }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
+
+  const handleSearch = (term: string) => {
+    setInputValue(term);
+    // searchTerm will be updated by the debounce effect
+  };
+
+  // Reset page when search term actually changes (after debounce)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handleStatusFilter = (status: string) => {
+    setFilterStatus(status);
+    setCurrentPage(1);
+  };
+
+  const handleFeaturedFilter = (featured: string) => {
+    setFilterFeatured(featured);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (session?.user) {
+      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
+      const isAllowedDomain = allowedDomains.some(domain => 
+        session.user?.email?.endsWith(domain)
+      );
+
+      if (!isAllowedDomain) {
+        router.push('/auth/error');
+        return;
+      }
+
+      fetchStories(currentPage);
+    }
+  }, [status, session, router, currentPage, fetchStories]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'badge-neutral';
-      case 'generating': return 'badge-warning';
-      case 'completed': return 'badge-success';
-      case 'published': return 'badge-info';
-      case 'archived': return 'badge-ghost';
+      case 'writing': return 'badge-warning';
+      case 'published': return 'badge-success';
       default: return 'badge-neutral';
     }
   };
-
-  const filteredStories = stories.filter(story => {
-    const statusMatch = filterStatus === 'all' || story.status === filterStatus;
-    const flaggedMatch = filterFlagged === 'all' || 
-      (filterFlagged === 'flagged' && story.flagged) ||
-      (filterFlagged === 'clean' && !story.flagged);
-    const searchMatch = searchTerm === '' || 
-      story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      story.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      story.author.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return statusMatch && flaggedMatch && searchMatch;
-  });
 
   if (status === 'loading' || isLoading) {
     return (
@@ -197,8 +202,8 @@ export default function StoriesPage() {
                   type="text" 
                   placeholder="Search stories, authors..." 
                   className="input input-bordered w-full max-w-xs"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={inputValue}
+                  onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
 
@@ -209,29 +214,27 @@ export default function StoriesPage() {
                 <select 
                   className="select select-bordered w-full max-w-xs" 
                   value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
+                  onChange={(e) => handleStatusFilter(e.target.value)}
                 >
                   <option value="all">All Statuses</option>
                   <option value="draft">Draft</option>
-                  <option value="generating">Generating</option>
-                  <option value="completed">Completed</option>
+                  <option value="writing">Writing</option>
                   <option value="published">Published</option>
-                  <option value="archived">Archived</option>
                 </select>
               </div>
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Content</span>
+                  <span className="label-text">Featured</span>
                 </label>
                 <select 
                   className="select select-bordered w-full max-w-xs"
-                  value={filterFlagged}
-                  onChange={(e) => setFilterFlagged(e.target.value)}
+                  value={filterFeatured}
+                  onChange={(e) => handleFeaturedFilter(e.target.value)}
                 >
-                  <option value="all">All Content</option>
-                  <option value="clean">Clean</option>
-                  <option value="flagged">Flagged</option>
+                  <option value="all">All Stories</option>
+                  <option value="featured">Featured</option>
+                  <option value="clean">Not Featured</option>
                 </select>
               </div>
             </div>
@@ -243,19 +246,19 @@ export default function StoriesPage() {
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm">Total Stories</h3>
-              <p className="text-2xl font-bold">{stories.length}</p>
+              <p className="text-2xl font-bold">{pagination?.totalCount || stories.length}</p>
             </div>
           </div>
           <div className="card bg-base-100 shadow">
             <div className="card-body">
-              <h3 className="card-title text-sm">Completed</h3>
-              <p className="text-2xl font-bold">{stories.filter(s => s.status === 'completed').length}</p>
+              <h3 className="card-title text-sm">Published</h3>
+              <p className="text-2xl font-bold">{stories.filter(s => s.status === 'published').length}</p>
             </div>
           </div>
           <div className="card bg-base-100 shadow">
             <div className="card-body">
-              <h3 className="card-title text-sm">Flagged</h3>
-              <p className="text-2xl font-bold text-error">{stories.filter(s => s.flagged).length}</p>
+              <h3 className="card-title text-sm">Featured</h3>
+              <p className="text-2xl font-bold text-info">{stories.filter(s => s.isFeatured).length}</p>
             </div>
           </div>
           <div className="card bg-base-100 shadow">
@@ -276,30 +279,26 @@ export default function StoriesPage() {
                     <th>Story</th>
                     <th>Author</th>
                     <th>Status</th>
-                    <th>Progress</th>
+                    <th>Chapters</th>
                     <th>Created</th>
                     <th>Flags</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStories.map((story) => (
-                    <tr key={story.id} className={story.flagged ? 'bg-error/10' : ''}>
+                  {stories.map((story) => (
+                    <tr key={story.storyId} className={story.isFeatured ? 'bg-info/10' : ''}>
                       <td>
                         <div>
                           <div className="font-bold">{story.title}</div>
                           <div className="text-sm opacity-50">
-                            {story.tags.map(tag => (
-                              <span key={tag} className="badge badge-outline badge-xs mr-1">
-                                {tag}
-                              </span>
-                            ))}
+                            ID: {story.storyId.substring(0, 8)}...
                           </div>
                         </div>
                       </td>
                       <td>
                         <div>
-                          <div className="font-medium">{story.author.name}</div>
+                          <div className="font-medium">{story.author.displayName}</div>
                           <div className="text-sm opacity-50">{story.author.email}</div>
                         </div>
                       </td>
@@ -310,8 +309,7 @@ export default function StoriesPage() {
                       </td>
                       <td>
                         <div className="text-sm">
-                          <div>{story.wordCount.toLocaleString()} words</div>
-                          <div className="text-xs opacity-50">{story.chapters} chapters</div>
+                          <div>{story.chapterCount} chapters</div>
                         </div>
                       </td>
                       <td>
@@ -321,29 +319,22 @@ export default function StoriesPage() {
                       </td>
                       <td>
                         <div className="flex gap-1">
-                          {story.flagged && (
-                            <span className="badge badge-error badge-xs">Flagged</span>
+                          {story.isFeatured && (
+                            <span className="badge badge-info badge-xs">Featured</span>
                           )}
                           {story.isPublic && (
-                            <span className="badge badge-info badge-xs">Public</span>
+                            <span className="badge badge-success badge-xs">Public</span>
                           )}
                         </div>
                       </td>
                       <td>
                         <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-xs">View</button>
-                          <button className="btn btn-ghost btn-xs">Edit</button>
-                          <div className="dropdown dropdown-end">
-                            <div tabIndex={0} role="button" className="btn btn-ghost btn-xs">
-                              ⋮
-                            </div>
-                            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                              <li><a>Archive</a></li>
-                              <li><a>Flag Content</a></li>
-                              <li><a>Export</a></li>
-                              <li><a className="text-error">Delete</a></li>
-                            </ul>
-                          </div>
+                          <Link 
+                            href={`/stories/${story.storyId}`}
+                            className="btn btn-ghost btn-xs"
+                          >
+                            View
+                          </Link>
                         </div>
                       </td>
                     </tr>
@@ -351,7 +342,7 @@ export default function StoriesPage() {
                 </tbody>
               </table>
               
-              {filteredStories.length === 0 && (
+              {stories.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-base-content/70">No stories found matching your filters.</p>
                 </div>
@@ -359,6 +350,45 @@ export default function StoriesPage() {
             </div>
           </div>
         </div>
+
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <div className="btn-group">
+              <button
+                className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`}
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrev}
+              >
+                Previous
+              </button>
+              
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                const pageNum = Math.max(1, currentPage - 2) + i;
+                if (pageNum > pagination.totalPages) return null;
+                
+                return (
+                  <button
+                    key={pageNum}
+                    className={`btn ${currentPage === pageNum ? 'btn-active' : ''}`}
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              
+              <button
+                className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNext}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </main>
       <AdminFooter />
     </div>

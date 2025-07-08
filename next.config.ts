@@ -6,8 +6,8 @@ const nextConfig: NextConfig = {
   
   // Environment variables for client-side use
   env: {
-    NEXT_PUBLIC_MYTHORIA_WEBAPP_URL: process.env.MYTHORIA_WEBAPP_URL || 'http://localhost:3000',
-    NEXT_PUBLIC_MYTHORIA_ADMIN_URL: process.env.MYTHORIA_ADMIN_URL || 'http://localhost:3001',
+    NEXT_PUBLIC_WEBAPP_URL: process.env.WEBAPP_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_ADMIN_URL: process.env.ADMIN_URL || 'http://localhost:3001',
     NEXT_PUBLIC_STORY_GENERATION_WORKFLOW_URL: process.env.STORY_GENERATION_WORKFLOW_URL || 'http://localhost:8080',
     NEXT_PUBLIC_NOTIFICATION_ENGINE_URL: process.env.NOTIFICATION_ENGINE_URL || 'http://localhost:8081',
   },

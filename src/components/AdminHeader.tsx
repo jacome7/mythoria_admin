@@ -42,27 +42,9 @@ export default function AdminHeader() {
             <Link href="/server-status" onClick={closeDropdown}>Server Status</Link>
           </li>
 
-          {/* Tasks Dropdown */}
-          <li className="dropdown dropdown-hover">
-            <div 
-              tabIndex={0} 
-              role="button" 
-              className="btn btn-ghost"
-              onClick={() => handleDropdownToggle('tasks')}
-            >
-              Tasks
-              <svg className="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-              </svg>
-            </div>
-            <ul 
-              tabIndex={0} 
-              className={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 ${
-                activeDropdown === 'tasks' ? 'block' : ''
-              }`}
-            >
-              <li><Link href="/tasks" onClick={closeDropdown}>Open Tasks</Link></li>
-            </ul>
+          {/* Tickets - Standalone */}
+          <li>
+            <Link href="/tickets" onClick={closeDropdown}>Tickets</Link>
           </li>
 
           {/* Management Dropdown */}
@@ -84,9 +66,10 @@ export default function AdminHeader() {
                 activeDropdown === 'management' ? 'block' : ''
               }`}
             >
+              <li><Link href="/managers" onClick={closeDropdown}>Managers</Link></li>
               <li><Link href="/users" onClick={closeDropdown}>Users</Link></li>
               <li><Link href="/stories" onClick={closeDropdown}>Stories</Link></li>
-              <li><Link href="/leads" onClick={closeDropdown}>Leads</Link></li>
+              <li><Link href="/notifications" onClick={closeDropdown}>Notifications</Link></li>
             </ul>
           </li>
 
@@ -112,6 +95,7 @@ export default function AdminHeader() {
               <li><Link href="/pricing" onClick={closeDropdown}>Pricing</Link></li>
               <li><Link href="/revenue" onClick={closeDropdown}>Revenue</Link></li>
               <li><Link href="/ai-usage" onClick={closeDropdown}>AI Usage</Link></li>
+              <li><Link href="/services" onClick={closeDropdown}>Services</Link></li>
             </ul>
           </li>
         </ul>

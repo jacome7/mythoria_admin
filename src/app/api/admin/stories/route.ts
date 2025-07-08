@@ -25,18 +25,20 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
     const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const featured = searchParams.get('featured') || '';
     const sortBy = (searchParams.get('sortBy') || 'createdAt') as 'title' | 'createdAt' | 'status';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
-    // Get stories data
-    const stories = await adminService.getStories(page, limit, search, sortBy, sortOrder);
+    // Get stories data with author information
+    const stories = await adminService.getStoriesWithAuthors(page, limit, search, status, featured, sortBy, sortOrder);
 
     return NextResponse.json({
       data: stories,
       pagination: {
         page,
         limit,
-        totalCount: stories.length, // Approximated for now
+        totalCount: stories.length, // This should be improved with proper count query
         totalPages: Math.ceil(stories.length / limit),
         hasNext: stories.length === limit,
         hasPrev: page > 1

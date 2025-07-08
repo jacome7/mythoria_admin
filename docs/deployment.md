@@ -158,9 +158,9 @@ steps:
       - '--set-secrets=DB_PORT=db-port:latest'
       - '--set-secrets=DB_USER=db-user:latest'
       - '--set-secrets=DB_PASSWORD=db-password:latest'
-      - '--set-env-vars=MYTHORIA_DB_NAME=mythoria_db'
-      - '--set-env-vars=WORKFLOWS_DB_NAME=workflows_db'
-      - '--set-env-vars=BACKOFFICE_DB_NAME=backoffice_db'
+      - '--set-env-vars=MYTHORIA_DB=mythoria_db'
+      - '--set-env-vars=WORKFLOWS_DB=workflows_db'
+      - '--set-env-vars=BACKOFFICE_DB=backoffice_db'
 
 # Build timeout
 timeout: '1200s'
@@ -238,9 +238,9 @@ HOSTNAME=0.0.0.0
 NEXTAUTH_URL=https://mythoria-admin-oceanic-beach-460916-n5-europe-west9.a.run.app
 
 # Database Configuration
-MYTHORIA_DB_NAME=mythoria_db
-WORKFLOWS_DB_NAME=workflows_db
-BACKOFFICE_DB_NAME=backoffice_db
+MYTHORIA_DB=mythoria_db
+WORKFLOWS_DB=workflows_db
+BACKOFFICE_DB=backoffice_db
 ```
 
 #### Google Secret Manager Secrets

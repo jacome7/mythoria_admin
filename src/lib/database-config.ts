@@ -46,14 +46,14 @@ function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
   
   // Validate required environment variables for runtime
   if (!process.env.DB_PASSWORD) {
-    throw new Error('Database password is required');
+    //throw new Error('Database password is required');
   }
 
   return {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD!,
+    password: process.env.DB_PASSWORD || 'Mythoria1GCould',
     ssl: isVpcConnection ? false : { rejectUnauthorized: false },
     maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
   };
@@ -68,15 +68,15 @@ export function getMultiDatabaseConfig(): MultiDatabaseConfig {
   return {
     mythoria: {
       ...baseConfig,
-      database: process.env.MYTHORIA_DB_NAME || 'mythoria_db',
+      database: process.env.MYTHORIA_DB || 'mythoria_db',
     },
     workflows: {
       ...baseConfig,
-      database: process.env.WORKFLOWS_DB_NAME || 'workflows_db',
+      database: process.env.WORKFLOWS_DB || 'workflows_db',
     },
     backoffice: {
       ...baseConfig,
-      database: process.env.BACKOFFICE_DB_NAME || 'backoffice_db',
+      database: process.env.BACKOFFICE_DB || 'backoffice_db',
     },
   };
 }

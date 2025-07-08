@@ -46,9 +46,9 @@ DB_USER=postgres
 DB_PASSWORD=your-database-password
 
 # Individual database names
-MYTHORIA_DB_NAME=mythoria_db
-WORKFLOWS_DB_NAME=workflows_db
-BACKOFFICE_DB_NAME=backoffice_db
+MYTHORIA_DB=mythoria_db
+WORKFLOWS_DB=workflows_db
+BACKOFFICE_DB=backoffice_db
 ```
 
 ## ✅ Integration Ready

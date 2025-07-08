@@ -11,13 +11,13 @@ const services: ServiceConfiguration[] = [
   {
     name: 'mythoria-webapp',
     displayName: 'Mythoria Web App',
-    baseUrl: process.env.MYTHORIA_WEBAPP_URL || 'http://localhost:3000',
+    baseUrl: process.env.WEBAPP_URL || 'http://localhost:3000',
     healthPath: '/api/health'
   },
   {
     name: 'mythoria-admin',
     displayName: 'Mythoria Admin Portal',
-    baseUrl: process.env.MYTHORIA_ADMIN_URL || 'http://localhost:3001',
+    baseUrl: process.env.ADMIN_URL || 'http://localhost:3001',
     healthPath: '/api/health'
   },
   {

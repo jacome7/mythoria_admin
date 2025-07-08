@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { sql } from "drizzle-orm";
 import { getMultiDatabaseConfig, getPoolConfig, isVpcDirectEgress } from "@/lib/database-config";
+import { seedTicketingData } from "@/lib/ticketing/seed";
 import * as dotenv from "dotenv";
 
 // Load environment variables
@@ -27,8 +28,11 @@ async function seedDatabase() {
     const result = await backofficeDb.execute(sql`SELECT 1 as test`);
     console.log('✅ Database connection verified:', result);
     
-    // Add seed data here when needed
-    console.log('ℹ️  No seed data configured yet');
+    // Seed ticketing data
+    await seedTicketingData();
+    console.log('✅ Ticketing data seeded successfully');
+    
+    console.log('ℹ️  Additional seed data can be added here when needed');
     
     // Close connections
     await backofficePool.end();

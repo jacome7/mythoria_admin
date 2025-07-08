@@ -181,9 +181,9 @@ essential_variables:
   - DB_PORT
   - DB_USER
   - DB_PASSWORD
-  - MYTHORIA_DB_NAME
-  - WORKFLOWS_DB_NAME
-  - BACKOFFICE_DB_NAME
+  - MYTHORIA_DB
+  - WORKFLOWS_DB
+  - BACKOFFICE_DB
 
 optional_variables:
   - NODE_ENV
