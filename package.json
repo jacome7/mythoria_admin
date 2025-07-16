@@ -25,6 +25,7 @@
     "@google-cloud/pubsub": "^5.1.0",
     "@google-cloud/storage": "^7.16.0",
     "@google-cloud/vertexai": "^1.10.0",
+    "@google-cloud/workflows": "^4.3.0",
     "@google/genai": "^1.7.0",
     "@tiptap/extension-color": "^2.23.0",
     "@tiptap/extension-image": "^2.23.0",

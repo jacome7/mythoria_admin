@@ -41,12 +41,10 @@ export const creditPackages = pgTable("credit_packages", {
   icon: varchar("icon", { length: 50 }).notNull().default("FaShoppingCart"),
   key: varchar("key", { length: 50 }).notNull().unique(),
   isActive: boolean("is_active").notNull().default(true),
-  sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   // Indexes for performance optimization
-  sortOrderIdx: index("credit_packages_sort_order_idx").on(table.sortOrder),
   isActiveIdx: index("credit_packages_is_active_idx").on(table.isActive),
 }));
 

@@ -47,6 +47,11 @@ export default function AdminHeader() {
             <Link href="/tickets" onClick={closeDropdown}>Tickets</Link>
           </li>
 
+          {/* Workflows - Standalone */}
+          <li>
+            <Link href="/workflows" onClick={closeDropdown}>Workflows</Link>
+          </li>
+
           {/* Management Dropdown */}
           <li className="dropdown dropdown-hover">
             <div 

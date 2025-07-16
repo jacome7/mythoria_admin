@@ -46,6 +46,8 @@ export default function StoryDetailPage() {
   const [isUnfeatureModalOpen, setIsUnfeatureModalOpen] = useState(false);
   const [featureImagePath, setFeatureImagePath] = useState('');
   const [isUpdatingFeature, setIsUpdatingFeature] = useState(false);
+  const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+  const [isRestartingGeneration, setIsRestartingGeneration] = useState(false);
 
   const fetchStory = useCallback(async () => {
     try {
@@ -157,6 +159,34 @@ export default function StoryDetailPage() {
     }
   };
 
+  const handleRestartGeneration = async () => {
+    try {
+      setIsRestartingGeneration(true);
+      const response = await fetch(`/api/admin/stories/${storyId}/restart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setIsRestartModalOpen(false);
+        // Since we don't have a toast system, we'll use alert for now
+        alert('Story generation has been restarted successfully!');
+        console.log('Story generation restarted:', result);
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error restarting story generation:', error);
+      alert('Error restarting story generation');
+    } finally {
+      setIsRestartingGeneration(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'badge-neutral';
@@ -213,6 +243,14 @@ export default function StoryDetailPage() {
             <h1 className="text-3xl font-bold">{story.title}</h1>
           </div>
           <div className="flex gap-2">
+            {story.status === 'writing' && (
+              <button 
+                className="btn btn-warning" 
+                onClick={() => setIsRestartModalOpen(true)}
+              >
+                Restart Story Generation
+              </button>
+            )}
             {story.isPublic && !story.isFeatured && (
               <button 
                 className="btn btn-info" 
@@ -254,11 +292,11 @@ export default function StoryDetailPage() {
                 </div>
                 <div>
                   <span className="font-semibold">Created:</span>
-                  <span className="ml-2">{new Date(story.createdAt).toLocaleDateString()}</span>
+                  <span className="ml-2">{new Date(story.createdAt).toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="font-semibold">Updated:</span>
-                  <span className="ml-2">{new Date(story.updatedAt).toLocaleDateString()}</span>
+                  <span className="ml-2">{new Date(story.updatedAt).toLocaleString()}</span>
                 </div>
                 <div className="flex gap-2 mt-4">
                   {story.isPublic && (
@@ -488,6 +526,44 @@ export default function StoryDetailPage() {
                 disabled={isUpdatingFeature}
               >
                 {isUpdatingFeature ? 'Updating...' : 'Unfeature Story'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restart Story Generation Modal */}
+      {isRestartModalOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Restart Story Generation</h3>
+            <p className="py-4">
+              Are you sure you want to restart the story generation workflow? This will:
+            </p>
+            <div className="alert alert-warning">
+              <div className="flex-1">
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Create a new workflow run for this story</li>
+                  <li>Trigger the story generation workflow again</li>
+                  <li>The story will remain in &quot;writing&quot; status</li>
+                  <li>Any previous generation progress may be overwritten</li>
+                </ul>
+              </div>
+            </div>
+            <div className="modal-action">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setIsRestartModalOpen(false)}
+                disabled={isRestartingGeneration}
+              >
+                Cancel
+              </button>
+              <button
+                className={`btn btn-warning ${isRestartingGeneration ? 'loading' : ''}`}
+                onClick={handleRestartGeneration}
+                disabled={isRestartingGeneration}
+              >
+                {isRestartingGeneration ? 'Restarting...' : 'Restart Generation'}
               </button>
             </div>
           </div>

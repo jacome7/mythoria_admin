@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { adminService } from '@/db/services';
+import { publishStoryRequest } from '@/lib/pubsub';
+
+// POST /api/admin/stories/[storyId]/restart - Restart story generation workflow
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: Promise<{ storyId: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has admin access
+    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
+    const isAllowedDomain = allowedDomains.some(domain => 
+      session.user?.email?.endsWith(domain)
+    );
+
+    if (!isAllowedDomain) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { storyId } = await params;
+
+    // Verify the story exists and is in 'writing' status
+    const story = await adminService.getStoryByIdWithAuthor(storyId);
+    
+    if (!story) {
+      return NextResponse.json({ error: 'Story not found' }, { status: 404 });
+    }
+
+    if (story.status !== 'writing') {
+      return NextResponse.json({ 
+        error: 'Only stories in "writing" status can have their generation restarted' 
+      }, { status: 400 });
+    }
+
+    // Generate a new runId for workflow tracking
+    const { randomUUID } = await import('crypto');
+    const runId = randomUUID();
+
+    // Create a new workflow run record with the same runId
+    const workflowRun = await adminService.createWorkflowRun(storyId, undefined, runId);
+
+    // Publish the Pub/Sub message to trigger the workflow
+    try {
+      await publishStoryRequest({
+        storyId: storyId,
+        runId: workflowRun.runId,
+        timestamp: new Date().toISOString(),
+      });
+      
+      console.log(`Story generation restart request published for story ${storyId}, run ${workflowRun.runId}`);
+    } catch (pubsubError) {
+      console.error('Failed to publish story restart request:', pubsubError);
+      
+      return NextResponse.json(
+        { error: "Failed to restart story generation workflow" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Story generation restarted successfully',
+      storyId: storyId,
+      runId: workflowRun.runId,
+      status: 'queued' 
+    });
+
+  } catch (error) {
+    console.error('Error restarting story generation:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

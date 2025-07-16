@@ -1,6 +1,7 @@
-import { getMythoriaDb } from "./index";
-import { count, desc, eq, like, asc, sql, or } from "drizzle-orm";
+import { getMythoriaDb, getWorkflowsDb } from "./index";
+import { count, desc, eq, like, asc, sql, or, inArray } from "drizzle-orm";
 import { authors, stories, printRequests, creditLedger, authorCreditBalances, creditPackages, pricing } from "./schema";
+import { storyGenerationRuns, storyGenerationSteps } from "./schema/workflows";
 
 export const adminService = {
   // KPI operations
@@ -556,6 +557,214 @@ export const adminService = {
     const db = getMythoriaDb();
     await db.delete(pricing).where(eq(pricing.id, serviceId));
     return true;
+  },
+
+  // Workflow operations
+  async getWorkflowRuns(
+    page: number = 1,
+    limit: number = 100,
+    status?: 'queued' | 'running' | 'failed' | 'completed' | 'cancelled',
+    searchTerm?: string,
+    sortBy: 'createdAt' | 'startedAt' | 'endedAt' = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc'
+  ) {
+    const workflowsDb = getWorkflowsDb();
+    const mythoriaDb = getMythoriaDb();
+    const offset = (page - 1) * limit;
+    
+    const orderColumn = sortBy === 'startedAt' ? storyGenerationRuns.startedAt :
+                       sortBy === 'endedAt' ? storyGenerationRuns.endedAt : 
+                       storyGenerationRuns.createdAt;
+    const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
+    
+    // First, get workflow runs from workflows database
+    let workflowQuery = workflowsDb
+      .select({
+        runId: storyGenerationRuns.runId,
+        storyId: storyGenerationRuns.storyId,
+        gcpWorkflowExecution: storyGenerationRuns.gcpWorkflowExecution,
+        status: storyGenerationRuns.status,
+        currentStep: storyGenerationRuns.currentStep,
+        errorMessage: storyGenerationRuns.errorMessage,
+        startedAt: storyGenerationRuns.startedAt,
+        endedAt: storyGenerationRuns.endedAt,
+        metadata: storyGenerationRuns.metadata,
+        createdAt: storyGenerationRuns.createdAt,
+        updatedAt: storyGenerationRuns.updatedAt,
+      })
+      .from(storyGenerationRuns);
+
+    // Apply status filter
+    if (status) {
+      workflowQuery = workflowQuery.where(eq(storyGenerationRuns.status, status)) as typeof workflowQuery;
+    }
+
+    // Apply ordering and pagination
+    const workflowRuns = await workflowQuery
+      .orderBy(orderDirection)
+      .limit(limit)
+      .offset(offset);
+
+    // If no workflows found, return empty result
+    if (workflowRuns.length === 0) {
+      return [];
+    }
+
+    // Get story IDs to fetch story details from mythoria database
+    const storyIds = workflowRuns.map(run => run.storyId);
+    
+    // Fetch story and author details from mythoria database
+    const storyDetails = await mythoriaDb
+      .select({
+        storyId: stories.storyId,
+        title: stories.title,
+        authorName: authors.displayName,
+        authorEmail: authors.email,
+      })
+      .from(stories)
+      .innerJoin(authors, eq(stories.authorId, authors.authorId))
+      .where(inArray(stories.storyId, storyIds));
+
+    // Create a map for quick lookup
+    const storyMap = new Map(storyDetails.map(story => [story.storyId, story]));
+
+    // Combine workflow runs with story details
+    const results = workflowRuns.map(run => {
+      const story = storyMap.get(run.storyId);
+      return {
+        run_id: run.runId,
+        story_id: run.storyId,
+        story_title: story?.title || 'Unknown Story',
+        status: run.status,
+        started_at: run.startedAt,
+        ended_at: run.endedAt,
+        user_id: story?.authorEmail || 'Unknown Email',
+        error_message: run.errorMessage,
+        current_step: run.currentStep,
+        step_details: undefined,
+        story_details: undefined,
+        gcpWorkflowExecution: run.gcpWorkflowExecution,
+        // Additional fields that might be useful
+        authorName: story?.authorName || 'Unknown Author',
+        authorEmail: story?.authorEmail || 'Unknown Email',
+        createdAt: run.createdAt,
+        updatedAt: run.updatedAt,
+        metadata: run.metadata,
+      };
+    });
+
+    // Apply search filter in application code (since we need to search across databases)
+    if (searchTerm) {
+      return results.filter(run => 
+        run.story_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        run.authorName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return results;
+  },
+
+  async getWorkflowRunById(runId: string) {
+    const workflowsDb = getWorkflowsDb();
+    const mythoriaDb = getMythoriaDb();
+    
+    // Get workflow run from workflows database
+    const [workflowRun] = await workflowsDb
+      .select({
+        runId: storyGenerationRuns.runId,
+        storyId: storyGenerationRuns.storyId,
+        gcpWorkflowExecution: storyGenerationRuns.gcpWorkflowExecution,
+        status: storyGenerationRuns.status,
+        currentStep: storyGenerationRuns.currentStep,
+        errorMessage: storyGenerationRuns.errorMessage,
+        startedAt: storyGenerationRuns.startedAt,
+        endedAt: storyGenerationRuns.endedAt,
+        metadata: storyGenerationRuns.metadata,
+        createdAt: storyGenerationRuns.createdAt,
+        updatedAt: storyGenerationRuns.updatedAt,
+      })
+      .from(storyGenerationRuns)
+      .where(eq(storyGenerationRuns.runId, runId));
+      
+    if (!workflowRun) {
+      return null;
+    }
+    
+    // Get story details from mythoria database
+    const [storyDetails] = await mythoriaDb
+      .select({
+        storyId: stories.storyId,
+        title: stories.title,
+        authorName: authors.displayName,
+        authorEmail: authors.email,
+      })
+      .from(stories)
+      .innerJoin(authors, eq(stories.authorId, authors.authorId))
+      .where(eq(stories.storyId, workflowRun.storyId));
+    
+    // Combine the results
+    return {
+      runId: workflowRun.runId,
+      storyId: workflowRun.storyId,
+      storyTitle: storyDetails?.title || 'Unknown Story',
+      authorName: storyDetails?.authorName || 'Unknown Author',
+      authorEmail: storyDetails?.authorEmail || 'Unknown Email',
+      gcpWorkflowExecution: workflowRun.gcpWorkflowExecution,
+      status: workflowRun.status,
+      currentStep: workflowRun.currentStep,
+      errorMessage: workflowRun.errorMessage,
+      startedAt: workflowRun.startedAt,
+      endedAt: workflowRun.endedAt,
+      metadata: workflowRun.metadata,
+      createdAt: workflowRun.createdAt,
+      updatedAt: workflowRun.updatedAt,
+    };
+  },
+
+  async getWorkflowSteps(runId: string) {
+    const workflowsDb = getWorkflowsDb();
+    const steps = await workflowsDb
+      .select()
+      .from(storyGenerationSteps)
+      .where(eq(storyGenerationSteps.runId, runId))
+      .orderBy(asc(storyGenerationSteps.createdAt));
+    
+    return steps;
+  },
+
+  async getWorkflowRunsCount(status?: 'queued' | 'running' | 'failed' | 'completed' | 'cancelled') {
+    const workflowsDb = getWorkflowsDb();
+    
+    if (status) {
+      const result = await workflowsDb
+        .select({ value: count() })
+        .from(storyGenerationRuns)
+        .where(eq(storyGenerationRuns.status, status));
+      return result[0]?.value || 0;
+    } else {
+      const result = await workflowsDb.select({ value: count() }).from(storyGenerationRuns);
+      return result[0]?.value || 0;
+    }
+  },
+
+  async createWorkflowRun(storyId: string, gcpWorkflowExecution?: string, runId?: string) {
+    const workflowsDb = getWorkflowsDb();
+    const insertData: typeof storyGenerationRuns.$inferInsert = {
+      storyId,
+      gcpWorkflowExecution,
+      status: 'queued',
+    };
+
+    if (runId) {
+      insertData.runId = runId;
+    }
+
+    const [newRun] = await workflowsDb
+      .insert(storyGenerationRuns)
+      .values(insertData)
+      .returning();
+    
+    return newRun;
   }
 };
 
