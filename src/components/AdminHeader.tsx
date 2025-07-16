@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export default function AdminHeader() {
   const { data: session } = useSession();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleDropdownToggle = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
@@ -16,6 +17,44 @@ export default function AdminHeader() {
   const closeDropdown = () => {
     setActiveDropdown(null);
   };
+
+  const handleMouseEnter = useCallback((dropdown: string) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setActiveDropdown(dropdown);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    // Add a delay before closing to allow moving to submenu
+    timeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 150); // 150ms delay
+  }, []);
+
+  const handleSubmenuMouseEnter = useCallback(() => {
+    // Cancel the close timeout when entering submenu
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  const handleSubmenuMouseLeave = useCallback(() => {
+    // Close immediately when leaving submenu
+    setActiveDropdown(null);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <header className="navbar bg-base-100 shadow-md">
@@ -53,7 +92,11 @@ export default function AdminHeader() {
           </li>
 
           {/* Management Dropdown */}
-          <li className="dropdown dropdown-hover">
+          <li 
+            className="dropdown"
+            onMouseEnter={() => handleMouseEnter('management')}
+            onMouseLeave={handleMouseLeave}
+          >
             <div 
               tabIndex={0} 
               role="button" 
@@ -68,8 +111,10 @@ export default function AdminHeader() {
             <ul 
               tabIndex={0} 
               className={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 ${
-                activeDropdown === 'management' ? 'block' : ''
+                activeDropdown === 'management' ? 'block' : 'hidden'
               }`}
+              onMouseEnter={handleSubmenuMouseEnter}
+              onMouseLeave={handleSubmenuMouseLeave}
             >
               <li><Link href="/managers" onClick={closeDropdown}>Managers</Link></li>
               <li><Link href="/users" onClick={closeDropdown}>Users</Link></li>
@@ -79,7 +124,11 @@ export default function AdminHeader() {
           </li>
 
           {/* Financials Dropdown */}
-          <li className="dropdown dropdown-hover">
+          <li 
+            className="dropdown"
+            onMouseEnter={() => handleMouseEnter('financials')}
+            onMouseLeave={handleMouseLeave}
+          >
             <div 
               tabIndex={0} 
               role="button" 
@@ -94,12 +143,14 @@ export default function AdminHeader() {
             <ul 
               tabIndex={0} 
               className={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 ${
-                activeDropdown === 'financials' ? 'block' : ''
+                activeDropdown === 'financials' ? 'block' : 'hidden'
               }`}
+              onMouseEnter={handleSubmenuMouseEnter}
+              onMouseLeave={handleSubmenuMouseLeave}
             >
-              <li><Link href="/pricing" onClick={closeDropdown}>Pricing</Link></li>
               <li><Link href="/revenue" onClick={closeDropdown}>Revenue</Link></li>
               <li><Link href="/ai-usage" onClick={closeDropdown}>AI Usage</Link></li>
+              <li><Link href="/pricing" onClick={closeDropdown}>Pricing</Link></li>
               <li><Link href="/services" onClick={closeDropdown}>Services</Link></li>
             </ul>
           </li>

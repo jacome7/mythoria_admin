@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
@@ -38,15 +38,123 @@ interface TokenUsage {
   requests: number;
 }
 
+interface ActionUsage {
+  action: string;
+  totalCost: number;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  uniqueStories: number;
+  averageCostPerRequest: number;
+  averageCostPerStory: number;
+}
+
 export default function AIUsagePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [usageData, setUsageData] = useState<UsageData[]>([]);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage[]>([]);
+  const [actionUsage, setActionUsage] = useState<ActionUsage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [timePeriod, setTimePeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [timePeriod, setTimePeriod] = useState<'1d' | '7d' | '30d' | '90d'>('30d');
   const [activeTab, setActiveTab] = useState<'overview' | 'providers' | 'costs'>('overview');
+
+  // Helper function to get action icon and description
+  const getActionInfo = (action: string) => {
+    const actionMap: Record<string, { icon: string; name: string; description: string }> = {
+      'story_structure': { icon: '🏗️', name: 'Story Structure', description: 'Creating the story framework and plot' },
+      'story_outline': { icon: '📋', name: 'Story Outline', description: 'Generating story outlines and summaries' },
+      'chapter_writing': { icon: '✍️', name: 'Chapter Writing', description: 'Writing story chapters and content' },
+      'image_generation': { icon: '🎨', name: 'Image Generation', description: 'Creating story illustrations and images' },
+      'story_review': { icon: '🔍', name: 'Story Review', description: 'Reviewing and analyzing story content' },
+      'character_generation': { icon: '👤', name: 'Character Generation', description: 'Creating characters and personas' },
+      'story_enhancement': { icon: '✨', name: 'Story Enhancement', description: 'Improving and refining story content' },
+      'audio_generation': { icon: '🎵', name: 'Audio Generation', description: 'Creating audio content and narration' },
+      'content_validation': { icon: '✅', name: 'Content Validation', description: 'Validating content quality and safety' },
+      'image_edit': { icon: '🖼️', name: 'Image Editing', description: 'Editing and modifying images' },
+      'test': { icon: '🧪', name: 'Test', description: 'Testing and experimental features' }
+    };
+    return actionMap[action] || { icon: '📝', name: action.replace(/_/g, ' '), description: 'AI action' };
+  };
+
+  const fetchAIUsageData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch real token usage stats from API
+      const response = await fetch(`/api/ai-usage/stats?period=${timePeriod}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch AI usage data');
+      }
+      
+      const data = await response.json();
+      
+      // Transform the real data to match the existing UI structure
+      
+      // Convert model breakdown to provider format for backward compatibility
+      const transformedProviders: AIProvider[] = data.modelBreakdown.map((model: { model: string; totalTokens: number; averageCostPerRequest: number; inputTokens: number; outputTokens: number; totalCost: number; requests: number }, index: number) => ({
+        id: (index + 1).toString(),
+        name: model.model,
+        type: 'text' as const, // Most models are text-based
+        isActive: true,
+        priority: index + 1,
+        costPerToken: model.averageCostPerRequest / (model.totalTokens || 1),
+        dailyUsage: Math.round(model.totalTokens / (timePeriod === '1d' ? 1 : timePeriod === '7d' ? 7 : timePeriod === '30d' ? 30 : 90)),
+        monthlyUsage: model.totalTokens,
+        dailyLimit: undefined,
+        monthlyLimit: undefined
+      }));
+
+      // Transform daily usage data
+      const transformedUsageData: UsageData[] = data.dailyUsage.map((day: { date: string; totalTokens: number; totalCost: number }) => ({
+        date: day.date,
+        textTokens: Number(day.totalTokens) || 0,
+        imageGenerations: 0, // Will need to be calculated based on action types
+        audioSeconds: 0, // Will need to be calculated based on action types
+        totalCost: Number(day.totalCost) || 0
+      }));
+
+      // Transform model breakdown to token usage format
+      const transformedTokenUsage: TokenUsage[] = data.modelBreakdown.map((model: { model: string; inputTokens: number; outputTokens: number; totalCost: number; requests: number }) => ({
+        model: model.model,
+        provider: model.model.includes('gpt') ? 'OpenAI' : 
+                  model.model.includes('gemini') ? 'Google' : 
+                  model.model.includes('claude') ? 'Anthropic' : 'Unknown',
+        inputTokens: Number(model.inputTokens) || 0,
+        outputTokens: Number(model.outputTokens) || 0,
+        totalCost: Number(model.totalCost) || 0,
+        requests: Number(model.requests) || 0
+      }));
+
+      // Transform action breakdown data
+      const transformedActionUsage: ActionUsage[] = data.actionBreakdown.map((action: { action: string; totalCost: number; requests: number; inputTokens: number; outputTokens: number; uniqueStories: number; averageCostPerRequest: number; averageCostPerStory: number }) => ({
+        action: action.action,
+        totalCost: Number(action.totalCost) || 0,
+        requests: Number(action.requests) || 0,
+        inputTokens: Number(action.inputTokens) || 0,
+        outputTokens: Number(action.outputTokens) || 0,
+        uniqueStories: Number(action.uniqueStories) || 0,
+        averageCostPerRequest: Number(action.averageCostPerRequest) || 0,
+        averageCostPerStory: Number(action.averageCostPerStory) || 0
+      }));
+
+      setProviders(transformedProviders);
+      setUsageData(transformedUsageData);
+      setTokenUsage(transformedTokenUsage);
+      setActionUsage(transformedActionUsage);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching AI usage data:', error);
+      
+      // Provide fallback empty data to prevent UI errors
+      setProviders([]);
+      setUsageData([]);
+      setTokenUsage([]);
+      setActionUsage([]);
+      setIsLoading(false);
+    }
+  }, [timePeriod]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -69,138 +177,7 @@ export default function AIUsagePage() {
 
       fetchAIUsageData();
     }
-  }, [status, session, router, timePeriod]);
-
-  const fetchAIUsageData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Mock data for now - replace with actual API calls
-      const mockProviders: AIProvider[] = [
-        {
-          id: '1',
-          name: 'OpenAI GPT-4',
-          type: 'text',
-          isActive: true,
-          priority: 1,
-          costPerToken: 0.00003,
-          dailyUsage: 850000,
-          monthlyUsage: 24500000,
-          dailyLimit: 1000000,
-          monthlyLimit: 30000000
-        },
-        {
-          id: '2',
-          name: 'OpenAI DALL-E 3',
-          type: 'image',
-          isActive: true,
-          priority: 1,
-          costPerImage: 0.04,
-          dailyUsage: 245,
-          monthlyUsage: 7340,
-          dailyLimit: 500,
-          monthlyLimit: 15000
-        },
-        {
-          id: '3',
-          name: 'Google Vertex AI',
-          type: 'text',
-          isActive: true,
-          priority: 2,
-          costPerToken: 0.000025,
-          dailyUsage: 120000,
-          monthlyUsage: 3600000,
-          dailyLimit: 500000,
-          monthlyLimit: 15000000
-        },
-        {
-          id: '4',
-          name: 'Azure OpenAI',
-          type: 'text',
-          isActive: false,
-          priority: 3,
-          costPerToken: 0.000035,
-          dailyUsage: 0,
-          monthlyUsage: 0,
-          dailyLimit: 200000,
-          monthlyLimit: 6000000
-        },
-        {
-          id: '5',
-          name: 'ElevenLabs TTS',
-          type: 'audio',
-          isActive: true,
-          priority: 1,
-          costPerSecond: 0.0024,
-          dailyUsage: 3600,
-          monthlyUsage: 108000,
-          dailyLimit: 7200,
-          monthlyLimit: 216000
-        }
-      ];
-
-      const mockUsageData: UsageData[] = [
-        { date: '2025-01-01', textTokens: 850000, imageGenerations: 245, audioSeconds: 3600, totalCost: 35.2 },
-        { date: '2024-12-31', textTokens: 920000, imageGenerations: 278, audioSeconds: 4200, totalCost: 42.1 },
-        { date: '2024-12-30', textTokens: 780000, imageGenerations: 189, audioSeconds: 2800, totalCost: 28.9 },
-        { date: '2024-12-29', textTokens: 1100000, imageGenerations: 312, audioSeconds: 5400, totalCost: 51.3 },
-        { date: '2024-12-28', textTokens: 650000, imageGenerations: 156, audioSeconds: 2200, totalCost: 22.7 },
-        { date: '2024-12-27', textTokens: 890000, imageGenerations: 234, audioSeconds: 3800, totalCost: 37.8 },
-        { date: '2024-12-26', textTokens: 1200000, imageGenerations: 356, audioSeconds: 6000, totalCost: 58.4 }
-      ];
-
-      const mockTokenUsage: TokenUsage[] = [
-        {
-          model: 'gpt-4-turbo',
-          provider: 'OpenAI',
-          inputTokens: 12500000,
-          outputTokens: 8900000,
-          totalCost: 642.00,
-          requests: 15420
-        },
-        {
-          model: 'gpt-3.5-turbo',
-          provider: 'OpenAI',
-          inputTokens: 45000000,
-          outputTokens: 32000000,
-          totalCost: 115.50,
-          requests: 28950
-        },
-        {
-          model: 'gemini-pro',
-          provider: 'Google',
-          inputTokens: 3200000,
-          outputTokens: 2100000,
-          totalCost: 132.50,
-          requests: 5678
-        },
-        {
-          model: 'dall-e-3',
-          provider: 'OpenAI',
-          inputTokens: 0,
-          outputTokens: 0,
-          totalCost: 293.60,
-          requests: 7340
-        },
-        {
-          model: 'eleven-labs-tts',
-          provider: 'ElevenLabs',
-          inputTokens: 0,
-          outputTokens: 0,
-          totalCost: 259.20,
-          requests: 4320
-        }
-      ];
-
-      setProviders(mockProviders);
-      setUsageData(mockUsageData);
-      setTokenUsage(mockTokenUsage);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching AI usage data:', error);
-      setIsLoading(false);
-    }
-  };
+  }, [status, session, router, timePeriod, fetchAIUsageData]);
 
   const toggleProviderStatus = (providerId: string) => {
     setProviders(providers => 
@@ -210,9 +187,9 @@ export default function AIUsagePage() {
     );
   };
 
-  const totalDailyCost = usageData.length > 0 ? usageData[0].totalCost : 0;
-  const totalMonthlyCost = usageData.reduce((sum, day) => sum + day.totalCost, 0);
-  const totalTokens = tokenUsage.reduce((sum, usage) => sum + usage.inputTokens + usage.outputTokens, 0);
+  const totalDailyCost = usageData.length > 0 ? Number(usageData[0].totalCost) || 0 : 0;
+  const totalMonthlyCost = usageData.reduce((sum, day) => sum + (Number(day.totalCost) || 0), 0);
+  const totalTokens = tokenUsage.reduce((sum, usage) => sum + (Number(usage.inputTokens) || 0) + (Number(usage.outputTokens) || 0), 0);
 
   if (status === 'loading' || isLoading) {
     return (
@@ -243,8 +220,9 @@ export default function AIUsagePage() {
               <select 
                 className="select select-bordered" 
                 value={timePeriod}
-                onChange={(e) => setTimePeriod(e.target.value as '7d' | '30d' | '90d')}
+                onChange={(e) => setTimePeriod(e.target.value as '1d' | '7d' | '30d' | '90d')}
               >
+                <option value="1d">Last 24 hours</option>
                 <option value="7d">Last 7 days</option>
                 <option value="30d">Last 30 days</option>
                 <option value="90d">Last 90 days</option>
@@ -428,34 +406,90 @@ export default function AIUsagePage() {
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="card-title">Cost Breakdown by Model</h3>
+                  <h3 className="card-title">Cost Breakdown by Action</h3>
                   <button className="btn btn-sm btn-outline">Export Report</button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="table table-zebra w-full">
                     <thead>
                       <tr>
-                        <th>Model</th>
-                        <th>Provider</th>
+                        <th>Action</th>
                         <th>Input Tokens</th>
                         <th>Output Tokens</th>
                         <th>Requests</th>
+                        <th>Stories</th>
                         <th>Total Cost</th>
                         <th>Avg Cost/Request</th>
+                        <th>Avg Cost/Story</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {tokenUsage.map((usage) => (
-                        <tr key={usage.model}>
-                          <td className="font-medium">{usage.model}</td>
-                          <td>{usage.provider}</td>
-                          <td>{usage.inputTokens > 0 ? `${(usage.inputTokens / 1000000).toFixed(2)}M` : '-'}</td>
-                          <td>{usage.outputTokens > 0 ? `${(usage.outputTokens / 1000000).toFixed(2)}M` : '-'}</td>
-                          <td>{usage.requests.toLocaleString()}</td>
-                          <td className="font-bold">€{usage.totalCost.toFixed(2)}</td>
-                          <td>€{(usage.totalCost / usage.requests).toFixed(4)}</td>
+                      {actionUsage.map((usage) => {
+                        const actionInfo = getActionInfo(usage.action);
+                        return (
+                          <tr key={usage.action}>
+                            <td className="font-medium">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-lg">{actionInfo.icon}</span>
+                                <div>
+                                  <div className="font-semibold">{actionInfo.name}</div>
+                                  <div className="text-xs text-base-content/60">{actionInfo.description}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>{usage.inputTokens > 0 ? `${(usage.inputTokens / 1000000).toFixed(2)}M` : '-'}</td>
+                            <td>{usage.outputTokens > 0 ? `${(usage.outputTokens / 1000000).toFixed(2)}M` : '-'}</td>
+                            <td>{usage.requests.toLocaleString()}</td>
+                            <td>
+                              <div className="font-semibold">{usage.uniqueStories.toLocaleString()}</div>
+                              <div className="text-xs text-base-content/60">unique stories</div>
+                            </td>
+                            <td className="font-bold">€{usage.totalCost.toFixed(2)}</td>
+                            <td>€{usage.averageCostPerRequest.toFixed(4)}</td>
+                            <td>
+                              <div className="font-bold text-primary text-lg">€{usage.averageCostPerStory.toFixed(3)}</div>
+                              <div className="text-xs text-base-content/60">per story</div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {actionUsage.length > 0 && (
+                        <tr className="border-t-2 border-base-300 bg-base-200/50">
+                          <td className="font-bold">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-lg">📊</span>
+                              <div>Total</div>
+                            </div>
+                          </td>
+                          <td className="font-bold">
+                            {(actionUsage.reduce((sum, usage) => sum + usage.inputTokens, 0) / 1000000).toFixed(2)}M
+                          </td>
+                          <td className="font-bold">
+                            {(actionUsage.reduce((sum, usage) => sum + usage.outputTokens, 0) / 1000000).toFixed(2)}M
+                          </td>
+                          <td className="font-bold">
+                            {actionUsage.reduce((sum, usage) => sum + usage.requests, 0).toLocaleString()}
+                          </td>
+                          <td className="font-bold">
+                            {actionUsage.reduce((sum, usage) => sum + usage.uniqueStories, 0).toLocaleString()}
+                          </td>
+                          <td className="font-bold text-lg">
+                            €{actionUsage.reduce((sum, usage) => sum + usage.totalCost, 0).toFixed(2)}
+                          </td>
+                          <td className="font-bold">
+                            €{(
+                              actionUsage.reduce((sum, usage) => sum + usage.totalCost, 0) /
+                              Math.max(actionUsage.reduce((sum, usage) => sum + usage.requests, 0), 1)
+                            ).toFixed(4)}
+                          </td>
+                          <td className="font-bold text-secondary text-lg">
+                            €{(
+                              actionUsage.reduce((sum, usage) => sum + usage.totalCost, 0) /
+                              Math.max(actionUsage.reduce((sum, usage) => sum + usage.uniqueStories, 0), 1)
+                            ).toFixed(3)}
+                          </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
