@@ -148,9 +148,9 @@ export default function AdminHeader() {
               onMouseEnter={handleSubmenuMouseEnter}
               onMouseLeave={handleSubmenuMouseLeave}
             >
-              <li><Link href="/pricing" onClick={closeDropdown}>Pricing</Link></li>
               <li><Link href="/revenue" onClick={closeDropdown}>Revenue</Link></li>
               <li><Link href="/ai-usage" onClick={closeDropdown}>AI Usage</Link></li>
+              <li><Link href="/pricing" onClick={closeDropdown}>Pricing</Link></li>
               <li><Link href="/services" onClick={closeDropdown}>Services</Link></li>
             </ul>
           </li>
