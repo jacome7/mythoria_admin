@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
+import { formatAdminDate } from '@/lib/date-utils';
 
 interface Story {
   storyId: string;
@@ -314,7 +315,7 @@ export default function StoriesPage() {
                       </td>
                       <td>
                         <div className="text-sm">
-                          {new Date(story.createdAt).toLocaleDateString()}
+                          {formatAdminDate(story.createdAt)}
                         </div>
                       </td>
                       <td>

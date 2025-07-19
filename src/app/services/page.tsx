@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
+import { formatAdminDate } from '@/lib/date-utils';
 
 interface Service {
   id: string;
@@ -333,8 +334,8 @@ export default function ServicesPage() {
                           {service.isActive ? 'Active' : 'Inactive'}
                         </div>
                       </td>
-                      <td>{new Date(service.createdAt).toLocaleDateString()}</td>
-                      <td>{new Date(service.updatedAt).toLocaleDateString()}</td>
+                      <td>{formatAdminDate(service.createdAt)}</td>
+                      <td>{formatAdminDate(service.updatedAt)}</td>
                       <td>
                         <div className="flex gap-2">
                           <button

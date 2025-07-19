@@ -26,3 +26,6 @@
   --color-error: oklch(65.69% 0.137 22.876);
   --color-error-content: oklch(13.138% 0.027 22.876);
 }
+
+/* Import story reader styles */
+@import "../styles/story-reader.css";

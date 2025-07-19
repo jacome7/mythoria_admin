@@ -7,6 +7,7 @@ import Link from 'next/link';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
+import { formatAdminDate } from '@/lib/date-utils';
 
 interface Ticket {
   id: string;
@@ -363,7 +364,7 @@ export default function TicketsPage() {
                           )}
                         </td>
                         <td className="text-sm">
-                          {new Date(ticket.createdAt).toLocaleDateString()}
+                          {formatAdminDate(ticket.createdAt)}
                           <br />
                           <span className="text-base-content/70">
                             {new Date(ticket.createdAt).toLocaleTimeString()}

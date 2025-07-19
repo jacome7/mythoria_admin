@@ -765,7 +765,62 @@ export const adminService = {
       .returning();
     
     return newRun;
-  }
+  },
+
+  // Story chapters operations
+  async getStoryChapters(storyId: string) {
+    const db = getMythoriaDb();
+    const chapters = await db.select({
+      id: sql`chapters.id`,
+      chapterNumber: sql`chapters.chapter_number`,
+      title: sql`chapters.title`,
+      imageUri: sql`chapters.image_uri`,
+      imageThumbnailUri: sql`chapters.image_thumbnail_uri`,
+      htmlContent: sql`chapters.html_content`,
+      audioUri: sql`chapters.audio_uri`,
+      version: sql`chapters.version`,
+      createdAt: sql`chapters.created_at`,
+      updatedAt: sql`chapters.updated_at`,
+    })
+    .from(sql`chapters`)
+    .where(sql`chapters.story_id = ${storyId}`)
+    .orderBy(sql`chapters.chapter_number ASC`);
+    
+    return chapters;
+  },
+
+  async getStoryChapter(storyId: string, chapterNumber: number) {
+    const db = getMythoriaDb();
+    const [chapter] = await db.select({
+      id: sql`chapters.id`,
+      chapterNumber: sql`chapters.chapter_number`,
+      title: sql`chapters.title`,
+      imageUri: sql`chapters.image_uri`,
+      imageThumbnailUri: sql`chapters.image_thumbnail_uri`,
+      htmlContent: sql`chapters.html_content`,
+      audioUri: sql`chapters.audio_uri`,
+      version: sql`chapters.version`,
+      createdAt: sql`chapters.created_at`,
+      updatedAt: sql`chapters.updated_at`,
+    })
+    .from(sql`chapters`)
+    .where(sql`chapters.story_id = ${storyId} AND chapters.chapter_number = ${chapterNumber}`);
+    
+    return chapter;
+  },
+
+  async getStoryWithChapters(storyId: string) {
+    const story = await this.getStoryByIdWithAuthor(storyId);
+    if (!story) return null;
+
+    const chapters = await this.getStoryChapters(storyId);
+    
+    return {
+      ...story,
+      chapters
+    };
+  },
+
 };
 
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminHeader from '../../components/AdminHeader';
 import AdminFooter from '../../components/AdminFooter';
+import { formatAdminDate } from '@/lib/date-utils';
 
 interface User {
   authorId: string;
@@ -224,13 +225,13 @@ export default function UsersPage() {
                       </td>
                       <td>
                         <div className="text-sm">
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {formatAdminDate(user.createdAt)}
                         </div>
                       </td>
                       <td>
                         <div className="text-sm">
                           {user.lastLoginAt 
-                            ? new Date(user.lastLoginAt).toLocaleDateString()
+                            ? formatAdminDate(user.lastLoginAt)
                             : <span className="text-gray-400">Never</span>
                           }
                         </div>

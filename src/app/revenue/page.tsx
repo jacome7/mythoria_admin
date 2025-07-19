@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
+import { formatAdminDate } from '@/lib/date-utils';
 
 interface RevenueData {
   period: string;
@@ -264,7 +265,7 @@ export default function RevenuePage() {
                     {revenueData.slice(0, 7).map((day) => (
                       <tr key={day.period}>
                         <td className="text-sm">
-                          {new Date(day.period).toLocaleDateString()}
+                          {formatAdminDate(day.period)}
                         </td>
                         <td className="font-bold">
                           €{day.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}

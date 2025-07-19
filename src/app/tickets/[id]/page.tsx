@@ -7,6 +7,23 @@ import Link from 'next/link';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
+import { formatAdminDateTime } from '@/lib/date-utils';
+
+interface TicketMetadata {
+  phone?: string; // For payment requests (MB Way)
+  email?: string;
+  name?: string;
+  amount?: number;
+  credits?: number;
+  paymentMethod?: string;
+  author?: {
+    id?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  [key: string]: unknown; // Allow additional fields
+}
 
 interface Ticket {
   id: string;
@@ -18,7 +35,7 @@ interface Ticket {
   description: string;
   customerEmail?: string;
   customerName?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: TicketMetadata;
   author?: {
     id: string;
     name: string;
@@ -269,7 +286,7 @@ export default function TicketDetailPage() {
     }
   };
 
-  const renderMetadata = (metadata: Record<string, unknown>) => {
+  const renderMetadata = (metadata: TicketMetadata) => {
     if (!metadata || Object.keys(metadata).length === 0) return null;
 
     return (
@@ -364,8 +381,8 @@ export default function TicketDetailPage() {
                 </p>
 
                 <div className="text-sm text-base-content/70">
-                  <p>Created: {new Date(ticket.createdAt).toLocaleString()}</p>
-                  <p>Last Updated: {new Date(ticket.updatedAt).toLocaleString()}</p>
+                  <p>Created: {formatAdminDateTime(ticket.createdAt)}</p>
+                  <p>Last Updated: {formatAdminDateTime(ticket.updatedAt)}</p>
                 </div>
               </div>
             </div>
@@ -419,7 +436,7 @@ export default function TicketDetailPage() {
                             </span>
                           </div>
                           <span className="text-sm text-base-content/70">
-                            {new Date(comment.createdAt).toLocaleString()}
+                            {formatAdminDateTime(comment.createdAt)}
                           </span>
                         </div>
                         <p className="text-base-content/90 whitespace-pre-wrap">
@@ -473,6 +490,27 @@ export default function TicketDetailPage() {
                       <span className="font-medium">Email:</span>
                       <p className="text-base-content/70">{ticket.customerEmail}</p>
                     </div>
+                  )}
+                  
+                  {/* Display phone number from metadata if no author or author has no phone */}
+                  {(!ticket.author || !ticket.author.phone) && ticket.metadata && (
+                    <>
+                      {/* Check for phone in metadata.phone (payment requests) */}
+                      {ticket.metadata.phone && (
+                        <div>
+                          <span className="font-medium">Mobile Phone:</span>
+                          <p className="text-base-content/70">{ticket.metadata.phone}</p>
+                        </div>
+                      )}
+                      
+                      {/* Check for phone in metadata.author.phone (contact forms) */}
+                      {!ticket.metadata.phone && ticket.metadata.author?.phone && (
+                        <div>
+                          <span className="font-medium">Mobile Phone:</span>
+                          <p className="text-base-content/70">{ticket.metadata.author.phone}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                   
                   <div>

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import AdminHeader from '../../../components/AdminHeader';
 import AdminFooter from '../../../components/AdminFooter';
+import { formatAdminDateTime } from '@/lib/date-utils';
 
 interface StoryDetail {
   storyId: string;
@@ -292,11 +293,11 @@ export default function StoryDetailPage() {
                 </div>
                 <div>
                   <span className="font-semibold">Created:</span>
-                  <span className="ml-2">{new Date(story.createdAt).toLocaleString()}</span>
+                  <span className="ml-2">{formatAdminDateTime(story.createdAt)}</span>
                 </div>
                 <div>
                   <span className="font-semibold">Updated:</span>
-                  <span className="ml-2">{new Date(story.updatedAt).toLocaleString()}</span>
+                  <span className="ml-2">{formatAdminDateTime(story.updatedAt)}</span>
                 </div>
                 <div className="flex gap-2 mt-4">
                   {story.isPublic && (
@@ -352,18 +353,16 @@ export default function StoryDetailPage() {
                   )}
                 </div>
                 <div>
-                  <span className="font-semibold">HTML:</span>
-                  {story.htmlUri ? (
-                    <a 
-                      href={story.htmlUri} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-outline ml-2"
+                  <span className="font-semibold">Read Story:</span>
+                  {story.status === 'published' ? (
+                    <Link 
+                      href={`/stories/${storyId}/read`}
+                      className="btn btn-sm btn-primary ml-2"
                     >
-                      View HTML
-                    </a>
+                      Read Story
+                    </Link>
                   ) : (
-                    <span className="ml-2 text-gray-400">Not available</span>
+                    <span className="ml-2 text-gray-400">Story not published</span>
                   )}
                 </div>
                 {story.featureImageUri && (
