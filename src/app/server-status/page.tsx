@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
-import { formatCustomDate } from '@/lib/date-utils';
 
 interface ServiceStatus {
   name: string;

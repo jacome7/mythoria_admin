@@ -6,7 +6,6 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AdminHeader from '../../../components/AdminHeader';
 import AdminFooter from '../../../components/AdminFooter';
-import { formatAdminDate, formatCustomDate } from '@/lib/date-utils';
 
 interface User {
   authorId: string;
