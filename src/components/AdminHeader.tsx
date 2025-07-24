@@ -8,7 +8,12 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 export default function AdminHeader() {
   const { data: session } = useSession();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   const handleDropdownToggle = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
@@ -16,6 +21,7 @@ export default function AdminHeader() {
 
   const closeDropdown = () => {
     setActiveDropdown(null);
+    setMobileMenuOpen(false);
   };
 
   const handleMouseEnter = useCallback((dropdown: string) => {
@@ -56,20 +62,99 @@ export default function AdminHeader() {
     };
   }, []);
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (mobileMenuOpen && !target.closest('.dropdown')) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (mobileMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [mobileMenuOpen]);
+
   return (
     <header className="navbar bg-base-100 shadow-md">
       <div className="navbar-start">
+        {/* Mobile menu dropdown */}
+        <div className="dropdown lg:hidden relative">
+          <button 
+            type="button"
+            className="btn btn-ghost"
+            onClick={toggleMobileMenu}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+          {mobileMenuOpen && (
+            <ul className="menu p-2 shadow bg-base-100 rounded-box w-52 absolute top-full left-0 mt-1 z-50 border border-gray-200">
+              {/* Mobile Dashboard */}
+              <li>
+                <Link href="/" onClick={closeDropdown}>Dashboard</Link>
+              </li>
+              
+              {/* Mobile Server Status */}
+              <li>
+                <Link href="/server-status" onClick={closeDropdown}>Server Status</Link>
+              </li>
+              
+              {/* Mobile Tickets */}
+              <li>
+                <Link href="/tickets" onClick={closeDropdown}>Tickets</Link>
+              </li>
+              
+              {/* Mobile Workflows */}
+              <li>
+                <Link href="/workflows" onClick={closeDropdown}>Workflows</Link>
+              </li>
+              
+              {/* Mobile Management Submenu */}
+              <li>
+                <details>
+                  <summary>Management</summary>
+                  <ul className="p-2 bg-base-100">
+                    <li><Link href="/managers" onClick={closeDropdown}>Managers</Link></li>
+                    <li><Link href="/users" onClick={closeDropdown}>Users</Link></li>
+                    <li><Link href="/stories" onClick={closeDropdown}>Stories</Link></li>
+                    <li><Link href="/notifications" onClick={closeDropdown}>Notifications</Link></li>
+                  </ul>
+                </details>
+              </li>
+              
+              {/* Mobile Financials Submenu */}
+              <li>
+                <details>
+                  <summary>Financials</summary>
+                  <ul className="p-2 bg-base-100">
+                    <li><Link href="/revenue" onClick={closeDropdown}>Revenue</Link></li>
+                    <li><Link href="/ai-usage" onClick={closeDropdown}>AI Usage</Link></li>
+                    <li><Link href="/pricing" onClick={closeDropdown}>Pricing</Link></li>
+                    <li><Link href="/services" onClick={closeDropdown}>Services</Link></li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          )}
+        </div>
+
         <Link href="/" className="btn btn-ghost normal-case text-xl px-2 py-1">
           <Image 
             src="/Mythoria-logo-white-transparent-256x168.png" 
             alt="Mythoria Logo" 
             width={52} 
             height={34} 
+            className="max-w-none w-10 h-6 sm:w-12 sm:h-8 md:w-[52px] md:h-[34px]"
           />
         </Link>
       </div>
 
-      <div className="navbar-center">
+      <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">
           {/* Dashboard - Standalone */}
           <li>
@@ -161,7 +246,7 @@ export default function AdminHeader() {
         {session?.user && (
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
-              <div className="w-10 rounded-full">
+              <div className="w-8 sm:w-10 rounded-full">
                 {session.user.image ? (
                   <Image
                     src={session.user.image}
@@ -171,26 +256,26 @@ export default function AdminHeader() {
                     className="rounded-full"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-content">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center text-primary-content text-sm sm:text-base">
                     {session.user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 )}
               </div>
             </div>
-            <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+            <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-48 sm:w-52">
               <li>
                 <div className="justify-between">
-                  <span>{session.user.name}</span>
+                  <span className="text-sm sm:text-base truncate">{session.user.name}</span>
                 </div>
               </li>
               <li>
                 <div className="justify-between">
-                  <span className="text-sm opacity-70">{session.user.email}</span>
+                  <span className="text-xs sm:text-sm opacity-70 truncate">{session.user.email}</span>
                 </div>
               </li>
               <li><hr /></li>
               <li>
-                <button onClick={() => signOut({ callbackUrl: '/' })}>
+                <button onClick={() => signOut({ callbackUrl: '/' })} className="text-sm sm:text-base">
                   Logout
                 </button>
               </li>
