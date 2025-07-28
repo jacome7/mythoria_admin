@@ -289,6 +289,27 @@ export default function TicketDetailPage() {
   const renderMetadata = (metadata: TicketMetadata) => {
     if (!metadata || Object.keys(metadata).length === 0) return null;
 
+    const renderValue = (key: string, value: unknown) => {
+      // Check if this is an email field and we have author ID
+      if (key === 'email' && typeof value === 'string' && metadata.author?.id) {
+        return (
+          <Link 
+            href={`/users/${metadata.author.id}`}
+            className="text-primary hover:text-primary-focus underline"
+          >
+            {value}
+          </Link>
+        );
+      }
+      
+      // For complex objects, pretty print them
+      if (typeof value === 'object') {
+        return JSON.stringify(value, null, 2);
+      }
+      
+      return String(value);
+    };
+
     return (
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
@@ -300,7 +321,7 @@ export default function TicketDetailPage() {
                   {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
                 </span>
                 <span className="text-base-content/70 break-words">
-                  {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                  {renderValue(key, value)}
                 </span>
               </div>
             ))}
@@ -466,7 +487,16 @@ export default function TicketDetailPage() {
                       </div>
                       <div>
                         <span className="font-medium">Email:</span>
-                        <p className="text-base-content/70">{ticket.author.email}</p>
+                        {ticket.author.id ? (
+                          <Link 
+                            href={`/users/${ticket.author.id}`}
+                            className="text-primary hover:text-primary-focus underline"
+                          >
+                            {ticket.author.email}
+                          </Link>
+                        ) : (
+                          <p className="text-base-content/70">{ticket.author.email}</p>
+                        )}
                       </div>
                       {ticket.author.phone && (
                         <div>
@@ -488,7 +518,16 @@ export default function TicketDetailPage() {
                   {!ticket.author && ticket.customerEmail && (
                     <div>
                       <span className="font-medium">Email:</span>
-                      <p className="text-base-content/70">{ticket.customerEmail}</p>
+                      {ticket.metadata?.author?.id ? (
+                        <Link 
+                          href={`/users/${ticket.metadata.author.id}`}
+                          className="text-primary hover:text-primary-focus underline"
+                        >
+                          {ticket.customerEmail}
+                        </Link>
+                      ) : (
+                        <p className="text-base-content/70">{ticket.customerEmail}</p>
+                      )}
                     </div>
                   )}
                   
