@@ -218,15 +218,15 @@ export default function ServerStatusPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6 md:mb-8">
             <div>
-              <h1 className="text-4xl font-bold mb-2">Server Status</h1>
-              <p className="text-gray-600">Monitor the health and performance of all Mythoria services</p>
+              <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Server Status</h1>
+              <p className="text-gray-600 text-sm md:text-base">Monitor the health and performance of all Mythoria services</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 md:gap-4 items-center">
               {/* Auto-refresh toggle */}
               <div className="form-control">
                 <label className="label cursor-pointer">
@@ -256,7 +256,7 @@ export default function ServerStatusPage() {
           </div>
 
           {/* Services Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {services.map((service) => (
               <div key={service.name} className="card bg-base-100 shadow-lg">
                 <div className="card-body">

@@ -19,13 +19,13 @@ export default function KPICard({ title, value, icon, href, description, isLoadi
         <div className="card-body">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-primary text-2xl">
+              <div className="text-primary text-xl md:text-2xl">
                 {icon}
               </div>
               <div>
-                <h3 className="card-title text-lg">{title}</h3>
+                <h3 className="card-title text-base md:text-lg">{title}</h3>
                 {description && (
-                  <p className="text-sm text-base-content/70">{description}</p>
+                  <p className="text-xs md:text-sm text-base-content/70">{description}</p>
                 )}
               </div>
             </div>
@@ -33,7 +33,7 @@ export default function KPICard({ title, value, icon, href, description, isLoadi
               {isLoading ? (
                 <div className="loading loading-spinner loading-md"></div>
               ) : (
-                <div className="text-3xl font-bold text-primary">{value}</div>
+                <div className="text-2xl md:text-3xl font-bold text-primary">{value}</div>
               )}
             </div>
           </div>

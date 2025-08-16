@@ -10,6 +10,7 @@ export * from './print';
 export * from './tickets';
 export * from './credits';
 export * from './managers';
+export * from './blog';
 
 // Auth
 export * from './auth';

@@ -51,15 +51,6 @@ function initializeDatabases(): {
 
   try {
     const config = getMultiDatabaseConfig();
-    
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Multi-database configuration:", {
-        mythoria: { ...config.mythoria, password: '[REDACTED]' },
-        workflows: { ...config.workflows, password: '[REDACTED]' },
-        backoffice: { ...config.backoffice, password: '[REDACTED]' },
-        isVpcConnection: isVpcDirectEgress(),
-      });
-    }
 
     // Initialize mythoria database
     mythoriaPool = createPool(getPoolConfig(config.mythoria), 'mythoria');

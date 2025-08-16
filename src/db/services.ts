@@ -2,6 +2,7 @@ import { getMythoriaDb, getWorkflowsDb } from "./index";
 import { count, desc, eq, like, asc, sql, or, inArray } from "drizzle-orm";
 import { authors, stories, printRequests, creditLedger, authorCreditBalances, creditPackages, pricing } from "./schema";
 import { storyGenerationRuns, storyGenerationSteps } from "./schema/workflows";
+export { adminBlogService } from './services/blog';
 
 export const adminService = {
   // KPI operations

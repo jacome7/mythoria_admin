@@ -6,6 +6,15 @@ import { useState } from "react";
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const isNonProd = process.env.NODE_ENV !== 'production';
+  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
+  let adminPort = '3001';
+  try {
+    const u = new URL(adminUrl);
+    adminPort = u.port || (u.protocol === 'https:' ? '443' : '80');
+  } catch {
+    adminPort = '3001';
+  }
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -39,7 +48,7 @@ export default function SignInPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <span className="text-sm">
-                Access restricted to Mythoria users
+                Access restricted to @mythoria.pt and @caravanconcierge.com
               </span>
             </div>
 
@@ -61,8 +70,13 @@ export default function SignInPage() {
 
           <div className="text-center">
             <p className="text-sm text-base-content/60">
-              This portal is restricted to Mythoriateam members.
+              This portal is restricted to Mythoria team members.
             </p>
+            {isNonProd && (
+              <p className="text-xs text-base-content/50 mt-2">
+                Dev Environment: Port {adminPort}
+              </p>
+            )}
           </div>
         </div>
       </div>

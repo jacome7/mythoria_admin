@@ -185,16 +185,16 @@ export default function StoriesPage() {
   return (
     <div className="min-h-screen bg-base-200">
       <AdminHeader />
-      <main className="container mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-base-content mb-2">Stories Management</h1>
-          <p className="text-base-content/70">View, moderate, and manage user-generated stories</p>
+      <main className="container mx-auto p-4 md:p-6">
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">Stories Management</h1>
+          <p className="text-base-content/70 text-sm md:text-base">View, moderate, and manage user-generated stories</p>
         </div>
 
         {/* Filters and Search */}
         <div className="card bg-base-100 shadow-xl mb-6">
           <div className="card-body">
-            <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 items-start md:items-center">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Search</span>
@@ -243,7 +243,7 @@ export default function StoriesPage() {
         </div>
 
         {/* Stories Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm">Total Stories</h3>
@@ -291,7 +291,11 @@ export default function StoriesPage() {
                     <tr key={story.storyId} className={story.isFeatured ? 'bg-info/10' : ''}>
                       <td>
                         <div>
-                          <div className="font-bold">{story.title}</div>
+                          <div className="font-bold">
+                            <Link href={`/stories/${story.storyId}`} className="link link-primary">
+                              {story.title}
+                            </Link>
+                          </div>
                           <div className="text-sm opacity-50">
                             ID: {story.storyId.substring(0, 8)}...
                           </div>

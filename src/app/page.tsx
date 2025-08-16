@@ -79,8 +79,8 @@ export default function AdminPortal() {
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">Dashboard</h1>
-        <p className="text-center text-gray-600 mb-8">Project main indicators and KPIs</p>
+        <h1 className="text-2xl md:text-4xl font-bold text-center mb-6 md:mb-8">Dashboard</h1>
+        <p className="text-center text-gray-600 text-sm md:text-base mb-6 md:mb-8">Project main indicators and KPIs</p>
         
         {/* KPI Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto mb-8">

@@ -132,20 +132,20 @@ export default function UsersPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 md:mb-8">
           <div>
-            <h1 className="text-4xl font-bold">Users Management</h1>
-            <p className="text-gray-600 mt-2">Manage registered authors and their data</p>
+            <h1 className="text-2xl md:text-4xl font-bold">Users Management</h1>
+            <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">Manage registered authors and their data</p>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-xs md:text-sm text-gray-500">
             {pagination && `${pagination.totalCount} total users`}
           </div>
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="bg-base-100 p-6 rounded-lg shadow-sm mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-base-100 p-4 md:p-6 rounded-lg shadow-sm mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <div className="flex-1">
               <input
                 type="text"
@@ -176,13 +176,13 @@ export default function UsersPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-base-100 rounded-lg shadow-sm">
+  <div className="bg-base-100 rounded-lg shadow-sm">
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="loading loading-spinner loading-lg"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+      <div className="overflow-x-auto">
               <table className="table table-zebra w-full">
                 <thead>
                   <tr>
@@ -211,7 +211,7 @@ export default function UsersPage() {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.authorId} className="hover:bg-base-50">
+        <tr key={user.authorId} className="hover:bg-base-50">
                       <td>
                         <div className="font-medium">{user.displayName}</div>
                       </td>
@@ -239,7 +239,7 @@ export default function UsersPage() {
                       <td>
                         <Link 
                           href={`/users/${user.authorId}`}
-                          className="btn btn-sm btn-outline"
+        className="btn btn-sm btn-outline"
                         >
                           View
                         </Link>

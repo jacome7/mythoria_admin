@@ -211,9 +211,9 @@ export default function TicketsPage() {
       <AdminHeader />
       
       <main className="container mx-auto p-4">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-base-content mb-2">Customer Tickets</h1>
-          <p className="text-base-content/70">Manage customer support tickets and requests</p>
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">Customer Tickets</h1>
+          <p className="text-base-content/70 text-sm md:text-base">Manage customer support tickets and requests</p>
         </div>
 
         {/* Metrics Cards */}
@@ -246,7 +246,7 @@ export default function TicketsPage() {
         <div className="card bg-base-100 shadow-xl mb-6">
           <div className="card-body">
             <h2 className="card-title">Filters</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Status</span>
@@ -332,10 +332,10 @@ export default function TicketsPage() {
                         <td className="font-mono text-sm">
                           {getFormattedTicketNumber(ticket.id)}
                         </td>
-                        <td>
+            <td>
                           <div className="font-medium">{getDisplaySubject(ticket)}</div>
                           {ticket.description && (
-                            <div className="text-sm text-base-content/70 truncate max-w-xs">
+              <div className="text-sm text-base-content/70 truncate max-w-[14rem] md:max-w-xs">
                               {ticket.description}
                             </div>
                           )}

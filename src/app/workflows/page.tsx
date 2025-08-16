@@ -154,14 +154,14 @@ export default function WorkflowsPage() {
     <div className="min-h-screen bg-base-200">
       <AdminHeader />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-start mb-4">
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3 md:gap-4 mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Workflow Management</h1>
-              <p className="text-base-content/70">Monitor and manage story generation workflows</p>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Workflow Management</h1>
+              <p className="text-base-content/70 text-sm md:text-base">Monitor and manage story generation workflows</p>
             </div>
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col md:items-end gap-2">
               <button
                 onClick={handleSyncWorkflows}
                 disabled={isSyncing}
@@ -203,7 +203,7 @@ export default function WorkflowsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="tabs tabs-lifted mb-6">
+  <div className="tabs tabs-lifted mb-4 md:mb-6">
           <a
             className={`tab tab-lifted ${activeTab === 'running' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('running')}
