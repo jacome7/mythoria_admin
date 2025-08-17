@@ -82,21 +82,22 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
 
   // Render first page content
   const renderFirstPage = () => (
-    <div className="story-container max-w-4xl mx-auto p-8">
+    <div className="story-container max-w-4xl mx-auto p-8 bg-white text-black">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">{story.title}</h1>
-        <p className="text-xl text-gray-600 mb-8">by {story.authorName}</p>
+        <h1 className="text-4xl font-bold mb-4 text-black">{story.title}</h1>
+        <p className="text-xl text-gray-700 mb-8">by {story.authorName}</p>
       </div>
 
       {/* Table of Contents */}
-      <div className="bg-base-100 rounded-lg p-6 mb-8">
-        <h2 className="text-2xl font-bold mb-4 text-center">Table of Contents</h2>
+  <div className="bg-gray-50 rounded-lg p-6 mb-8">
+    <h2 className="text-2xl font-bold mb-4 text-center text-black">Table of Contents</h2>
         <div className="space-y-2">
           {chapters.map((chapter) => (
             <button
               key={chapter.id}
               onClick={() => navigateToChapter(chapter.chapterNumber)}
-              className="w-full text-left p-3 rounded hover:bg-base-200 transition-colors"
+      className="toc-button w-full text-left p-3 rounded bg-white text-black hover:bg-gray-100 transition-colors"
+      aria-label={`Go to chapter ${chapter.chapterNumber}: ${chapter.title}`}
             >
               <span className="font-medium">{chapter.chapterNumber}. {chapter.title}</span>
             </button>
@@ -139,9 +140,9 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
     }
 
     return (
-      <div className="story-container max-w-4xl mx-auto p-8">
+    <div className="story-container max-w-4xl mx-auto p-8 bg-white text-black">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-6 text-center">{currentChapterData.title}</h2>
+      <h2 className="text-3xl font-bold mb-6 text-center text-black">{currentChapterData.title}</h2>
           
           {/* Chapter Image */}
           {currentChapterData.imageUri && toAbsoluteImageUrl(currentChapterData.imageUri) && (
@@ -159,18 +160,18 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
           
           {/* Chapter Content */}
           <div 
-            className="prose prose-lg max-w-none"
+            className="prose prose-lg max-w-none text-black"
             dangerouslySetInnerHTML={{ __html: currentChapterData.htmlContent }}
           />
         </div>
 
         {/* Navigation Controls */}
-        <div className="flex justify-between items-center py-8 border-t">
+  <div className="flex justify-between items-center py-8 border-t border-gray-200">
           <div>
             {(currentChapter && currentChapter > 1) || currentChapter === 1 ? (
               <button
                 onClick={navigateToPreviousChapter}
-                className="btn btn-outline"
+    className="btn btn-outline"
               >
                 {currentChapter === 1 ? '← Back to Story' : `← Chapter ${currentChapter - 1}`}
               </button>
@@ -206,15 +207,15 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
   const renderTableOfContentsModal = () => (
     showTableOfContents && (
       <div className="modal modal-open">
-        <div className="modal-box">
-          <h3 className="font-bold text-lg mb-4">Table of Contents</h3>
+        <div className="modal-box bg-white text-black">
+          <h3 className="font-bold text-lg mb-4 text-black">Table of Contents</h3>
           <div className="space-y-2">
             <button
               onClick={() => {
                 navigateToChapter(0);
                 setShowTableOfContents(false);
               }}
-              className="btn btn-ghost btn-sm w-full justify-start"
+              className="btn btn-ghost btn-sm w-full justify-start text-black"
             >
               Cover & Introduction
             </button>
@@ -225,8 +226,8 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
                   navigateToChapter(chapter.chapterNumber);
                   setShowTableOfContents(false);
                 }}
-                className={`btn btn-ghost btn-sm w-full justify-start ${
-                  currentChapter === chapter.chapterNumber ? 'bg-primary/20' : ''
+                className={`btn btn-ghost btn-sm w-full justify-start text-black ${
+                  currentChapter === chapter.chapterNumber ? 'bg-gray-100' : ''
                 }`}
               >
                 {chapter.chapterNumber}. {chapter.title}
@@ -247,9 +248,9 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
   );
 
   return (
-    <div className="story-reader min-h-screen bg-base-200">
+    <div className="story-reader min-h-screen bg-gray-100 text-black">
       {/* Reading Toolbar */}
-      <div className="bg-base-100 border-b border-base-300 p-4 print:hidden">
+      <div className="bg-white border-b border-gray-200 p-4 print:hidden">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
             onClick={() => router.push(`/stories/${storyId}`)}

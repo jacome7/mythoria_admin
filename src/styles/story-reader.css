@@ -3,11 +3,12 @@
 .story-reader {
   font-family: 'Georgia', 'Times New Roman', serif;
   line-height: 1.6;
-  color: #333;
+  color: #111; /* high-contrast black */
+  background: #f3f4f6; /* light gray page bg */
 }
 
 .story-container {
-  background: white;
+  background: #ffffff; /* always light background */
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin: 0 auto;
@@ -18,21 +19,21 @@
 .story-container h1 {
   font-size: 2.5rem;
   font-weight: bold;
-  color: #2c3e50;
+  color: #111;
   margin-bottom: 1rem;
 }
 
 .story-container h2 {
   font-size: 2rem;
   font-weight: bold;
-  color: #2c3e50;
+  color: #111;
   margin-bottom: 1.5rem;
 }
 
 .story-container h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #34495e;
+  color: #111;
   margin-bottom: 1rem;
 }
 
@@ -66,15 +67,15 @@
 .story-container .prose h4,
 .story-container .prose h5,
 .story-container .prose h6 {
-  color: #2c3e50;
+  color: #111;
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 1rem;
 }
 
 .story-container .prose blockquote {
-  border-left: 4px solid #3498db;
-  background: #f8f9fa;
+  border-left: 4px solid #2563eb; /* blue-600 */
+  background: #f3f4f6; /* gray-100 */
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
   font-style: italic;
@@ -103,11 +104,12 @@
 .story-container .toc-button {
   transition: all 0.2s ease;
   border-left: 4px solid transparent;
+  color: #111;
 }
 
 .story-container .toc-button:hover {
-  background-color: #f8f9fa;
-  border-left-color: #3498db;
+  background-color: #f3f4f6; /* gray-100 */
+  border-left-color: #2563eb;
 }
 
 /* Navigation */
@@ -205,25 +207,12 @@
   outline-offset: 2px;
 }
 
-/* Dark mode support */
+/* Force light theme for readability in admin portal */
 @media (prefers-color-scheme: dark) {
-  .story-reader {
-    color: #e9ecef;
-  }
-  
-  .story-container {
-    background: #2c3e50;
-    color: #e9ecef;
-  }
-  
+  .story-reader { color: #111; background: #f3f4f6; }
+  .story-container { background: #ffffff; color: #111; }
   .story-container h1,
   .story-container h2,
-  .story-container h3 {
-    color: #ecf0f1;
-  }
-  
-  .story-container .prose blockquote {
-    background: #34495e;
-    border-left-color: #3498db;
-  }
+  .story-container h3 { color: #111; }
+  .story-container .prose blockquote { background: #f3f4f6; border-left-color: #2563eb; }
 }

@@ -150,7 +150,7 @@ export default function ReadChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-200">
+    <div className="min-h-screen bg-gray-100 text-black">
       <AdminHeader />
       
       {/* Story Reader */}
@@ -161,7 +161,7 @@ export default function ReadChapterPage() {
         currentChapter={chapterNumber}
       />
 
-      <AdminFooter />
+  <AdminFooter />
     </div>
   );
 }

@@ -144,7 +144,7 @@ export default function ReadStoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-200">
+    <div className="min-h-screen bg-gray-100 text-black">
       <AdminHeader />
       
       {/* Story Reader - First page with cover and table of contents */}
@@ -155,7 +155,7 @@ export default function ReadStoryPage() {
         currentChapter={0} // 0 = first page
       />
 
-      <AdminFooter />
+  <AdminFooter />
     </div>
   );
 }
