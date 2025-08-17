@@ -1,0 +1,254 @@
+{
+  "@floating-ui/react": {
+    "current": "0.27.13",
+    "wanted": "0.27.15",
+    "latest": "0.27.15",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@floating-ui\\react"
+  },
+  "@google-cloud/pubsub": {
+    "current": "5.1.0",
+    "wanted": "5.2.0",
+    "latest": "5.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@google-cloud\\pubsub"
+  },
+  "@google-cloud/workflows": {
+    "current": "4.3.0",
+    "wanted": "4.4.0",
+    "latest": "4.4.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@google-cloud\\workflows"
+  },
+  "@google/genai": {
+    "current": "1.9.0",
+    "wanted": "1.14.0",
+    "latest": "1.14.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@google\\genai"
+  },
+  "@tailwindcss/postcss": {
+    "current": "4.1.11",
+    "wanted": "4.1.12",
+    "latest": "4.1.12",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tailwindcss\\postcss"
+  },
+  "@testing-library/jest-dom": {
+    "current": "6.6.3",
+    "wanted": "6.7.0",
+    "latest": "6.7.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@testing-library\\jest-dom"
+  },
+  "@tiptap/extension-color": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\extension-color"
+  },
+  "@tiptap/extension-image": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\extension-image"
+  },
+  "@tiptap/extension-link": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\extension-link"
+  },
+  "@tiptap/extension-text-align": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\extension-text-align"
+  },
+  "@tiptap/extension-text-style": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\extension-text-style"
+  },
+  "@tiptap/pm": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\pm"
+  },
+  "@tiptap/react": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\react"
+  },
+  "@tiptap/starter-kit": {
+    "current": "2.25.0",
+    "wanted": "2.26.1",
+    "latest": "3.2.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@tiptap\\starter-kit"
+  },
+  "@types/node": {
+    "current": "24.0.7",
+    "wanted": "24.3.0",
+    "latest": "24.3.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@types\\node"
+  },
+  "@types/pg": {
+    "current": "8.15.4",
+    "wanted": "8.15.5",
+    "latest": "8.15.5",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@types\\pg"
+  },
+  "@types/react": {
+    "current": "19.1.8",
+    "wanted": "19.1.10",
+    "latest": "19.1.10",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@types\\react"
+  },
+  "@types/react-dom": {
+    "current": "19.1.6",
+    "wanted": "19.1.7",
+    "latest": "19.1.7",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\@types\\react-dom"
+  },
+  "daisyui": {
+    "current": "5.0.46",
+    "wanted": "5.0.50",
+    "latest": "5.0.50",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\daisyui"
+  },
+  "dotenv": {
+    "current": "17.2.0",
+    "wanted": "17.2.1",
+    "latest": "17.2.1",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\dotenv"
+  },
+  "drizzle-orm": {
+    "current": "0.44.2",
+    "wanted": "0.44.4",
+    "latest": "0.44.4",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\drizzle-orm"
+  },
+  "eslint": {
+    "current": "9.30.0",
+    "wanted": "9.33.0",
+    "latest": "9.33.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\eslint"
+  },
+  "eslint-config-next": {
+    "current": "15.3.5",
+    "wanted": "15.4.6",
+    "latest": "15.4.6",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\eslint-config-next"
+  },
+  "jest": {
+    "current": "30.0.4",
+    "wanted": "30.0.5",
+    "latest": "30.0.5",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\jest"
+  },
+  "jest-environment-jsdom": {
+    "current": "30.0.4",
+    "wanted": "30.0.5",
+    "latest": "30.0.5",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\jest-environment-jsdom"
+  },
+  "next": {
+    "current": "15.3.5",
+    "wanted": "15.4.6",
+    "latest": "15.4.6",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\next"
+  },
+  "next-auth": {
+    "current": "5.0.0-beta.29",
+    "wanted": "5.0.0-beta.29",
+    "latest": "4.24.11",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\next-auth"
+  },
+  "react": {
+    "current": "19.1.0",
+    "wanted": "19.1.1",
+    "latest": "19.1.1",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\react"
+  },
+  "react-dom": {
+    "current": "19.1.0",
+    "wanted": "19.1.1",
+    "latest": "19.1.1",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\react-dom"
+  },
+  "rehype-pretty-code": {
+    "current": "0.12.6",
+    "wanted": "0.12.6",
+    "latest": "0.14.1",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\rehype-pretty-code"
+  },
+  "svix": {
+    "current": "1.69.0",
+    "wanted": "1.73.0",
+    "latest": "1.73.0",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\svix"
+  },
+  "tailwindcss": {
+    "current": "4.1.11",
+    "wanted": "4.1.12",
+    "latest": "4.1.12",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\tailwindcss"
+  },
+  "ts-jest": {
+    "current": "29.4.0",
+    "wanted": "29.4.1",
+    "latest": "29.4.1",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\ts-jest"
+  },
+  "tsx": {
+    "current": "4.20.3",
+    "wanted": "4.20.4",
+    "latest": "4.20.4",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\tsx"
+  },
+  "typescript": {
+    "current": "5.8.3",
+    "wanted": "5.9.2",
+    "latest": "5.9.2",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\typescript"
+  },
+  "zod": {
+    "current": "4.0.2",
+    "wanted": "4.0.17",
+    "latest": "4.0.17",
+    "dependent": "mythoria_admin",
+    "location": "C:\\Mythoria\\mythoria_admin\\node_modules\\zod"
+  }
+}
