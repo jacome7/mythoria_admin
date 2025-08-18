@@ -23,8 +23,8 @@ interface StoryDetail {
   updatedAt: string;
   isPublic: boolean;
   isFeatured: boolean;
-  pdfUri: string | null;
-  htmlUri: string | null;
+  interiorPdfUri: string | null;
+  coverPdfUri: string | null;
   plotDescription: string | null;
   synopsis: string | null;
   place: string | null;
@@ -338,15 +338,30 @@ export default function StoryDetailPage() {
               <h2 className="card-title">Files & Links</h2>
               <div className="space-y-3">
                 <div>
-                  <span className="font-semibold">PDF:</span>
-                  {story.pdfUri ? (
+                  <span className="font-semibold">Interior PDF:</span>
+                  {story.interiorPdfUri ? (
                     <a 
-                      href={story.pdfUri} 
+                      href={story.interiorPdfUri} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-outline ml-2"
                     >
-                      View PDF
+                      View Interior
+                    </a>
+                  ) : (
+                    <span className="ml-2 text-gray-400">Not available</span>
+                  )}
+                </div>
+                <div>
+                  <span className="font-semibold">Cover PDF:</span>
+                  {story.coverPdfUri ? (
+                    <a 
+                      href={story.coverPdfUri} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="btn btn-sm btn-outline ml-2"
+                    >
+                      View Cover Spread
                     </a>
                   ) : (
                     <span className="ml-2 text-gray-400">Not available</span>

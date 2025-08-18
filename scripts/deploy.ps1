@@ -9,7 +9,8 @@ param(
     [string]$Region = "europe-west9",
     
     [switch]$Force = $false,
-    [switch]$VerboseLogging = $false
+    [switch]$VerboseLogging = $false,
+    [switch]$Fast = $false
 )
 
 # Set error action preference
@@ -22,6 +23,7 @@ Write-Host "[INFO] Region: $Region"
 try {
     # Configuration
     $SERVICE_NAME = "mythoria-admin"
+    $IMAGE_NAME = "gcr.io/$ProjectId/$SERVICE_NAME"
     
     Write-Host "[INFO] Project: $ProjectId"
     Write-Host "[INFO] Service: $SERVICE_NAME"
@@ -85,14 +87,41 @@ try {
         }
     }
 
-    # Build and deploy using beta for enhanced logging
-    Write-Host "[INFO] Starting Cloud Build production deployment with enhanced logging..."
-    Write-Host "[INFO] This may take several minutes..."
-    
-    if ($VerboseLogging) {
-        gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
+    if ($Fast) {
+        Write-Host "[INFO] Fast deploy: reusing last built image" -ForegroundColor Yellow
+        $digest = (gcloud container images list-tags $IMAGE_NAME --format="get(digest)" --limit=1 --sort-by=~timestamp 2>$null)
+        if (-not $digest) {
+            Write-Host "[ERR] No prior image found for $IMAGE_NAME. Fast deploy requires an existing image." -ForegroundColor Red
+            exit 1
+        }
+        $imageRef = "$IMAGE_NAME@sha256:$digest"
+        Write-Host "[INFO] Deploying $imageRef to $SERVICE_NAME in $Region" -ForegroundColor Cyan
+        gcloud run deploy $SERVICE_NAME --image $imageRef --region $Region --platform managed --quiet
     } else {
-        gcloud beta builds submit --config cloudbuild.yaml
+        Write-Host "[INFO] Installing dependencies (npm ci)" -ForegroundColor Blue
+        npm ci
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm ci failed" -ForegroundColor Red; exit 1 }
+        Write-Host "[INFO] Linting (npm run lint)" -ForegroundColor Blue
+        npm run lint
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Lint failed" -ForegroundColor Red; exit 1 }
+        Write-Host "[INFO] Typecheck (npm run typecheck)" -ForegroundColor Blue
+        npm run typecheck
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Typecheck failed" -ForegroundColor Red; exit 1 }
+        Write-Host "[INFO] Tests (npm test)" -ForegroundColor Blue
+        npm test
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Tests failed" -ForegroundColor Red; exit 1 }
+        Write-Host "[INFO] Building (npm run build)" -ForegroundColor Blue
+        npm run build
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
+        # Build and deploy with Cloud Build (cloudbuild.yaml)
+        Write-Host "[INFO] Starting Cloud Build production deployment..."
+        Write-Host "[INFO] This may take several minutes..."
+        
+        if ($VerboseLogging) {
+            gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
+        } else {
+            gcloud beta builds submit --config cloudbuild.yaml
+        }
     }
     
     if ($LASTEXITCODE -ne 0) {

@@ -233,8 +233,9 @@ export const adminService = {
       updatedAt: stories.updatedAt,
       isPublic: stories.isPublic,
       isFeatured: stories.isFeatured,
-      pdfUri: stories.pdfUri,
-      htmlUri: stories.htmlUri,
+      interiorPdfUri: stories.interiorPdfUri,
+      coverPdfUri: stories.coverPdfUri,
+      // htmlUri/pdfUri removed
       author: {
         authorId: authors.authorId,
         displayName: authors.displayName,
@@ -261,8 +262,9 @@ export const adminService = {
         updatedAt: stories.updatedAt,
         isPublic: stories.isPublic,
         isFeatured: stories.isFeatured,
-        pdfUri: stories.pdfUri,
-        htmlUri: stories.htmlUri,
+        interiorPdfUri: stories.interiorPdfUri,
+        coverPdfUri: stories.coverPdfUri,
+        // htmlUri/pdfUri removed
         author: {
           authorId: authors.authorId,
           displayName: authors.displayName,
@@ -302,8 +304,9 @@ export const adminService = {
       updatedAt: stories.updatedAt,
       isPublic: stories.isPublic,
       isFeatured: stories.isFeatured,
-      pdfUri: stories.pdfUri,
-      htmlUri: stories.htmlUri,
+      interiorPdfUri: stories.interiorPdfUri,
+      coverPdfUri: stories.coverPdfUri,
+      // htmlUri/pdfUri removed
       plotDescription: stories.plotDescription,
       synopsis: stories.synopsis,
       place: stories.place,

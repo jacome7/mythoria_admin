@@ -22,8 +22,8 @@ interface Story {
   updatedAt: string;
   isPublic: boolean;
   isFeatured: boolean;
-  pdfUri: string | null;
-  htmlUri: string | null;
+  interiorPdfUri?: string | null;
+  coverPdfUri?: string | null;
 }
 
 interface PaginationData {

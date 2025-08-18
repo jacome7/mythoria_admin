@@ -22,9 +22,11 @@ export const stories = pgTable("stories", {
   status: storyStatusEnum("status").default('draft'),  features: jsonb("features"), // {"ebook":true,"printed":false,"audiobook":true}
   deliveryAddress: jsonb("delivery_address"), // Delivery address for printed books
   dedicationMessage: text("dedication_message"), // Personalized dedication message
-  htmlUri: text("html_uri"), // Internal Google Storage link to access the HTML file
-  pdfUri: text("pdf_uri"), // Internal Google Storage link to access the PDF file
-  audiobookUri: jsonb("audiobook_uri"), // JSON object with internal GS links to each chapter audio file  // Sharing functionality fields
+  // Removed html_uri and pdf_uri in favor of chapters HTML and print PDFs
+  audiobookUri: jsonb("audiobook_uri"), // JSON object with internal GS links to each chapter audio file
+  interiorPdfUri: text("interior_pdf_uri"), // Internal Google Storage link to interior PDF for printing
+  coverPdfUri: text("cover_pdf_uri"), // Internal Google Storage link to cover spread PDF for printing
+  // Sharing functionality fields
   slug: text("slug"), // Human-readable slug for public URLs
   isPublic: boolean("is_public").default(false), // Whether story is publicly accessible
   isFeatured: boolean("is_featured").default(false), // Whether story is featured in gallery

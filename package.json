@@ -7,17 +7,24 @@
     "build": "next build",
     "start": "next start --port 3001",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "logs": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\logs.ps1",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx -r dotenv/config ./src/db/migrate.ts",
     "db:push": "drizzle-kit push",
+    "db:reset": "tsx -r dotenv/config ./src/db/reset.ts",
     "db:setup": "npm run db:reset && npm run db:push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx -r dotenv/config ./src/db/seed.ts",
     "sync-workflows-schema": "tsx -r dotenv/config ./scripts/sync-workflows-schema.ts",
-    "deploy": "gcloud beta builds submit --config cloudbuild.yaml"
+    "deploy": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
+    "deploy:fast": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast"
   },
   "sideEffects": false,
   "dependencies": {
@@ -64,9 +71,13 @@
     "eslint-config-next": "^15.4.6",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
+    "prettier": "^3.3.3",
     "tailwindcss": "^4.1.12",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "overrides": {
     "esbuild": ">=0.24.3"
