@@ -49,6 +49,29 @@ export default function StoryDetailPage() {
   const [isUpdatingFeature, setIsUpdatingFeature] = useState(false);
   const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
   const [isRestartingGeneration, setIsRestartingGeneration] = useState(false);
+  const [isGeneratingPdfs, setIsGeneratingPdfs] = useState(false);
+  const [pdfGenMessage, setPdfGenMessage] = useState<string | null>(null);
+  const handleGeneratePdfs = async () => {
+    setPdfGenMessage(null);
+    setIsGeneratingPdfs(true);
+    try {
+      const response = await fetch(`/api/stories/${storyId}/generate-pdfs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setPdfGenMessage('PDF generation triggered successfully!');
+      } else {
+        setPdfGenMessage(result.error || 'Failed to trigger PDF generation.');
+      }
+    } catch (err) {
+      console.error('Failed to trigger PDF generation:', err);
+      setPdfGenMessage('Failed to trigger PDF generation.');
+    } finally {
+      setIsGeneratingPdfs(false);
+    }
+  };
 
   const fetchStory = useCallback(async () => {
     try {
@@ -80,7 +103,7 @@ export default function StoryDetailPage() {
     if (session?.user) {
       // Check if user has the required email domain
       const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
+      const isAllowedDomain = allowedDomains.some(domain =>
         session.user?.email?.endsWith(domain)
       );
 
@@ -245,24 +268,24 @@ export default function StoryDetailPage() {
           </div>
           <div className="flex gap-2">
             {story.status === 'writing' && (
-              <button 
-                className="btn btn-warning" 
+              <button
+                className="btn btn-warning"
                 onClick={() => setIsRestartModalOpen(true)}
               >
                 Restart Story Generation
               </button>
             )}
             {story.isPublic && !story.isFeatured && (
-              <button 
-                className="btn btn-info" 
+              <button
+                className="btn btn-info"
                 onClick={() => setIsFeatureModalOpen(true)}
               >
                 Feature Story
               </button>
             )}
             {story.isFeatured && (
-              <button 
-                className="btn btn-warning" 
+              <button
+                className="btn btn-warning"
                 onClick={() => setIsUnfeatureModalOpen(true)}
               >
                 Unfeature Story
@@ -336,13 +359,26 @@ export default function StoryDetailPage() {
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title">Files & Links</h2>
+              {/* PDF Generation Button */}
+              <div className="mb-4">
+                <button
+                  className={`btn btn-primary btn-sm ${isGeneratingPdfs ? 'loading' : ''}`}
+                  onClick={handleGeneratePdfs}
+                  disabled={isGeneratingPdfs || story.status !== 'published'}
+                >
+                  {isGeneratingPdfs ? 'Triggering...' : 'Generate PDFs (Cover & Interior)'}
+                </button>
+                {pdfGenMessage && (
+                  <div className={`mt-2 text-sm ${pdfGenMessage.includes('success') ? 'text-success' : 'text-error'}`}>{pdfGenMessage}</div>
+                )}
+              </div>
               <div className="space-y-3">
                 <div>
                   <span className="font-semibold">Interior PDF:</span>
                   {story.interiorPdfUri ? (
-                    <a 
-                      href={story.interiorPdfUri} 
-                      target="_blank" 
+                    <a
+                      href={story.interiorPdfUri}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-outline ml-2"
                     >
@@ -355,9 +391,9 @@ export default function StoryDetailPage() {
                 <div>
                   <span className="font-semibold">Cover PDF:</span>
                   {story.coverPdfUri ? (
-                    <a 
-                      href={story.coverPdfUri} 
-                      target="_blank" 
+                    <a
+                      href={story.coverPdfUri}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-outline ml-2"
                     >
@@ -370,7 +406,7 @@ export default function StoryDetailPage() {
                 <div>
                   <span className="font-semibold">Read Story:</span>
                   {story.status === 'published' ? (
-                    <Link 
+                    <Link
                       href={`/stories/${storyId}/read`}
                       className="btn btn-sm btn-primary ml-2"
                     >
@@ -384,9 +420,9 @@ export default function StoryDetailPage() {
                   <div>
                     <span className="font-semibold">Feature Image:</span>
                     <div className="ml-2 mt-2">
-                      <Image 
-                        src={story.featureImageUri} 
-                        alt="Feature" 
+                      <Image
+                        src={story.featureImageUri}
+                        alt="Feature"
                         width={96}
                         height={96}
                         className="object-cover rounded"

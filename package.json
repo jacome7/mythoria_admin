@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "logs": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\logs.ps1",
+    "logs": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\logs.ps1",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -23,8 +23,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx -r dotenv/config ./src/db/seed.ts",
     "sync-workflows-schema": "tsx -r dotenv/config ./scripts/sync-workflows-schema.ts",
-    "deploy": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
-    "deploy:fast": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast"
+    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
+    "deploy:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast"
   },
   "sideEffects": false,
   "dependencies": {

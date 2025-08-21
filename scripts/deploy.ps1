@@ -15,6 +15,8 @@ param(
 
 # Set error action preference
 $ErrorActionPreference = "Stop"
+# In PowerShell 7+, prevent native commands writing to stderr from honoring ErrorActionPreference
+$global:PSNativeCommandUseErrorActionPreference = $false
 
 Write-Host "[INFO] Starting production deployment of Mythoria Admin Portal"
 Write-Host "[INFO] Project: $ProjectId"
@@ -31,12 +33,12 @@ try {
     
     # Check if gcloud is installed
     Write-Host "[INFO] Checking gcloud installation..."
-    $gcloudVersion = gcloud version --format="value(Google Cloud SDK)" 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[ERR] gcloud CLI not found. Please install Google Cloud SDK."
+    $gcloudPath = Get-Command gcloud -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+    if (-not $gcloudPath) {
+        Write-Host "[ERR] gcloud CLI not found. Please install Google Cloud SDK." -ForegroundColor Red
         exit 1
     }
-    Write-Host "[OK] Google Cloud SDK found: $gcloudVersion"
+    Write-Host "[OK] Google Cloud SDK found at: $gcloudPath"
 
     # Set the project
     Write-Host "[INFO] Setting Google Cloud project..."
@@ -98,9 +100,42 @@ try {
         Write-Host "[INFO] Deploying $imageRef to $SERVICE_NAME in $Region" -ForegroundColor Cyan
         gcloud run deploy $SERVICE_NAME --image $imageRef --region $Region --platform managed --quiet
     } else {
-        Write-Host "[INFO] Installing dependencies (npm ci)" -ForegroundColor Blue
-        npm ci
-        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm ci failed" -ForegroundColor Red; exit 1 }
+        function Invoke-NpmCiWithRecovery {
+            param([int]$MaxAttempts = 2)
+            $attempt = 1
+            while ($attempt -le $MaxAttempts) {
+                Write-Host "[INFO] Installing dependencies (npm ci) - attempt $attempt/$MaxAttempts" -ForegroundColor Blue
+                npm ci
+                if ($LASTEXITCODE -eq 0) { return $true }
+
+                Write-Host "[WARN] npm ci failed (exit $LASTEXITCODE). Attempting recovery..." -ForegroundColor Yellow
+                # Try to rename node_modules to free locks, then remove
+                if (Test-Path -Path "node_modules") {
+                    $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+                    $backupDir = "node_modules_old_$timestamp"
+                    try { Rename-Item -Path "node_modules" -NewName $backupDir -ErrorAction Stop } catch {}
+                    # Try remove old dir in background best-effort
+                    try { Start-Job -ScriptBlock { param($p) Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue } -ArgumentList (Join-Path (Get-Location) $backupDir) | Out-Null } catch {}
+                }
+                Start-Sleep -Seconds 2
+                $attempt++
+            }
+            return $false
+        }
+
+        # Install dependencies; prefer ci if lockfile exists, otherwise fallback to install
+        if (Test-Path -Path "package-lock.json") {
+            $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 2
+            if (-not $ciOk) {
+                Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
+                npm install --no-fund --no-audit
+                if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
+            }
+        } else {
+            Write-Host "[INFO] No package-lock.json found; installing dependencies (npm install)" -ForegroundColor Yellow
+            npm install --no-fund --no-audit
+            if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
+        }
         Write-Host "[INFO] Linting (npm run lint)" -ForegroundColor Blue
         npm run lint
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Lint failed" -ForegroundColor Red; exit 1 }
