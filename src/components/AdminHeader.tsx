@@ -88,11 +88,8 @@ export default function AdminHeader() {
 
           <Link href="/" className="btn btn-ghost normal-case text-xl px-2 py-1">
             <Image
-              src="/Mythoria-logo-white-transparent-256x168.png"
-              alt="Mythoria Logo"
-              width={52}
-              height={34}
-              className="max-w-none w-10 h-6 sm:w-12 sm:h-8 md:w-[52px] md:h-[34px]"
+              src="/just_lettering.png"
+              alt="Mythoria Logo" width={150} height={49}
             />
           </Link>
         </div>

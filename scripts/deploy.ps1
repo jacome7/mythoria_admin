@@ -80,15 +80,6 @@ try {
     }
     Write-Host "[OK] All APIs enabled"
 
-    # Confirm deployment
-    if (-not $Force) {
-        $confirmation = Read-Host "Deploy to production? [y/N]"
-        if ($confirmation -ne 'y' -and $confirmation -ne 'Y') {
-            Write-Host "[INFO] Deployment cancelled by user."
-            exit 0
-        }
-    }
-
     if ($Fast) {
         Write-Host "[INFO] Fast deploy: reusing last built image" -ForegroundColor Yellow
         $digest = (gcloud container images list-tags $IMAGE_NAME --format="get(digest)" --limit=1 --sort-by=~timestamp 2>$null)
