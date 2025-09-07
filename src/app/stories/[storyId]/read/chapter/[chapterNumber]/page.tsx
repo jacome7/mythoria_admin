@@ -25,6 +25,8 @@ interface Story {
   authorName: string;
   targetAudience?: string;
   graphicalStyle?: string;
+  coverUri: string;
+  backcoverUri: string;
 }
 
 export default function ReadChapterPage() {
@@ -47,8 +49,19 @@ export default function ReadChapterPage() {
       if (response.ok) {
         const data = await response.json();
         setStory(data.story);
-        setChapters(data.chapters);
-        setCurrentChapter(data.currentChapter);
+        // Ensure only the latest version of each chapter is kept (defensive in case API returns older versions)
+        const latestByNumber: Record<number, Chapter> = {};
+        for (const ch of data.chapters as Chapter[]) {
+          const existing = latestByNumber[ch.chapterNumber];
+          if (!existing || ch.version > existing.version) {
+            latestByNumber[ch.chapterNumber] = ch;
+          }
+        }
+        const deduped = Object.values(latestByNumber).sort((a, b) => a.chapterNumber - b.chapterNumber);
+        setChapters(deduped);
+        // Pick the latest version for the requested chapter number
+        const latestRequested = deduped.find(c => c.chapterNumber === chapterNumber);
+        setCurrentChapter(latestRequested || null);
       } else if (response.status === 404) {
         setError('Chapter not found');
       } else if (response.status === 403) {

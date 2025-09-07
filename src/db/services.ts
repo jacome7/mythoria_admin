@@ -306,6 +306,8 @@ export const adminService = {
       isFeatured: stories.isFeatured,
       interiorPdfUri: stories.interiorPdfUri,
       coverPdfUri: stories.coverPdfUri,
+  coverUri: stories.coverUri,
+  backcoverUri: stories.backcoverUri,
       // htmlUri/pdfUri removed
       plotDescription: stories.plotDescription,
       synopsis: stories.synopsis,

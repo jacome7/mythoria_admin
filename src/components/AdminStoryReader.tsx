@@ -24,6 +24,8 @@ interface AdminStoryReaderProps {
     authorName: string;
     targetAudience?: string;
     graphicalStyle?: string;
+  coverUri?: string;
+  backcoverUri?: string;
   };
   chapters: Chapter[];
   currentChapter?: number;
@@ -86,6 +88,20 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-4 text-black">{story.title}</h1>
         <p className="text-xl text-gray-700 mb-8">by {story.authorName}</p>
+        {/* Front Cover Image (after title/author) */}
+        {story.coverUri && toAbsoluteImageUrl(story.coverUri) && (
+          <div className="flex justify-center mb-8">
+            <Image
+              src={toAbsoluteImageUrl(story.coverUri)!}
+              alt="Front Cover"
+              className="rounded-lg shadow-md"
+              width={400}
+              height={600}
+              style={{ height: 'auto', maxWidth: '100%' }}
+              priority
+            />
+          </div>
+        )}
       </div>
 
       {/* Table of Contents */}
@@ -115,6 +131,20 @@ export default function AdminStoryReader({ storyId, story, chapters, currentChap
           Start Reading
         </button>
       </div>
+
+      {/* Back Cover Image (after table of contents and start button) */}
+      {story.backcoverUri && toAbsoluteImageUrl(story.backcoverUri) && (
+        <div className="mt-12 flex justify-center">
+          <Image
+            src={toAbsoluteImageUrl(story.backcoverUri)!}
+            alt="Back Cover"
+            className="rounded-lg shadow-sm"
+            width={400}
+            height={600}
+            style={{ height: 'auto', maxWidth: '100%' }}
+          />
+        </div>
+      )}
     </div>
   );
 

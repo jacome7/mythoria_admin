@@ -2,6 +2,20 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 
+// Minimal chapter shape expected from adminService.getStoryWithChapters
+type ChapterResult = {
+  chapterNumber: number;
+  version: number;
+  id?: string;
+  title?: string;
+  imageUri?: string | null;
+  imageThumbnailUri?: string | null;
+  htmlContent?: string;
+  audioUri?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+} & Record<string, unknown>;
+
 export async function GET(
   request: Request, 
   { params }: { params: Promise<{ storyId: string }> }
@@ -38,12 +52,27 @@ export async function GET(
       authorName: storyWithChapters.author.displayName,
       targetAudience: storyWithChapters.targetAudience,
       graphicalStyle: storyWithChapters.graphicalStyle,
+  coverUri: storyWithChapters.coverUri,
+  backcoverUri: storyWithChapters.backcoverUri,
       // Add other fields as needed
     };
 
+    // Requirement: only return the most recent version of each chapter
+  const latestChaptersByNumber: Map<number, ChapterResult> = new Map();
+  for (const ch of storyWithChapters.chapters as ChapterResult[]) {
+      const num = ch.chapterNumber as number;
+      const existing = latestChaptersByNumber.get(num);
+      if (!existing || (typeof ch.version === 'number' && ch.version > existing.version)) {
+        latestChaptersByNumber.set(num, ch);
+      }
+    }
+    // Convert map to sorted array
+    const latestChapters = Array.from(latestChaptersByNumber.values())
+      .sort((a, b) => (a.chapterNumber as number) - (b.chapterNumber as number));
+
     return NextResponse.json({
       story: transformedStory,
-      chapters: storyWithChapters.chapters
+      chapters: latestChapters
     });
   } catch (error) {
     console.error('Error fetching story chapters:', error);

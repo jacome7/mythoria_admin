@@ -1,5 +1,6 @@
-import { pgTable, uuid, varchar, timestamp, jsonb, index } from "drizzle-orm/pg-core";
-import { addressTypeEnum } from './enums';
+import { pgTable, uuid, varchar, timestamp, jsonb, index, text } from "drizzle-orm/pg-core";
+import { sql } from 'drizzle-orm';
+import { addressTypeEnum, genderEnum, literaryAgeEnum, primaryGoalEnum, audienceForStoriesEnum } from './enums';
 
 // -----------------------------------------------------------------------------
 // Authors domain
@@ -15,6 +16,15 @@ export const authors = pgTable("authors", {
   mobilePhone: varchar("mobile_phone", { length: 30 }),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   preferredLocale: varchar("preferred_locale", { length: 5 }).default('en'), // CHAR(5)
+  // Onboarding profile fields (all optional besides displayName which we reuse as preferred name)
+  gender: genderEnum('gender'),
+  literaryAge: literaryAgeEnum('literary_age'),
+  // Multi-select goals & audiences (arrays of enums)
+  primaryGoals: primaryGoalEnum('primary_goals').array().default(sql`'{}'::primary_goal[]`),
+  primaryGoalOther: varchar('primary_goal_other', { length: 160 }),
+  audiences: audienceForStoriesEnum('audiences').array().default(sql`'{}'::audience_for_stories[]`),
+  // Controlled vocabulary list of interests
+  interests: text('interests').array().default(sql`'{}'::text[]`),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   // Indexes for performance optimization - unique constraints already create indexes
@@ -23,14 +33,6 @@ export const authors = pgTable("authors", {
   lastLoginAtIdx: index("authors_last_login_at_idx").on(table.lastLoginAt),
   createdAtIdx: index("authors_created_at_idx").on(table.createdAt),
 }));
-
-// Leads (email collection for app launch notifications)
-export const leads = pgTable("leads", {
-  leadId: uuid("lead_id").primaryKey().defaultRandom(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  notifiedAt: timestamp("notified_at", { withTimezone: true }), // Track when we notified them
-});
 
 // Addresses
 export const addresses = pgTable("addresses", {
@@ -73,9 +75,6 @@ export type NewAuthor = typeof authors.$inferInsert;
 
 export type Address = typeof addresses.$inferSelect;
 export type NewAddress = typeof addresses.$inferInsert;
-
-export type Lead = typeof leads.$inferSelect;
-export type NewLead = typeof leads.$inferInsert;
 
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;

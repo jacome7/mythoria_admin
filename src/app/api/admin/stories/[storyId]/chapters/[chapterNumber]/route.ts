@@ -51,6 +51,8 @@ export async function GET(
       authorName: story.author.displayName,
       targetAudience: story.targetAudience,
       graphicalStyle: story.graphicalStyle,
+  coverUri: story.coverUri,
+  backcoverUri: story.backcoverUri,
       // Add other fields as needed
     };
 

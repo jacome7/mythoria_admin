@@ -116,7 +116,7 @@ try {
 
         # Install dependencies; prefer ci if lockfile exists, otherwise fallback to install
         if (Test-Path -Path "package-lock.json") {
-            $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 2
+            $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 1
             if (-not $ciOk) {
                 Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
                 npm install --no-fund --no-audit

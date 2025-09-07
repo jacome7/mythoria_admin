@@ -1,6 +1,6 @@
 {
   "name": "mythoria_admin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 3001",
@@ -23,6 +23,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx -r dotenv/config ./src/db/seed.ts",
     "sync-workflows-schema": "tsx -r dotenv/config ./scripts/sync-workflows-schema.ts",
+    "sync-mythoria-db-schema": "tsx -r dotenv/config ./scripts/sync-mythoria-db-schema.ts",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
     "deploy:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast"
   },

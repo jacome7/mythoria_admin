@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp, integer, index, decimal, boolean, varchar } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, integer, index } from "drizzle-orm/pg-core";
 import { authors } from './authors';
 import { creditEventTypeEnum } from './enums';
 
@@ -31,33 +31,6 @@ export const authorCreditBalances = pgTable("author_credit_balances", {
   lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Credit Packages - Available credit bundles for purchase
-export const creditPackages = pgTable("credit_packages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  credits: integer("credits").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  popular: boolean("popular").notNull().default(false),
-  bestValue: boolean("best_value").notNull().default(false),
-  icon: varchar("icon", { length: 50 }).notNull().default("FaShoppingCart"),
-  key: varchar("key", { length: 50 }).notNull().unique(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (table) => ({
-  // Indexes for performance optimization
-  isActiveIdx: index("credit_packages_is_active_idx").on(table.isActive),
-}));
-
-// Pricing - Service pricing configuration (existing table)
-export const pricing = pgTable("pricing", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  serviceCode: varchar("service_code", { length: 50 }).notNull().unique(),
-  credits: integer("credits").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
@@ -66,9 +39,3 @@ export type NewCreditLedgerEntry = typeof creditLedger.$inferInsert;
 
 export type AuthorCreditBalance = typeof authorCreditBalances.$inferSelect;
 export type NewAuthorCreditBalance = typeof authorCreditBalances.$inferInsert;
-
-export type CreditPackage = typeof creditPackages.$inferSelect;
-export type NewCreditPackage = typeof creditPackages.$inferInsert;
-
-export type PricingService = typeof pricing.$inferSelect;
-export type NewPricingService = typeof pricing.$inferInsert;
