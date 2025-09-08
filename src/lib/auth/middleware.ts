@@ -50,7 +50,8 @@ async function authenticateApiKey(apiKey: string): Promise<AuthResult> {
   }
 
   if (apiKey !== validApiKey) {
-    console.warn('Invalid API key attempt:', apiKey.substring(0, 10) + '...');
+    const mask = (key: string) => key.length <= 6 ? '***' : `${key.slice(0,3)}***${key.slice(-3)}`;
+    console.warn('Invalid API key attempt:', mask(apiKey), 'expected:', mask(validApiKey));
     return {
       success: false,
       error: 'Invalid API key',
