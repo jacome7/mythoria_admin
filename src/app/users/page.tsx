@@ -115,6 +115,11 @@ export default function UsersPage() {
     setCurrentPage(1);
   };
 
+  // Navigate to a specific user's detail page
+  const handleUserRowClick = (authorId: string) => {
+    router.push(`/users/${authorId}`);
+  };
+
   // Show loading state while checking authentication
   if (status === 'loading') {
     return (
@@ -211,7 +216,20 @@ export default function UsersPage() {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-        <tr key={user.authorId} className="hover:bg-base-50">
+	<tr
+            key={user.authorId}
+            className="hover:bg-base-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+            role="button"
+            tabIndex={0}
+            aria-label={`View details for ${user.displayName}`}
+            onClick={() => handleUserRowClick(user.authorId)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleUserRowClick(user.authorId);
+              }
+            }}
+          >
                       <td>
                         <div className="font-medium">{user.displayName}</div>
                       </td>
@@ -237,9 +255,10 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td>
-                        <Link 
+                        <Link
                           href={`/users/${user.authorId}`}
-        className="btn btn-sm btn-outline"
+                          className="btn btn-sm btn-outline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           View
                         </Link>

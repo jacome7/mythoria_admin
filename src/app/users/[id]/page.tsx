@@ -29,6 +29,13 @@ interface CreditHistoryEntry {
   balanceAfter: number;
 }
 
+interface UserStoryRow {
+  storyId: string;
+  title: string;
+  status: string | null;
+  createdAt: string;
+}
+
 export default function UserDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -42,6 +49,8 @@ export default function UserDetailPage() {
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
   const [isCreditHistoryLoading, setIsCreditHistoryLoading] = useState(false);
   const [isAssigningCredits, setIsAssigningCredits] = useState(false);
+  const [stories, setStories] = useState<UserStoryRow[]>([]);
+  const [isStoriesLoading, setIsStoriesLoading] = useState(false);
   
   // Form state for assigning credits
   const [assignAmount, setAssignAmount] = useState<number>(1);
@@ -54,6 +63,8 @@ export default function UserDetailPage() {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
+  // After user loads, fetch stories
+  fetchStories();
       } else if (response.status === 404) {
         router.push('/users');
       } else {
@@ -65,6 +76,21 @@ export default function UserDetailPage() {
       setIsLoading(false);
     }
   }, [userId, router]);
+
+  const fetchStories = useCallback(async () => {
+    try {
+      setIsStoriesLoading(true);
+      const response = await fetch(`/api/admin/users/${userId}/stories`);
+      if (response.ok) {
+        const json = await response.json();
+        setStories(json.data || []);
+      }
+    } catch (e) {
+      console.error('Error fetching user stories:', e);
+    } finally {
+      setIsStoriesLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -278,10 +304,11 @@ export default function UserDetailPage() {
               <h2 className="card-title">Credits</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold">Current Balance:</span>
-                  <button 
-                    className="btn btn-outline btn-secondary"
+                  <span className="font-semibold">Available Credits:</span>
+                  <button
+                    className="btn btn-primary"
                     onClick={handleOpenCreditsModal}
+                    aria-label="View credit history"
                   >
                     {user.creditBalance} Credits
                   </button>
@@ -296,6 +323,49 @@ export default function UserDetailPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* User Stories */}
+        <div className="mt-10">
+          <div className="card bg-base-200 shadow-xl">
+            <div className="card-body">
+              <h2 className="card-title">Stories</h2>
+              {isStoriesLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <span className="loading loading-spinner loading-lg" />
+                </div>
+              ) : stories.length === 0 ? (
+                <p className="text-sm text-gray-400">No stories found for this user.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra w-full">
+                    <thead>
+                      <tr>
+                        <th>Created At</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stories.map(s => (
+                        <tr key={s.storyId}>
+                          <td className="text-sm">{formatDate(s.createdAt)}</td>
+                          <td>
+                            <Link href={`/stories/${s.storyId}`} className="link link-primary">
+                              {s.title}
+                            </Link>
+                          </td>
+                          <td>
+                            <span className="badge badge-outline capitalize">{s.status || 'unknown'}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -343,7 +413,7 @@ export default function UserDetailPage() {
                 </div>
                 <div className="mt-6 p-4 bg-base-200 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold">Current Balance</span>
+                    <span className="text-lg font-semibold">Available Credits</span>
                     <span className="text-xl font-bold text-primary">{user.creditBalance} Credits</span>
                   </div>
                 </div>

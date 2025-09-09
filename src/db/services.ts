@@ -111,6 +111,22 @@ export const adminService = {
     return historyWithBalance;
   },
 
+  // User stories (for admin user detail page)
+  async getUserStories(authorId: string) {
+    const db = getMythoriaDb();
+    const results = await db
+      .select({
+        storyId: stories.storyId,
+        title: stories.title,
+        status: stories.status,
+        createdAt: stories.createdAt,
+      })
+      .from(stories)
+      .where(eq(stories.authorId, authorId))
+      .orderBy(desc(stories.createdAt));
+    return results;
+  },
+
   async assignCreditsToUser(
     authorId: string, 
     amount: number, 
