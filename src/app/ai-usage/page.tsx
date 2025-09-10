@@ -1,10 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface AIProvider {
   id: string;
@@ -50,7 +50,7 @@ interface ActionUsage {
 }
 
 export default function AIUsagePage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [usageData, setUsageData] = useState<UsageData[]>([]);
@@ -157,27 +157,10 @@ export default function AIUsagePage() {
   }, [timePeriod]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchAIUsageData();
     }
-  }, [status, session, router, timePeriod, fetchAIUsageData]);
+  }, [loading, session, timePeriod, fetchAIUsageData]);
 
   const toggleProviderStatus = (providerId: string) => {
     setProviders(providers => 
@@ -191,7 +174,7 @@ export default function AIUsagePage() {
   const totalMonthlyCost = usageData.reduce((sum, day) => sum + (Number(day.totalCost) || 0), 0);
   const totalTokens = tokenUsage.reduce((sum, usage) => sum + (Number(usage.inputTokens) || 0) + (Number(usage.outputTokens) || 0), 0);
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
         <AdminHeader />
@@ -203,6 +186,10 @@ export default function AIUsagePage() {
         <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   return (

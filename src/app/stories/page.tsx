@@ -1,12 +1,12 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Story {
   storyId: string;
@@ -41,7 +41,7 @@ interface StoriesResponse {
 }
 
 export default function StoriesPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
@@ -90,27 +90,10 @@ export default function StoriesPage() {
   }, [searchTerm, filterStatus, filterFeatured]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchStories(currentPage);
     }
-  }, [status, session, router, currentPage, fetchStories]);
+  }, [loading, session, currentPage, fetchStories]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -136,28 +119,6 @@ export default function StoriesPage() {
     setCurrentPage(1);
   };
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      fetchStories(currentPage);
-    }
-  }, [status, session, router, currentPage, fetchStories]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -168,7 +129,7 @@ export default function StoriesPage() {
     }
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
         <AdminHeader />
@@ -180,6 +141,10 @@ export default function StoriesPage() {
         <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   return (
