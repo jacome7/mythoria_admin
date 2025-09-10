@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface ServiceStatus {
   name: string;
@@ -35,7 +35,7 @@ interface ServerStatusResponse {
 }
 
 export default function ServerStatusPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const [services, setServices] = useState<ServiceStatus[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -83,22 +83,10 @@ export default function ServerStatusPage() {
 
   // Authentication check
   useEffect(() => {
-    if (status === 'loading') return;
-    if (status === 'unauthenticated') {
+    if (!loading && !session?.user) {
       router.push('/auth/signin');
-      return;
     }
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-    }
-  }, [status, session, router]);
+  }, [loading, session, router]);
 
   // Check service health via backend API
   const checkAllServices = async () => {
@@ -144,22 +132,22 @@ export default function ServerStatusPage() {
 
   // Initial check and auto-refresh
   useEffect(() => {
-    if (services.length > 0 && status === 'authenticated') {
+    if (!loading && session?.user && services.length > 0) {
       checkAllServices();
     }
-  }, [services.length, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [services.length, loading, session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!autoRefresh) return;
     
     const interval = setInterval(() => {
-      if (status === 'authenticated') {
+      if (session?.user) {
         checkAllServices();
       }
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [autoRefresh, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoRefresh, session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get status icon and color
   const getStatusIcon = (status: ServiceStatus['status']) => {
@@ -202,16 +190,16 @@ export default function ServerStatusPage() {
   };
 
   // Show loading state while checking authentication
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
       </div>
     );
   }
-  
+
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 

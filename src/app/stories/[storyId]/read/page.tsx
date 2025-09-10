@@ -1,11 +1,11 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AdminHeader from '../../../../components/AdminHeader';
 import AdminFooter from '../../../../components/AdminFooter';
 import AdminStoryReader from '../../../../components/AdminStoryReader';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Chapter {
   id: string;
@@ -30,7 +30,7 @@ interface Story {
 }
 
 export default function ReadStoryPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const params = useParams();
   const storyId = params?.storyId as string;
@@ -73,32 +73,13 @@ export default function ReadStoryPage() {
   }, [storyId]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch story data
+    if (!loading && session?.user) {
       fetchStory();
     }
-  }, [status, session, router, fetchStory]);
+  }, [loading, session, fetchStory]);
 
   // Show loading state while checking authentication
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
@@ -107,7 +88,7 @@ export default function ReadStoryPage() {
   }
 
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 

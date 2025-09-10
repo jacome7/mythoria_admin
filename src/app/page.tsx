@@ -1,11 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import AdminHeader from '../components/AdminHeader';
 import AdminFooter from '../components/AdminFooter';
 import KPICard from '../components/KPICard';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface KPIData {
   users: number;
@@ -14,35 +13,15 @@ interface KPIData {
 }
 
 export default function AdminPortal() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { session, loading } = useAdminAuth();
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
 
   useEffect(() => {
-    if (status === 'loading') return; // Still loading
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      // Check if user has the required email domain (already validated in auth.ts)
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch KPI data if authorized
+    if (!loading && session?.user) {
       fetchKPIs();
     }
-  }, [status, session, router]);
+  }, [loading, session]);
 
   const fetchKPIs = async () => {
     try {
@@ -62,16 +41,16 @@ export default function AdminPortal() {
   };
 
   // Show loading state while checking authentication
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
       </div>
     );
   }
-  
+
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 

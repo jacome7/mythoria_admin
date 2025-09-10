@@ -1,10 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '../../components/AdminHeader';
 import AdminFooter from '../../components/AdminFooter';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Manager {
   managerId: string;
@@ -24,7 +24,7 @@ interface ManagerFormData {
 }
 
 export default function ManagersPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const [managers, setManagers] = useState<Manager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,29 +59,10 @@ export default function ManagersPage() {
   };
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch managers data if authorized
+    if (!loading && session?.user) {
       fetchManagers();
     }
-  }, [status, session, router]);
+  }, [loading, session]);
 
   const handleCreateNew = () => {
     setEditingManager(null);
@@ -166,7 +147,7 @@ export default function ManagersPage() {
     }
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
         <AdminHeader />
@@ -178,6 +159,10 @@ export default function ManagersPage() {
         <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   return (

@@ -1,11 +1,11 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import AdminFooter from '@/components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface RevenueData {
   period: string;
@@ -30,7 +30,7 @@ interface PaymentMethod {
 }
 
 export default function RevenuePage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
@@ -39,27 +39,10 @@ export default function RevenuePage() {
   const [timePeriod, setTimePeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchRevenueData();
     }
-  }, [status, session, router, timePeriod]);
+  }, [loading, session, timePeriod]);
 
   const fetchRevenueData = async () => {
     try {
@@ -107,7 +90,7 @@ export default function RevenuePage() {
   const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
   const totalRefunds = revenueData.reduce((sum, day) => sum + day.refunds, 0);
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
         <AdminHeader />
@@ -119,6 +102,10 @@ export default function RevenuePage() {
         <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   return (

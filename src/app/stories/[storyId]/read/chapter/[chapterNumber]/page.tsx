@@ -78,34 +78,13 @@ export default function ReadChapterPage() {
   }, [storyId, chapterNumber]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
+    if (!loading && session?.user && storyId && chapterNumber) {
+      fetchChapter();
     }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch chapter data
-      if (storyId && chapterNumber) {
-        fetchChapter();
-      }
-    }
-  }, [status, session, router, fetchChapter, storyId, chapterNumber]);
+  }, [loading, session, fetchChapter, storyId, chapterNumber]);
 
   // Show loading state while checking authentication
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
@@ -114,7 +93,7 @@ export default function ReadChapterPage() {
   }
 
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 
