@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
+import { notificationClient } from '@/lib/notifications/client';
 
 export async function POST(
   request: Request, 
@@ -44,19 +45,31 @@ export async function POST(
     }
 
     // Assign credits
-    await adminService.assignCreditsToUser(
-      id, 
-      amount, 
-      eventType
-    );
+    await adminService.assignCreditsToUser(id, amount, eventType);
 
     // Get updated balance
     const newBalance = await adminService.getUserCreditBalance(id);
 
-    return NextResponse.json({ 
-      success: true, 
+    let warning: string | undefined;
+
+    if (eventType === 'refund') {
+      const notifyResult = await notificationClient.sendCreditRefundNotification({
+        email: user.email,
+        name: user.displayName,
+        credits: amount,
+        preferredLocale: (user as any).preferredLocale,
+        authorId: user.authorId
+      });
+      if (!notifyResult.success) {
+        warning = `Credits assigned but refund email failed: ${notifyResult.error}`;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
       newBalance,
-      message: `Successfully assigned ${amount} credits to ${user.displayName}` 
+      message: `Successfully assigned ${amount} credits to ${user.displayName}`,
+      ...(warning ? { warning } : {})
     });
   } catch (error) {
     console.error('Error assigning credits:', error);

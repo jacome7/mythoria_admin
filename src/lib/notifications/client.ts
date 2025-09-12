@@ -72,6 +72,85 @@ class NotificationClient {
   }
 
   /**
+   * Send a templated email via /email/template endpoint
+   */
+  async sendTemplatedEmail(args: {
+    templateId: string;
+    recipients: { email: string; name?: string; language?: string }[];
+    variables?: Record<string, unknown>;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    metadata?: Record<string, unknown>;
+    authorId?: string;
+  }): Promise<NotificationResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/email/template`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'x-api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          templateId: args.templateId,
+            recipients: args.recipients.map(r => ({
+              email: r.email,
+              ...(r.name ? { name: r.name } : {}),
+              ...(r.language ? { language: r.language } : {})
+            })),
+          ...(args.variables ? { variables: args.variables } : {}),
+          ...(args.priority ? { priority: args.priority } : {}),
+          ...(args.metadata ? { metadata: args.metadata } : {}),
+          ...(args.authorId ? { authorId: args.authorId } : {})
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return { success: false, error: `Template send failed ${response.status}: ${errorText}` };
+      }
+      const json = await response.json();
+      return { success: true, messageId: (json as { data?: { id?: string } }).data?.id };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Send credit refund notification
+   */
+  async sendCreditRefundNotification(params: {
+    email: string;
+    name: string;
+    credits: number;
+    preferredLocale?: string | null;
+    authorId?: string;
+  }): Promise<NotificationResponse> {
+    const language = this.mapLocale(params.preferredLocale);
+    return this.sendTemplatedEmail({
+      templateId: 'credit-refund',
+      recipients: [{ email: params.email, name: params.name, language }],
+      variables: {
+        name: params.name,
+        credits: params.credits
+      },
+      priority: 'normal',
+      metadata: {
+        notificationType: 'credit-refund',
+        creditEventType: 'refund'
+      },
+      authorId: params.authorId
+    });
+  }
+
+  private mapLocale(locale?: string | null): string {
+    if (!locale) return 'en-US';
+    const lower = locale.toLowerCase();
+    if (lower.startsWith('pt')) return 'pt-PT';
+    if (lower.startsWith('es')) return 'es-ES';
+    if (lower.startsWith('fr')) return 'fr-FR';
+    return 'en-US';
+  }
+
+  /**
    * Send ticket creation notification
    */
   async sendTicketCreatedNotification(
