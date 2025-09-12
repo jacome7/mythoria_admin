@@ -3,8 +3,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import AdminHeader from '../../../../../../components/AdminHeader';
-import AdminFooter from '../../../../../../components/AdminFooter';
 import AdminStoryReader from '../../../../../../components/AdminStoryReader';
 
 interface Chapter {
@@ -100,7 +98,6 @@ export default function ReadChapterPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <div className="text-6xl mb-4">📚</div>
@@ -114,7 +111,6 @@ export default function ReadChapterPage() {
             </button>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -122,7 +118,6 @@ export default function ReadChapterPage() {
   if (!story || !currentChapter) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <div className="text-6xl mb-4">📚</div>
@@ -136,14 +131,12 @@ export default function ReadChapterPage() {
             </button>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 text-black">
-      <AdminHeader />
       
       {/* Story Reader */}
       <AdminStoryReader
@@ -153,7 +146,6 @@ export default function ReadChapterPage() {
         currentChapter={chapterNumber}
       />
 
-  <AdminFooter />
     </div>
   );
 }

@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -132,13 +130,11 @@ export default function StoriesPage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -149,7 +145,6 @@ export default function StoriesPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-4 md:p-6">
         <div className="mb-4 md:mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">Stories Management</h1>
@@ -360,7 +355,6 @@ export default function StoriesPage() {
           </div>
         )}
       </main>
-      <AdminFooter />
     </div>
   );
 }

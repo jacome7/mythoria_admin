@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface AIProvider {
@@ -177,13 +175,11 @@ export default function AIUsagePage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -194,7 +190,6 @@ export default function AIUsagePage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex justify-between items-center">
@@ -485,7 +480,6 @@ export default function AIUsagePage() {
           </div>
         )}
       </main>
-      <AdminFooter />
     </div>
   );
 }

@@ -4,8 +4,6 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 
 interface NotificationRule {
   id: string;
@@ -134,18 +132,15 @@ export default function NotificationsPage() {
   if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <div className="flex justify-center items-center h-64">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       
       <div className="container mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
@@ -413,7 +408,6 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      <AdminFooter />
     </div>
   );
 }

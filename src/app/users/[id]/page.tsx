@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '../../../components/AdminHeader';
-import AdminFooter from '../../../components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface User {
@@ -193,13 +191,11 @@ export default function UserDetailPage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-100">
-        <AdminHeader />
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -211,7 +207,6 @@ export default function UserDetailPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-base-100">
-        <AdminHeader />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">User not found</h1>
@@ -220,14 +215,12 @@ export default function UserDetailPage() {
             </Link>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-100">
-      <AdminHeader />
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -476,7 +469,6 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      <AdminFooter />
     </div>
   );
 }

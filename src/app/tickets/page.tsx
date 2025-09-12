@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -172,13 +170,11 @@ export default function TicketsPage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-4">
           <div className="flex justify-center items-center min-h-[400px]">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -189,7 +185,6 @@ export default function TicketsPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       
       <main className="container mx-auto p-4">
         <div className="mb-4 md:mb-6">
@@ -369,7 +364,6 @@ export default function TicketsPage() {
         </div>
       </main>
 
-      <AdminFooter />
     </div>
   );
 }

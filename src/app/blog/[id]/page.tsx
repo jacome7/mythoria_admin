@@ -1,8 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import AdminHeader from '../../../components/AdminHeader';
-import AdminFooter from '../../../components/AdminFooter';
 import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -222,7 +220,6 @@ export default function EditBlogPostPage() {
   if (error && isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <AdminHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
             <div className="alert alert-error">
@@ -238,14 +235,12 @@ export default function EditBlogPostPage() {
             </div>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
@@ -446,7 +441,6 @@ export default function EditBlogPostPage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }
