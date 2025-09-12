@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface ServiceStatus {
@@ -205,7 +203,6 @@ export default function ServerStatusPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -345,7 +342,6 @@ export default function ServerStatusPage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

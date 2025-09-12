@@ -3,8 +3,6 @@
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AdminHeader from '../../components/AdminHeader';
-import AdminFooter from '../../components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface BlogListTranslation { 
@@ -109,7 +107,6 @@ function BlogListContent() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="loading loading-spinner loading-lg"></div></div>}>
       <div className="min-h-screen flex flex-col">
-        <AdminHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
@@ -298,7 +295,6 @@ function BlogListContent() {
           )}
           </div>
         </main>
-        <AdminFooter />
       </div>
     </Suspense>
   );

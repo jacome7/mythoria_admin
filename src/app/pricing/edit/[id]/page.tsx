@@ -2,8 +2,6 @@
 
 import { useEffect, useState, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface CreditPackage {
@@ -133,13 +131,11 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -151,20 +147,17 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
   if (!creditPackage) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="alert alert-error">
             <span>Credit package not found</span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
@@ -346,7 +339,6 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

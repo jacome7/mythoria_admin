@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '../../components/AdminHeader';
-import AdminFooter from '../../components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -117,7 +115,6 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 md:mb-8">
           <div>
@@ -297,7 +294,6 @@ export default function UsersPage() {
           </div>
         )}
       </main>
-      <AdminFooter />
     </div>
   );
 }

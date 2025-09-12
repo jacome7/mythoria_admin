@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface CreditPackage {
@@ -70,13 +68,11 @@ export default function PricingPage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -87,7 +83,6 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-base-content mb-2">Credit Package Management</h1>
@@ -163,7 +158,6 @@ export default function PricingPage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

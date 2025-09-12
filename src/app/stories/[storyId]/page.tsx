@@ -4,8 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import AdminHeader from '../../../components/AdminHeader';
-import AdminFooter from '../../../components/AdminFooter';
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -218,7 +216,6 @@ export default function StoryDetailPage() {
   if (!story) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold">Story Not Found</h1>
@@ -227,14 +224,12 @@ export default function StoryDetailPage() {
             </Link>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -601,7 +596,6 @@ export default function StoryDetailPage() {
         </div>
       )}
 
-      <AdminFooter />
     </div>
   );
 }

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '../../components/AdminHeader';
-import AdminFooter from '../../components/AdminFooter';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Manager {
@@ -150,13 +148,11 @@ export default function ManagersPage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -167,7 +163,6 @@ export default function ManagersPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto px-4 py-8">
         <div className="bg-base-100 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
@@ -337,7 +332,6 @@ export default function ManagersPage() {
           </div>
         )}
       </main>
-      <AdminFooter />
     </div>
   );
 }

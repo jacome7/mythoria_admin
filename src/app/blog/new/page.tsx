@@ -1,8 +1,6 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '../../../components/AdminHeader';
-import AdminFooter from '../../../components/AdminFooter';
 import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -66,7 +64,6 @@ export default function NewBlogPostPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="flex items-center gap-4">
@@ -173,7 +170,6 @@ export default function NewBlogPostPage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

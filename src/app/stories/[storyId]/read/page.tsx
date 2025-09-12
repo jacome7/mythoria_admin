@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import AdminHeader from '../../../../components/AdminHeader';
-import AdminFooter from '../../../../components/AdminFooter';
 import AdminStoryReader from '../../../../components/AdminStoryReader';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -95,7 +93,6 @@ export default function ReadStoryPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <div className="text-6xl mb-4">📚</div>
@@ -109,7 +106,6 @@ export default function ReadStoryPage() {
             </button>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -117,7 +113,6 @@ export default function ReadStoryPage() {
   if (!story || chapters.length === 0) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">No Chapters Found</h1>
@@ -130,14 +125,12 @@ export default function ReadStoryPage() {
             </button>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 text-black">
-      <AdminHeader />
       
       {/* Story Reader - First page with cover and table of contents */}
       <AdminStoryReader
@@ -147,7 +140,6 @@ export default function ReadStoryPage() {
         currentChapter={0} // 0 = first page
       />
 
-  <AdminFooter />
     </div>
   );
 }

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -138,13 +136,11 @@ export default function ServicesPage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -155,7 +151,6 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Services Management</h1>
@@ -353,7 +348,6 @@ export default function ServicesPage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

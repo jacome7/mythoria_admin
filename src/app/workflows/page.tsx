@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import WorkflowsList from './components/WorkflowsList';
 
 export default function WorkflowsPage() {
@@ -152,7 +150,6 @@ export default function WorkflowsPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-6 md:mb-8">
@@ -239,7 +236,6 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
-      <AdminFooter />
     </div>
   );
 }

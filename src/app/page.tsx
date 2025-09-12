@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AdminHeader from '../components/AdminHeader';
-import AdminFooter from '../components/AdminFooter';
 import KPICard from '../components/KPICard';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -56,7 +54,6 @@ export default function AdminPortal() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
         <h1 className="text-2xl md:text-4xl font-bold text-center mb-6 md:mb-8">Dashboard</h1>
         <p className="text-center text-gray-600 text-sm md:text-base mb-6 md:mb-8">Project main indicators and KPIs</p>
@@ -103,7 +100,6 @@ export default function AdminPortal() {
           />
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }
