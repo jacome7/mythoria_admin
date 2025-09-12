@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Use JWT strategy instead of database for now to avoid initialization issues
@@ -33,8 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       // Check if email ends with allowed domains
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
+      const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
         profile.email?.endsWith(domain)
       );
 

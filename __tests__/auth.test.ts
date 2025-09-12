@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // Mock environment variables for testing
 process.env.GOOGLE_CLIENT_ID = 'test-client-id';
@@ -53,8 +54,7 @@ describe('Authentication Configuration', () => {
     // Simulate the signIn callback logic
     const isGoogleProvider = mockAccount.provider === 'google';
     const isEmailVerified = mockProfile.email_verified;
-    const allowedDomains = ['@mythoria.pt', '@caravanconcierge.com'];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain =>
       mockProfile.email.endsWith(domain)
     );
     
@@ -69,8 +69,6 @@ describe('Authentication Configuration', () => {
   });
 
   it('should validate email domains correctly', () => {
-    const allowedDomains = ['@mythoria.pt', '@caravanconcierge.com'];
-    
     const validEmails = [
       'user@mythoria.pt',
       'admin@mythoria.pt',
@@ -87,12 +85,12 @@ describe('Authentication Configuration', () => {
     ];
 
     validEmails.forEach(email => {
-      const isValid = allowedDomains.some(domain => email.endsWith(domain));
+      const isValid = ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
       expect(isValid).toBe(true);
     });
 
     invalidEmails.forEach(email => {
-      const isValid = allowedDomains.some(domain => email.endsWith(domain));
+      const isValid = ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
       expect(isValid).toBe(false);
     });
   });
@@ -113,8 +111,9 @@ describe('Authentication Configuration', () => {
     
     // All verified profiles should have valid domains
     verifiedProfiles.forEach(profile => {
-      const hasValidDomain = profile.email.endsWith('@mythoria.pt') || 
-                            profile.email.endsWith('@caravanconcierge.com');
+      const hasValidDomain = ALLOWED_DOMAINS.some(domain =>
+        profile.email.endsWith(domain)
+      );
       expect(hasValidDomain).toBe(true);
     });
   });

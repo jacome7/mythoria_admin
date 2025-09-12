@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { publishStoryRequest } from '@/lib/pubsub';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // POST /api/admin/stories/[storyId]/restart - Restart story generation workflow
 export async function POST(
@@ -15,8 +16,7 @@ export async function POST(
     }
 
     // Check if user has admin access
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

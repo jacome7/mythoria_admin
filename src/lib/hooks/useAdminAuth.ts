@@ -3,8 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-const allowedDomains = ['@mythoria.pt', '@caravanconcierge.com'];
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export const useAdminAuth = () => {
   const { data: session, status } = useSession();
@@ -22,7 +21,7 @@ export const useAdminAuth = () => {
     }
 
     if (session?.user) {
-      const isAllowedDomain = allowedDomains.some((domain) =>
+      const isAllowedDomain = ALLOWED_DOMAINS.some((domain) =>
         session.user?.email?.endsWith(domain),
       );
 

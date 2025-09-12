@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { signIn } from 'next-auth/react';
 import SignInPage from '@/app/auth/signin/page';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // Mock next-auth/react
 jest.mock('next-auth/react', () => ({
@@ -20,7 +21,8 @@ describe('SignIn Page', () => {
     expect(screen.getByText('Mythoria Admin')).toBeInTheDocument();
     expect(screen.getByText('Administration Portal')).toBeInTheDocument();
     expect(screen.getByText('Sign in with Google')).toBeInTheDocument();
-    expect(screen.getByText(/Access restricted to @mythoria.pt and @caravanconcierge.com/)).toBeInTheDocument();
+    const domainText = ALLOWED_DOMAINS.join(' and ');
+    expect(screen.getByText(`Access restricted to ${domainText}`)).toBeInTheDocument();
   });
 
   it('calls signIn when Google sign-in button is clicked', async () => {
@@ -56,7 +58,8 @@ describe('SignIn Page', () => {
   it('displays domain restriction warning', () => {
     render(<SignInPage />);
     
-    const warning = screen.getByText(/Access restricted to @mythoria.pt and @caravanconcierge.com/);
+    const domainText = ALLOWED_DOMAINS.join(' and ');
+    const warning = screen.getByText(`Access restricted to ${domainText}`);
     expect(warning).toBeInTheDocument();
   });
 
