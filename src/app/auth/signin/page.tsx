@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
-import { useState } from "react";
+import { signIn } from 'next-auth/react';
+import { FcGoogle } from 'react-icons/fc';
+import { useState } from 'react';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +49,7 @@ export default function SignInPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <span className="text-sm">
-                Access restricted to @mythoria.pt and @caravanconcierge.com
+                Access restricted to {ALLOWED_DOMAINS.join(' and ')}
               </span>
             </div>
 

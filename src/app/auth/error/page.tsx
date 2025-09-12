@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { MdError, MdHome } from "react-icons/md";
-import { Suspense } from "react";
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { MdError, MdHome } from 'react-icons/md';
+import { Suspense } from 'react';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 const errorMessages = {
   Configuration: "There is a problem with the server configuration.",
@@ -47,7 +48,7 @@ function AuthErrorContent() {
               </svg>
               <div className="text-sm">
                 <p className="font-medium">Domain Restriction</p>
-                <p>Only @mythoria.pt and @caravanconcierge.com email addresses are allowed.</p>
+                <p>Only {ALLOWED_DOMAINS.join(' and ')} email addresses are allowed.</p>
               </div>
             </div>
           )}

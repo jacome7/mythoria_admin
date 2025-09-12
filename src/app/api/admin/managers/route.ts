@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { getBackofficeDb } from '@/db';
 import { managers, type NewManager } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 /**
  * GET /api/admin/managers
@@ -17,8 +18,7 @@ export async function GET() {
     }
 
     // Check if user has the required email domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
@@ -62,8 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has the required email domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

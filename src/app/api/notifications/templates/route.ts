@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 interface NotificationTemplate {
   id: string;
@@ -71,8 +72,7 @@ export async function GET() {
     }
 
     // Check if user has admin access
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
@@ -103,8 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has admin access
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

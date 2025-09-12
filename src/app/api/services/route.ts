@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export async function GET(request: Request) {
   try {
@@ -11,8 +12,7 @@ export async function GET(request: Request) {
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
@@ -57,8 +57,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user has admin access
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export async function GET(
   request: Request,
@@ -12,8 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"]; 
-    const isAllowedDomain = allowedDomains.some(domain => session.user?.email?.endsWith(domain));
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => session.user?.email?.endsWith(domain));
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is from allowed domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
@@ -54,8 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is from allowed domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
