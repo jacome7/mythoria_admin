@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface AIProvider {
@@ -49,7 +48,6 @@ interface ActionUsage {
 
 export default function AIUsagePage() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [usageData, setUsageData] = useState<UsageData[]>([]);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage[]>([]);

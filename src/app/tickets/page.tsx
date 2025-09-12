@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDate } from '@/lib/date-utils';
@@ -33,7 +32,6 @@ interface TicketMetrics {
 
 export default function TicketsPage() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -76,13 +76,13 @@ export default function ReadChapterPage() {
   }, [storyId, chapterNumber]);
 
   useEffect(() => {
-    if (!loading && session?.user && storyId && chapterNumber) {
+    if (status !== 'loading' && session?.user && storyId && chapterNumber) {
       fetchChapter();
     }
-  }, [loading, session, fetchChapter, storyId, chapterNumber]);
+  }, [status, session, fetchChapter, storyId, chapterNumber]);
 
   // Show loading state while checking authentication
-  if (loading || isLoading) {
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>

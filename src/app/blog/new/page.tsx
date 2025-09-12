@@ -9,9 +9,9 @@ export default function NewBlogPostPage() {
   const router = useRouter();
   const [slugBase, setSlugBase] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');
-  const [loading, setLoading] = useState(false);
+  // Local submit/loading state (renamed to avoid shadowing auth loading)
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +21,7 @@ export default function NewBlogPostPage() {
       return;
     }
 
-    setLoading(true);
+  setSubmitting(true);
     setError('');
 
     try {
@@ -44,7 +44,7 @@ export default function NewBlogPostPage() {
   } catch {
       setError('Network error. Please try again.');
     } finally {
-      setLoading(false);
+  setSubmitting(false);
     }
   }
 
@@ -132,10 +132,10 @@ export default function NewBlogPostPage() {
                   </Link>
                   <button 
                     className="btn btn-primary" 
-                    disabled={loading || !slugBase.trim()}
+                    disabled={submitting || !slugBase.trim()}
                     type="submit"
                   >
-                    {loading ? (
+                    {submitting ? (
                       <>
                         <span className="loading loading-spinner loading-sm"></span>
                         Creating...

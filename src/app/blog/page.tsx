@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface BlogListTranslation { 
@@ -23,7 +23,6 @@ interface BlogListItem {
 
 function BlogListContent() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [posts, setPosts] = useState<BlogListItem[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);

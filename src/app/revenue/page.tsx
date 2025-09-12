@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -29,7 +28,6 @@ interface PaymentMethod {
 
 export default function RevenuePage() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);

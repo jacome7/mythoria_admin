@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -40,7 +39,6 @@ interface StoriesResponse {
 
 export default function StoriesPage() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

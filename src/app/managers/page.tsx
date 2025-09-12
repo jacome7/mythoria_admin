@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Manager {
@@ -23,7 +22,6 @@ interface ManagerFormData {
 
 export default function ManagersPage() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const [managers, setManagers] = useState<Manager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

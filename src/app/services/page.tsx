@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
@@ -16,7 +15,6 @@ interface Service {
 
 export default function ServicesPage() {
   const { session, loading } = useAdminAuth();
-  const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingService, setEditingService] = useState<Service | null>(null);
