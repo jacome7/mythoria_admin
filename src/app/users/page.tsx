@@ -1,12 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '../../components/AdminHeader';
-import AdminFooter from '../../components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface User {
   authorId: string;
@@ -35,7 +33,7 @@ type SortField = 'displayName' | 'email' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
 export default function UsersPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
@@ -72,29 +70,10 @@ export default function UsersPage() {
   }, [searchTerm, sortField, sortOrder]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch users data if authorized
+    if (!loading && session?.user) {
       fetchUsers(currentPage);
     }
-  }, [status, session, router, currentPage, fetchUsers]);
+  }, [loading, session, currentPage, fetchUsers]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -121,7 +100,7 @@ export default function UsersPage() {
   };
 
   // Show loading state while checking authentication
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
@@ -130,13 +109,12 @@ export default function UsersPage() {
   }
 
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 md:mb-8">
           <div>
@@ -316,7 +294,6 @@ export default function UsersPage() {
           </div>
         )}
       </main>
-      <AdminFooter />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { getWorkflowsDb } from '@/db';
 import { tokenUsageTracking } from '@/db/schema/workflows/token-usage';
 import { and, gte, lte, desc, asc, eq, like, or, count } from 'drizzle-orm';
 import { auth } from '@/auth';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // Type for valid AI action types
 type AIActionType = 'story_structure' | 'story_outline' | 'chapter_writing' | 'image_generation' | 'story_review' | 'character_generation' | 'story_enhancement' | 'audio_generation' | 'content_validation' | 'image_edit' | 'test';
@@ -61,8 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has access (domain validation)
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

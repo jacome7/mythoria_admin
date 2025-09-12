@@ -3,8 +3,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import AdminHeader from '../../../../../../components/AdminHeader';
-import AdminFooter from '../../../../../../components/AdminFooter';
 import AdminStoryReader from '../../../../../../components/AdminStoryReader';
 
 interface Chapter {
@@ -78,31 +76,10 @@ export default function ReadChapterPage() {
   }, [storyId, chapterNumber]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
+    if (status !== 'loading' && session?.user && storyId && chapterNumber) {
+      fetchChapter();
     }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch chapter data
-      if (storyId && chapterNumber) {
-        fetchChapter();
-      }
-    }
-  }, [status, session, router, fetchChapter, storyId, chapterNumber]);
+  }, [status, session, fetchChapter, storyId, chapterNumber]);
 
   // Show loading state while checking authentication
   if (status === 'loading' || isLoading) {
@@ -114,14 +91,13 @@ export default function ReadChapterPage() {
   }
 
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 
   if (error) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <div className="text-6xl mb-4">📚</div>
@@ -135,7 +111,6 @@ export default function ReadChapterPage() {
             </button>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
@@ -143,7 +118,6 @@ export default function ReadChapterPage() {
   if (!story || !currentChapter) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="text-center">
             <div className="text-6xl mb-4">📚</div>
@@ -157,14 +131,12 @@ export default function ReadChapterPage() {
             </button>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 text-black">
-      <AdminHeader />
       
       {/* Story Reader */}
       <AdminStoryReader
@@ -174,7 +146,6 @@ export default function ReadChapterPage() {
         currentChapter={chapterNumber}
       />
 
-  <AdminFooter />
     </div>
   );
 }

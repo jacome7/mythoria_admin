@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { getBackofficeDb } from '@/db';
 import { managers } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 interface RouteParams {
   params: Promise<{
@@ -23,8 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has the required email domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
@@ -78,8 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has the required email domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 
@@ -194,8 +193,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has the required email domain
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

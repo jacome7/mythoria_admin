@@ -1,11 +1,8 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { formatAdminDate } from '@/lib/date-utils';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface RevenueData {
   period: string;
@@ -30,8 +27,7 @@ interface PaymentMethod {
 }
 
 export default function RevenuePage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { session, loading } = useAdminAuth();
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -39,27 +35,10 @@ export default function RevenuePage() {
   const [timePeriod, setTimePeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchRevenueData();
     }
-  }, [status, session, router, timePeriod]);
+  }, [loading, session, timePeriod]);
 
   const fetchRevenueData = async () => {
     try {
@@ -107,23 +86,24 @@ export default function RevenuePage() {
   const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
   const totalRefunds = revenueData.reduce((sum, day) => sum + day.refunds, 0);
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
+  if (!session?.user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex justify-between items-center">
@@ -281,7 +261,6 @@ export default function RevenuePage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

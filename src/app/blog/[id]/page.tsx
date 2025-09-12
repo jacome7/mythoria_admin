@@ -1,10 +1,8 @@
 "use client";
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import AdminHeader from '../../../components/AdminHeader';
-import AdminFooter from '../../../components/AdminFooter';
 import Link from 'next/link';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 const LOCALES = ['en-US','pt-PT','es-ES'];
 
@@ -17,7 +15,7 @@ interface TranslationState {
 }
 
 export default function EditBlogPostPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
@@ -29,12 +27,12 @@ export default function EditBlogPostPage() {
   const [activeLocale, setActiveLocale] = useState('en-US');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const loadBlogPost = useCallback(async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       const res = await fetch(`/api/admin/blog/${id}`);
       
       if (res.ok) {
@@ -78,7 +76,7 @@ export default function EditBlogPostPage() {
     } catch {
       setError('Network error loading blog post');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [id]);
 
@@ -97,28 +95,10 @@ export default function EditBlogPostPage() {
 
   // Authentication check
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
+    if (!loading && session?.user) {
+      loadBlogPost();
     }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-  // Load blog post data if authorized
-  loadBlogPost();
-    }
-  }, [status, session, router, loadBlogPost]);
+  }, [loading, session, loadBlogPost]);
 
   function updateField(locale: string, field: keyof TranslationState, value: string) {
     setTranslations(prev => ({ 
@@ -224,7 +204,7 @@ export default function EditBlogPostPage() {
   }
 
   // Show loading state while checking authentication
-  if (status === 'loading' || loading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
@@ -233,14 +213,13 @@ export default function EditBlogPostPage() {
   }
 
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 
-  if (error && loading) {
+  if (error && isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <AdminHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
             <div className="alert alert-error">
@@ -256,14 +235,12 @@ export default function EditBlogPostPage() {
             </div>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AdminHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
@@ -464,7 +441,6 @@ export default function EditBlogPostPage() {
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

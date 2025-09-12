@@ -2,10 +2,8 @@
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import AdminHeader from '../../components/AdminHeader';
-import AdminFooter from '../../components/AdminFooter';
+import { useSearchParams } from 'next/navigation';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface BlogListTranslation { 
   locale: string; 
@@ -24,16 +22,15 @@ interface BlogListItem {
 }
 
 function BlogListContent() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { session, loading } = useAdminAuth();
   const searchParams = useSearchParams();
   const [posts, setPosts] = useState<BlogListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchBlogList = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoadingPosts(true);
       const qp = new URLSearchParams();
       if (searchParams.get('status')) qp.set('status', searchParams.get('status')!);
       if (searchParams.get('locale')) qp.set('locale', searchParams.get('locale')!);
@@ -55,34 +52,15 @@ function BlogListContent() {
       console.error('Error fetching blog posts');
       setPosts([]);
     } finally {
-      setLoading(false);
+      setLoadingPosts(false);
     }
   }, [searchParams]);
 
-  // Authentication check
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch blog posts if authorized
+    if (!loading && session?.user) {
       fetchBlogList();
     }
-  }, [status, session, router, fetchBlogList]);
+  }, [loading, session, fetchBlogList]);
 
   const handleDeletePost = async (postId: string, slugBase: string) => {
     const confirmed = confirm(`Are you sure you want to delete the blog post "${slugBase}"? This action cannot be undone.`);
@@ -112,7 +90,7 @@ function BlogListContent() {
   };
 
   // Show loading state while checking authentication
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading loading-spinner loading-lg"></div>
@@ -121,14 +99,13 @@ function BlogListContent() {
   }
 
   // Don't render content if not authorized
-  if (status === 'unauthenticated' || !session?.user) {
+  if (!session?.user) {
     return null;
   }
 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="loading loading-spinner loading-lg"></div></div>}>
       <div className="min-h-screen flex flex-col">
-        <AdminHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
@@ -197,7 +174,7 @@ function BlogListContent() {
             </div>
           </form>
 
-          {loading ? (
+          {loadingPosts ? (
             <div className="flex justify-center py-12">
               <div className="loading loading-spinner loading-lg"></div>
             </div>
@@ -317,7 +294,6 @@ function BlogListContent() {
           )}
           </div>
         </main>
-        <AdminFooter />
       </div>
     </Suspense>
   );

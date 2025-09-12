@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminBlogService } from '@/db/services';
 import { validateMdxSource } from '@/lib/blog/mdx-validate';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 function ensureAdminEmail(email?: string | null) {
   if (!email) return false;
-  const allowedDomains = ['@mythoria.pt', '@caravanconcierge.com'];
-  return allowedDomains.some(d => email.endsWith(d));
+  return ALLOWED_DOMAINS.some(d => email.endsWith(d));
 }
 
 export async function GET(req: Request) {

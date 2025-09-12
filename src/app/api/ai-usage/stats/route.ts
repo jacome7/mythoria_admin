@@ -3,6 +3,7 @@ import { getWorkflowsDb } from '@/db';
 import { tokenUsageTracking } from '@/db/schema/workflows/token-usage';
 import { and, gte, lte, sql, desc } from 'drizzle-orm';
 import { auth } from '@/auth';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // Types for the API responses
 export interface TokenUsageStatsResponse {
@@ -79,8 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has access (domain validation)
-    const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-    const isAllowedDomain = allowedDomains.some(domain => 
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
 

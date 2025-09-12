@@ -1,13 +1,11 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDateTime } from '@/lib/date-utils';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface TicketMetadata {
   phone?: string; // For payment requests (MB Way)
@@ -55,7 +53,7 @@ interface TicketComment {
 }
 
 export default function TicketDetailPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
@@ -123,27 +121,10 @@ export default function TicketDetailPage() {
   }, [ticketId, router]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchTicket();
     }
-  }, [status, session, router, fetchTicket]);
+  }, [loading, session, fetchTicket]);
 
   const updateTicket = async (updates: Partial<Ticket>) => {
     if (!ticket) return;
@@ -331,24 +312,25 @@ export default function TicketDetailPage() {
     );
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-4">
           <div className="flex justify-center items-center min-h-[400px]">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   if (!ticket) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-4">
           <div className="text-center py-8">
             <h1 className="text-2xl font-bold mb-4">Ticket Not Found</h1>
@@ -357,14 +339,12 @@ export default function TicketDetailPage() {
             </Link>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       
       <main className="container mx-auto p-4">
         {/* Header */}
@@ -610,7 +590,6 @@ export default function TicketDetailPage() {
         </div>
       </main>
 
-      <AdminFooter />
     </div>
   );
 }

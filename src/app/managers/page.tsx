@@ -1,10 +1,7 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AdminHeader from '../../components/AdminHeader';
-import AdminFooter from '../../components/AdminFooter';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Manager {
   managerId: string;
@@ -24,8 +21,7 @@ interface ManagerFormData {
 }
 
 export default function ManagersPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { session, loading } = useAdminAuth();
   const [managers, setManagers] = useState<Manager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -59,29 +55,10 @@ export default function ManagersPage() {
   };
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch managers data if authorized
+    if (!loading && session?.user) {
       fetchManagers();
     }
-  }, [status, session, router]);
+  }, [loading, session]);
 
   const handleCreateNew = () => {
     setEditingManager(null);
@@ -166,23 +143,24 @@ export default function ManagersPage() {
     }
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
+  if (!session?.user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto px-4 py-8">
         <div className="bg-base-100 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
@@ -352,7 +330,6 @@ export default function ManagersPage() {
           </div>
         )}
       </main>
-      <AdminFooter />
     </div>
   );
 }

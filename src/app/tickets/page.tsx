@@ -1,13 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDate } from '@/lib/date-utils';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface Ticket {
   id: string;
@@ -34,8 +31,7 @@ interface TicketMetrics {
 }
 
 export default function TicketsPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { session, loading } = useAdminAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,34 +114,11 @@ export default function TicketsPage() {
   }, []);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchTickets();
       fetchMetrics();
     }
-  }, [status, session, router, fetchTickets, fetchMetrics]);
-
-  useEffect(() => {
-    if (session?.user) {
-      fetchTickets();
-    }
-  }, [fetchTickets, session?.user]);
+  }, [loading, session, fetchTickets, fetchMetrics]);
 
   const getPriorityBadgeClass = (priority: string) => {
     switch (priority) {
@@ -192,23 +165,24 @@ export default function TicketsPage() {
     }
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-4">
           <div className="flex justify-center items-center min-h-[400px]">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
+  if (!session?.user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       
       <main className="container mx-auto p-4">
         <div className="mb-4 md:mb-6">
@@ -388,7 +362,6 @@ export default function TicketsPage() {
         </div>
       </main>
 
-      <AdminFooter />
     </div>
   );
 }

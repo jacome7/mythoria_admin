@@ -1,10 +1,8 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminHeader from '@/components/AdminHeader';
-import AdminFooter from '@/components/AdminFooter';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface CreditPackage {
   id: string;
@@ -21,7 +19,7 @@ interface CreditPackage {
 }
 
 export default function EditCreditPackagePage({ params }: { params: Promise<{ id: string }> }) {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const resolvedParams = use(params);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,27 +56,10 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
   }, [resolvedParams.id, router]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
+    if (!loading && session?.user) {
       fetchCreditPackage();
     }
-  }, [status, session, router, fetchCreditPackage]);
+  }, [loading, session, fetchCreditPackage]);
 
   const calculateCostPerCredit = () => {
     if (formData.credits > 0 && formData.price && parseFloat(formData.price) > 0) {
@@ -147,37 +128,36 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
     router.push('/pricing');
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   if (!creditPackage) {
     return (
       <div className="min-h-screen bg-base-200">
-        <AdminHeader />
         <main className="container mx-auto p-6">
           <div className="alert alert-error">
             <span>Credit package not found</span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-200">
-      <AdminHeader />
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
@@ -359,7 +339,6 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
           </div>
         </div>
       </main>
-      <AdminFooter />
     </div>
   );
 }

@@ -1,11 +1,9 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import AdminHeader from '../../../components/AdminHeader';
-import AdminFooter from '../../../components/AdminFooter';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface User {
   authorId: string;
@@ -37,7 +35,7 @@ interface UserStoryRow {
 }
 
 export default function UserDetailPage() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useAdminAuth();
   const router = useRouter();
   const params = useParams();
   const userId = params?.id as string;
@@ -93,29 +91,10 @@ export default function UserDetailPage() {
   }, [userId]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session?.user) {
-      // Check if user has the required email domain
-      const allowedDomains = ["@mythoria.pt", "@caravanconcierge.com"];
-      const isAllowedDomain = allowedDomains.some(domain => 
-        session.user?.email?.endsWith(domain)
-      );
-
-      if (!isAllowedDomain) {
-        router.push('/auth/error');
-        return;
-      }
-
-      // Fetch user data
+    if (!loading && session?.user) {
       fetchUser();
     }
-  }, [status, session, router, userId, fetchUser]);
+  }, [loading, session, userId, fetchUser]);
 
   const fetchCreditHistory = async () => {
     try {
@@ -209,24 +188,25 @@ export default function UserDetailPage() {
     return amount > 0 ? 'text-green-600' : 'text-red-600';
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-base-100">
-        <AdminHeader />
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   if (!user) {
     return (
       <div className="min-h-screen bg-base-100">
-        <AdminHeader />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">User not found</h1>
@@ -235,14 +215,12 @@ export default function UserDetailPage() {
             </Link>
           </div>
         </main>
-        <AdminFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-base-100">
-      <AdminHeader />
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -491,7 +469,6 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      <AdminFooter />
     </div>
   );
 }
