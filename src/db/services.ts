@@ -1,10 +1,231 @@
 import { getMythoriaDb, getWorkflowsDb } from "./index";
-import { count, desc, eq, like, asc, sql, or, inArray } from "drizzle-orm";
+import { count, desc, eq, like, asc, sql, or, inArray, and } from "drizzle-orm";
 import { authors, stories, printRequests, creditLedger, authorCreditBalances, creditPackages, pricing } from "./schema";
+import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
 import { storyGenerationRuns, storyGenerationSteps } from "./schema/workflows";
 export { adminBlogService } from './services/blog';
 
 export const adminService = {
+  // ---------------------------------------------------------------------------
+  // Promotion Codes
+  // ---------------------------------------------------------------------------
+  async getPromotionCodes(
+    page: number = 1,
+    limit: number = 50,
+    searchTerm?: string,
+    typeFilter?: string,
+    activeFilter?: string,
+  ) {
+    const db = getMythoriaDb();
+    const offset = (page - 1) * limit;
+
+    // Build where conditions dynamically
+  type Condition = ReturnType<typeof like> | ReturnType<typeof eq>;
+  const conditions: Condition[] = [];
+    if (searchTerm && searchTerm.trim()) {
+      const pattern = `%${searchTerm.trim().toUpperCase()}%`;
+      conditions.push(like(sql`UPPER(${promotionCodes.code})`, pattern));
+    }
+    if (typeFilter && typeFilter !== 'all') {
+      conditions.push(eq(promotionCodes.type, typeFilter));
+    }
+    if (activeFilter === 'true') {
+      conditions.push(eq(promotionCodes.active, true));
+    } else if (activeFilter === 'false') {
+      conditions.push(eq(promotionCodes.active, false));
+    }
+
+    const whereClause: Condition | undefined = conditions.length
+      ? conditions.slice(1).reduce<Condition>((acc, cur) => and(acc, cur) as Condition, conditions[0])
+      : undefined;
+
+    // Total count (separate query for accurate pagination)
+    const totalCountResult = await db
+      .select({ value: count() })
+      .from(promotionCodes)
+      .where(whereClause ?? sql`true`);
+    const totalCount = totalCountResult[0]?.value || 0;
+
+    // Fetch base rows
+    const baseSelect = db.select().from(promotionCodes);
+    const rows = await (whereClause ? baseSelect.where(whereClause) : baseSelect)
+      .orderBy(desc(promotionCodes.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    if (rows.length === 0) {
+      return { data: [], pagination: { page, limit, totalCount, totalPages: 0, hasNext: false, hasPrev: page > 1 } };
+    }
+
+    // Get redemption counts in batch
+    const codeIds = rows.map(r => r.promotionCodeId);
+    const redemptionCounts = await db
+      .select({ promotionCodeId: promotionCodeRedemptions.promotionCodeId, value: count() })
+      .from(promotionCodeRedemptions)
+      .where(inArray(promotionCodeRedemptions.promotionCodeId, codeIds))
+      .groupBy(promotionCodeRedemptions.promotionCodeId);
+    const redemptionMap = new Map(redemptionCounts.map(rc => [rc.promotionCodeId, rc.value]));
+
+    const data = rows.map(r => {
+      const totalRedemptions = redemptionMap.get(r.promotionCodeId) || 0;
+      const remainingGlobal = r.maxGlobalRedemptions != null ? Math.max(r.maxGlobalRedemptions - totalRedemptions, 0) : null;
+      return {
+        ...r,
+        totalRedemptions,
+        remainingGlobal,
+      };
+    });
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: (offset + rows.length) < totalCount,
+        hasPrev: page > 1,
+      }
+    };
+  },
+
+  async getPromotionCodeById(promotionCodeId: string) {
+    const db = getMythoriaDb();
+    const [row] = await db.select().from(promotionCodes).where(eq(promotionCodes.promotionCodeId, promotionCodeId));
+    if (!row) return null;
+
+    const [aggregate] = await db
+      .select({
+        totalRedemptions: count(promotionCodeRedemptions.promotionCodeRedemptionId),
+      })
+      .from(promotionCodeRedemptions)
+      .where(eq(promotionCodeRedemptions.promotionCodeId, promotionCodeId));
+
+    const [uniqueUsersResult] = await db
+      .select({ value: count(sql`DISTINCT ${promotionCodeRedemptions.authorId}`) })
+      .from(promotionCodeRedemptions)
+      .where(eq(promotionCodeRedemptions.promotionCodeId, promotionCodeId));
+
+    const totalRedemptions = aggregate?.totalRedemptions || 0;
+    const uniqueUsers = uniqueUsersResult?.value || 0;
+    const remainingGlobal = row.maxGlobalRedemptions != null ? Math.max(row.maxGlobalRedemptions - totalRedemptions, 0) : null;
+
+    return {
+      ...row,
+      totalRedemptions,
+      uniqueUsers,
+      remainingGlobal,
+    };
+  },
+
+  async getPromotionCodeRedemptions(
+    promotionCodeId: string,
+    page: number = 1,
+    limit: number = 50,
+  ) {
+    const db = getMythoriaDb();
+    const offset = (page - 1) * limit;
+
+    const totalCountResult = await db
+      .select({ value: count() })
+      .from(promotionCodeRedemptions)
+      .where(eq(promotionCodeRedemptions.promotionCodeId, promotionCodeId));
+    const totalCount = totalCountResult[0]?.value || 0;
+
+    if (totalCount === 0) {
+      return { data: [], pagination: { page, limit, totalCount: 0, totalPages: 0, hasNext: false, hasPrev: page > 1 } };
+    }
+
+    const rows = await db
+      .select({
+        promotionCodeRedemptionId: promotionCodeRedemptions.promotionCodeRedemptionId,
+        promotionCodeId: promotionCodeRedemptions.promotionCodeId,
+        authorId: promotionCodeRedemptions.authorId,
+        creditsGranted: promotionCodeRedemptions.creditsGranted,
+        redeemedAt: promotionCodeRedemptions.redeemedAt,
+        authorDisplayName: authors.displayName,
+        authorEmail: authors.email,
+      })
+      .from(promotionCodeRedemptions)
+      .innerJoin(authors, eq(promotionCodeRedemptions.authorId, authors.authorId))
+      .where(eq(promotionCodeRedemptions.promotionCodeId, promotionCodeId))
+      .orderBy(desc(promotionCodeRedemptions.redeemedAt))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: (offset + rows.length) < totalCount,
+        hasPrev: page > 1,
+      }
+    };
+  },
+
+  async createPromotionCode(input: {
+    code: string;
+    type: string;
+    creditAmount: number;
+    maxGlobalRedemptions?: number | null;
+    maxRedemptionsPerUser?: number;
+    validFrom?: string | null;
+    validUntil?: string | null;
+    active?: boolean;
+  }) {
+    const db = getMythoriaDb();
+
+    // Normalize & validate
+    const code = input.code.trim().toUpperCase();
+    if (!/^[A-Z0-9-]{3,64}$/.test(code)) {
+      throw Object.assign(new Error('invalid_code_format'), { code: 'invalid_code_format' });
+    }
+    if (input.creditAmount <= 0) {
+      throw Object.assign(new Error('invalid_credit_amount'), { code: 'invalid_credit_amount' });
+    }
+    if (input.validFrom && input.validUntil) {
+      const from = new Date(input.validFrom); const until = new Date(input.validUntil);
+      if (from >= until) {
+        throw Object.assign(new Error('invalid_validity_window'), { code: 'invalid_validity_window' });
+      }
+    }
+
+    try {
+      const [created] = await db.insert(promotionCodes).values({
+        code,
+        type: input.type || 'partner',
+        creditAmount: input.creditAmount,
+        maxGlobalRedemptions: input.maxGlobalRedemptions ?? null,
+        maxRedemptionsPerUser: input.maxRedemptionsPerUser ?? 1,
+        validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
+        validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+        active: input.active ?? true,
+      }).returning();
+      return created;
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'message' in e) {
+        const msg = String((e as { message?: string }).message).toLowerCase();
+        if (msg.includes('duplicate') || msg.includes('unique')) {
+          throw Object.assign(new Error('code_exists'), { code: 'code_exists' });
+        }
+      }
+      throw e;
+    }
+  },
+
+  async togglePromotionCodeActive(promotionCodeId: string) {
+    const db = getMythoriaDb();
+    const [existing] = await db.select({ active: promotionCodes.active }).from(promotionCodes).where(eq(promotionCodes.promotionCodeId, promotionCodeId));
+    if (!existing) return null;
+    const [updated] = await db.update(promotionCodes)
+      .set({ active: !existing.active, updatedAt: new Date() })
+      .where(eq(promotionCodes.promotionCodeId, promotionCodeId))
+      .returning();
+    return updated;
+  },
   // KPI operations
   async getTotalAuthorsCount() {
     const db = getMythoriaDb();

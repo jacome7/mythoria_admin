@@ -9,13 +9,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check if user is authenticated and authorized
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has admin access
     const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
       session.user?.email?.endsWith(domain)
     );
@@ -26,10 +24,8 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    
-    const { amount, eventType } = body;
+    const { amount, eventType } = body as { amount: number; eventType: 'refund' | 'voucher' | 'promotion' };
 
-    // Validate input
     if (!amount || amount < 1 || amount > 200) {
       return NextResponse.json({ error: 'Amount must be between 1 and 200' }, { status: 400 });
     }
@@ -38,16 +34,12 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid event type' }, { status: 400 });
     }
 
-    // Check if user exists
-    const user = await adminService.getUserById(id);
+    const user = await adminService.getUserById(id) as { email: string; displayName: string; preferredLocale?: string; authorId: string } | undefined;
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Assign credits
     await adminService.assignCreditsToUser(id, amount, eventType);
-
-    // Get updated balance
     const newBalance = await adminService.getUserCreditBalance(id);
 
     let warning: string | undefined;
@@ -57,7 +49,7 @@ export async function POST(
         email: user.email,
         name: user.displayName,
         credits: amount,
-        preferredLocale: (user as any).preferredLocale,
+        preferredLocale: user.preferredLocale,
         authorId: user.authorId
       });
       if (!notifyResult.success) {

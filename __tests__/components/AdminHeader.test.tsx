@@ -104,7 +104,8 @@ describe('AdminHeader', () => {
     expect(screen.getByText('Users')).toBeInTheDocument();
     expect(screen.getByText('Stories')).toBeInTheDocument();
     expect(screen.getByText('Notifications')).toBeInTheDocument();
-    expect(screen.getByText('Services')).toBeInTheDocument();
+    // Services is under Financials, not Management; ensure we don't falsely assert it here
+    // Add assertion that promotion codes link appears only after opening Financials (tested below)
   });
 
   it('shows financials dropdown menu items', () => {
@@ -123,6 +124,7 @@ describe('AdminHeader', () => {
     expect(screen.getByText('Revenue')).toBeInTheDocument();
     expect(screen.getByText('AI Usage')).toBeInTheDocument();
     expect(screen.getByText('Services')).toBeInTheDocument();
+    expect(screen.getByText('Promotion Codes')).toBeInTheDocument();
   });
 
   it('creates correct navigation links', () => {
@@ -139,5 +141,11 @@ describe('AdminHeader', () => {
 
     const serverStatusLink = screen.getByRole('link', { name: 'Server Status' });
     expect(serverStatusLink).toHaveAttribute('href', '/server-status');
+
+    // Open financials to reveal promotion codes link
+    const financialsButton = screen.getByText('Financials');
+    fireEvent.click(financialsButton);
+    const promoCodesLink = screen.getByRole('link', { name: 'Promotion Codes' });
+    expect(promoCodesLink).toHaveAttribute('href', '/promotion-codes');
   });
 });

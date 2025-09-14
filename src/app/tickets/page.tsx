@@ -9,10 +9,9 @@ import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 interface Ticket {
   id: string;
   category: 'contact' | 'print_request' | 'payment_request' | 'other';
-  type: 'contact' | 'print_request' | 'buy_credits' | 'other';
+  type: 'contact' | 'print_request' | 'payment_request' | 'other';
   subject: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high'; // Removed 'urgent' - not supported by database
   description: string;
   customerEmail?: string;
   customerName?: string;
@@ -27,7 +26,6 @@ interface TicketMetrics {
   openTickets: number;
   inProgressTickets: number;
   resolvedTickets: number;
-  urgentTickets: number;
 }
 
 export default function TicketsPage() {
@@ -36,15 +34,14 @@ export default function TicketsPage() {
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
+  // Removed priority filter per requirements
   const [filterType, setFilterType] = useState<string>('all');
 
   const fetchTickets = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (filterStatus !== 'all') params.append('status', filterStatus);
-      if (filterPriority !== 'all') params.append('priority', filterPriority);
-      if (filterType !== 'all') params.append('category', filterType); // API uses 'category' not 'type'
+  if (filterType !== 'all') params.append('category', filterType); // API uses 'category'
 
       const response = await fetch(`/api/tickets?${params.toString()}`);
       if (response.ok) {
@@ -53,28 +50,26 @@ export default function TicketsPage() {
         
         // Transform API data to match frontend interface
         const transformedTickets = (apiData.data || []).map((ticket: {
-          id: number;
+          id: string;
           category: string;
           subject: string;
           status: string;
-          priority: string;
           description: string;
           metadata?: { email?: string; name?: string; [key: string]: unknown };
           createdAt: string;
           updatedAt: string;
         }) => ({
-          id: ticket.id, // Already a UUID string
-          type: ticket.category, // Map category to type
+          id: ticket.id,
+          type: ticket.category as Ticket['type'],
           subject: ticket.subject,
-          status: ticket.status,
-          priority: ticket.priority,
+          status: ticket.status as Ticket['status'],
           description: ticket.description,
           customerEmail: ticket.metadata?.email,
           customerName: ticket.metadata?.name,
           metadata: ticket.metadata,
           createdAt: ticket.createdAt,
           updatedAt: ticket.updatedAt,
-          commentCount: 0 // Default value since API doesn't provide this
+          commentCount: 0
         }));
         
         console.log('Transformed Tickets:', transformedTickets); // Debug log
@@ -87,7 +82,7 @@ export default function TicketsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterStatus, filterPriority, filterType]);
+  }, [filterStatus, filterType]);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -96,13 +91,12 @@ export default function TicketsPage() {
         const apiMetrics = await response.json();
         console.log('API Metrics Response:', apiMetrics); // Debug log
         
-        // Transform API metrics to match frontend interface
-        const transformedMetrics = {
-          totalTickets: apiMetrics.total || 0,
-          openTickets: apiMetrics.open || 0,
-          inProgressTickets: apiMetrics.inProgress || 0,
-          resolvedTickets: apiMetrics.resolved || 0,
-          urgentTickets: 0 // Database doesn't support urgent, so always 0
+        // Transform API metrics to match updated frontend interface (no urgent card)
+        const transformedMetrics: TicketMetrics = {
+          totalTickets: apiMetrics.totalTickets || apiMetrics.total || 0,
+          openTickets: apiMetrics.openTickets || apiMetrics.open || 0,
+          inProgressTickets: apiMetrics.inProgressTickets || apiMetrics.inProgress || 0,
+          resolvedTickets: apiMetrics.resolvedTickets || apiMetrics.resolved || 0,
         };
         
         console.log('Transformed Metrics:', transformedMetrics); // Debug log
@@ -120,14 +114,7 @@ export default function TicketsPage() {
     }
   }, [loading, session, fetchTickets, fetchMetrics]);
 
-  const getPriorityBadgeClass = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'badge-warning';
-      case 'medium': return 'badge-info';
-      case 'low': return 'badge-ghost';
-      default: return 'badge-ghost';
-    }
-  };
+  // Priority removed from UI
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -143,7 +130,7 @@ export default function TicketsPage() {
     switch (type) {
       case 'contact': return 'badge-primary';
       case 'print_request': return 'badge-secondary';
-      case 'buy_credits': return 'badge-accent';
+      case 'payment_request': return 'badge-accent';
       default: return 'badge-ghost';
     }
   };
@@ -152,7 +139,7 @@ export default function TicketsPage() {
     switch (type) {
       case 'contact': return 'Contact Us';
       case 'print_request': return 'Print Request';
-      case 'buy_credits': return 'Buy Credits';
+      case 'payment_request': return 'Payment Request';
       case 'other': return 'Other';
       default: return type;
     }
@@ -192,7 +179,7 @@ export default function TicketsPage() {
 
         {/* Metrics Cards */}
         {metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
             <div className="stat bg-base-100 rounded-lg">
               <div className="stat-title">Total Tickets</div>
               <div className="stat-value text-2xl">{metrics.totalTickets}</div>
@@ -208,10 +195,6 @@ export default function TicketsPage() {
             <div className="stat bg-base-100 rounded-lg">
               <div className="stat-title">Resolved</div>
               <div className="stat-value text-2xl text-success">{metrics.resolvedTickets}</div>
-            </div>
-            <div className="stat bg-base-100 rounded-lg">
-              <div className="stat-title">Urgent</div>
-              <div className="stat-value text-2xl text-error">{metrics.urgentTickets}</div>
             </div>
           </div>
         )}
@@ -238,23 +221,7 @@ export default function TicketsPage() {
                 </select>
               </div>
               
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Priority</span>
-                </label>
-                <select 
-                  className="select select-bordered"
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                >
-                  <option value="all">All Priorities</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
-
-              <div className="form-control">
+        <div className="form-control">
                 <label className="label">
                   <span className="label-text">Type</span>
                 </label>
@@ -266,7 +233,7 @@ export default function TicketsPage() {
                   <option value="all">All Types</option>
                   <option value="contact">Contact Us</option>
                   <option value="print_request">Print Request</option>
-                  <option value="buy_credits">Buy Credits</option>
+          <option value="payment_request">Payment Request</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -294,15 +261,18 @@ export default function TicketsPage() {
                       <th>Subject</th>
                       <th>Type</th>
                       <th>Status</th>
-                      <th>Priority</th>
                       <th>Customer</th>
                       <th>Created</th>
-                      <th>Actions</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {tickets.map((ticket) => (
-                      <tr key={ticket.id}>
+                      <tr
+                        key={ticket.id}
+                        className="cursor-pointer hover"
+                        onClick={() => { window.location.href = `/tickets/${ticket.id}`; }}
+                      >
                         <td className="font-mono text-sm">
                           {getFormattedTicketNumber(ticket.id)}
                         </td>
@@ -325,16 +295,12 @@ export default function TicketsPage() {
                           </span>
                         </td>
                         <td>
-                          <span className={`badge ${getPriorityBadgeClass(ticket.priority)}`}>
-                            {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                          </span>
-                        </td>
-                        <td>
-                          {ticket.customerName && (
+                          {ticket.customerName ? (
                             <div className="font-medium">{ticket.customerName}</div>
-                          )}
-                          {ticket.customerEmail && (
-                            <div className="text-sm text-base-content/70">{ticket.customerEmail}</div>
+                          ) : ticket.customerEmail ? (
+                            <div className="font-medium">{ticket.customerEmail}</div>
+                          ) : (
+                            <span className="text-base-content/50">N/A</span>
                           )}
                         </td>
                         <td className="text-sm">
@@ -344,12 +310,13 @@ export default function TicketsPage() {
                             {new Date(ticket.createdAt).toLocaleTimeString()}
                           </span>
                         </td>
-                        <td>
-                          <Link 
+                        <td className="text-right">
+                          <Link
                             href={`/tickets/${ticket.id}`}
-                            className="btn btn-sm btn-primary"
+                            onClick={(e) => e.stopPropagation()}
+                            className="btn btn-xs btn-outline"
                           >
-                            View
+                            Open
                           </Link>
                         </td>
                       </tr>

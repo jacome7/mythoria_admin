@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, timestamp, jsonb, index, text } from "drizzle-orm/pg-core";
 import { sql } from 'drizzle-orm';
-import { addressTypeEnum, genderEnum, literaryAgeEnum, primaryGoalEnum, audienceForStoriesEnum } from './enums';
+import { addressTypeEnum, genderEnum, literaryAgeEnum, primaryGoalEnum, audienceForStoriesEnum, notificationPreferenceEnum } from './enums';
 
 // -----------------------------------------------------------------------------
 // Authors domain
@@ -25,6 +25,8 @@ export const authors = pgTable("authors", {
   audiences: audienceForStoriesEnum('audiences').array().default(sql`'{}'::audience_for_stories[]`),
   // Controlled vocabulary list of interests
   interests: text('interests').array().default(sql`'{}'::text[]`),
+  // Notification preference (enum) - defaults to inspiration (balanced helpful content)
+  notificationPreference: notificationPreferenceEnum('notification_preference').notNull().default('inspiration'),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   // Indexes for performance optimization - unique constraints already create indexes

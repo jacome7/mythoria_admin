@@ -220,6 +220,11 @@ export default function AdminHeader() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/promotion-codes" onClick={closeDropdown}>
+                    Promotion Codes
+                  </Link>
+                </li>
+                <li>
                   <Link href="/services" onClick={closeDropdown}>
                     Services
                   </Link>
@@ -337,6 +342,7 @@ export default function AdminHeader() {
                     <li><Link href="/revenue" onClick={closeDrawer}>Revenue</Link></li>
                     <li><Link href="/ai-usage" onClick={closeDrawer}>AI Usage</Link></li>
                     <li><Link href="/pricing" onClick={closeDrawer}>Pricing</Link></li>
+                    <li><Link href="/promotion-codes" onClick={closeDrawer}>Promotion Codes</Link></li>
                     <li><Link href="/services" onClick={closeDrawer}>Services</Link></li>
                   </ul>
                 )}

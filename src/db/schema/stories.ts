@@ -20,7 +20,8 @@ export const stories = pgTable("stories", {
   targetAudience: targetAudienceEnum("target_audience"),
   novelStyle: novelStyleEnum("novel_style"),
   graphicalStyle: graphicalStyleEnum("graphical_style"),
-  status: storyStatusEnum("status").default('draft'),  features: jsonb("features"), // {"ebook":true,"printed":false,"audiobook":true}
+  status: storyStatusEnum("status").default('draft'),
+  features: jsonb("features"), // {"ebook":true,"printed":false,"audiobook":true}
   deliveryAddress: jsonb("delivery_address"), // Delivery address for printed books
   customAuthor: text("custom_author"), // Custom author name(s) for the story
   dedicationMessage: text("dedication_message"), // Personalized dedication message

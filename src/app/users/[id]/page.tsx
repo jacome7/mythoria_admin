@@ -54,27 +54,6 @@ export default function UserDetailPage() {
   const [assignAmount, setAssignAmount] = useState<number>(1);
   const [assignEventType, setAssignEventType] = useState<'refund' | 'voucher' | 'promotion'>('voucher');
 
-  const fetchUser = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/admin/users/${userId}`);
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-  // After user loads, fetch stories
-  fetchStories();
-      } else if (response.status === 404) {
-        router.push('/users');
-      } else {
-        console.error('Failed to fetch user');
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, router]);
-
   const fetchStories = useCallback(async () => {
     try {
       setIsStoriesLoading(true);
@@ -89,6 +68,27 @@ export default function UserDetailPage() {
       setIsStoriesLoading(false);
     }
   }, [userId]);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/admin/users/${userId}`);
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        // After user loads, fetch stories
+        await fetchStories();
+      } else if (response.status === 404) {
+        router.push('/users');
+      } else {
+        console.error('Failed to fetch user');
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId, router, fetchStories]);
 
   useEffect(() => {
     if (!loading && session?.user) {
