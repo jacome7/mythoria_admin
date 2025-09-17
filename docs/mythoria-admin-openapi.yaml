@@ -1,0 +1,3678 @@
+openapi: 3.1.0
+info:
+  title: Mythoria Admin API
+  version: "0.2.0"
+  summary: Admin and backoffice operations for the Mythoria storytelling platform.
+  description: |
+    Design-first specification generated from the current Next.js App Router handlers and supporting services.
+    All endpoints live under `/api`. Unless noted otherwise, responses are JSON encoded in UTF-8.
+servers:
+  - url: https://admin.mythoria.pt
+    description: Production
+  - url: http://localhost:3001
+    description: Local development
+security:
+  - AdminSession: []
+tags:
+  - name: Health
+    description: Runtime diagnostics and readiness probes.
+  - name: Diagnostics
+    description: Debug helpers intended for operations staff.
+  - name: Notifications
+    description: Admin tooling for notification channels, templates, and automation rules.
+  - name: AI Usage
+    description: Token consumption insights for AI-powered workflows.
+  - name: Credits
+    description: Credit package catalogue and manual adjustments.
+  - name: Pricing Services
+    description: Service-to-credit conversion catalogue management.
+  - name: Tickets
+    description: Customer support ticketing utilities.
+  - name: Admin Users
+    description: User roster, balances, and manual credit adjustments.
+  - name: Admin Stories
+    description: Editorial workflows for generated stories.
+  - name: Admin Blog
+    description: Admin-managed content for Mythoria updates and marketing.
+  - name: Promotion Codes
+    description: Voucher and promotion code lifecycle.
+  - name: Print Requests
+    description: Physical book production requests.
+  - name: Workflows
+    description: Story generation workflow telemetry.
+  - name: Notifications Debug
+    description: Low-level notification operations (mock implementations).
+  - name: Stories
+    description: Story-level operations exposed outside the admin namespace.
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Check infrastructure health
+      description: Returns aggregated status for database connections, outbound network reachability, and auth configuration. Optional debugging metadata is included when the `debug` query parameter is truthy.
+      security: []
+      parameters:
+        - name: debug
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: When true, include extended diagnostics such as connection type and environment metadata.
+      responses:
+        '200':
+          description: Health metrics collected successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                healthy:
+                  summary: All dependencies reachable
+                  value:
+                    status: healthy
+                    timestamp: 2025-01-15T10:00:00.000Z
+                    databases:
+                      mythoria:
+                        status: connected
+                      workflows:
+                        status: connected
+                      backoffice:
+                        status: connected
+                    network:
+                      status: connected
+                      publicDomain: https://www.google.com
+                    auth:
+                      googleClientId: configured
+                      googleClientSecret: configured
+                      authSecret: configured
+                      nextAuthUrl: https://admin.mythoria.pt
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/server-status:
+    get:
+      tags: [Health]
+      summary: Check downstream service health endpoints
+      description: Probes configured services and aggregates their reported status codes and payloads.
+      security: []
+      parameters:
+        - name: service
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Known service identifier (e.g., `mythoria-webapp`, `notification-engine`).
+      responses:
+        '200':
+          description: Service status snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/ping:
+    get:
+      tags: [Diagnostics]
+      summary: Ping with API key authentication
+      description: Validates bearer API keys for service-to-service calls.
+      security:
+        - BearerApiKey: []
+      responses:
+        '200':
+          description: API key accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingSuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Diagnostics]
+      summary: Echo request payload for integration tests
+      description: Requires the same bearer API key as the `GET` variant and echoes any JSON payload submitted.
+      security:
+        - BearerApiKey: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            example:
+              requestId: integration-test
+              payload:
+                message: Hello from Mythoria WebApp
+      responses:
+        '200':
+          description: API key accepted and payload echoed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingPostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/debug/auth:
+    get:
+      tags: [Diagnostics]
+      summary: Inspect deployed auth configuration
+      description: Returns a redacted view of environment configuration and inbound headers for troubleshooting OAuth callbacks.
+      security: []
+      responses:
+        '200':
+          description: Debug snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthDebugResponse'
+  /api/debug/workflows-db:
+    get:
+      tags: [Diagnostics]
+      summary: Sanity check the workflows database connection
+      description: Performs a count query against the `token_usage_tracking` table to ensure connectivity.
+      security: []
+      responses:
+        '200':
+          description: Workflows database reachable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowsDbCheck'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/ai-usage/records:
+    get:
+      tags: [AI Usage]
+      summary: List token usage records
+      description: Returns paginated token usage entries filtered by time period, model, action, or search keywords.
+      parameters:
+        - $ref: '#/components/parameters/PeriodParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Case-insensitive filter applied to model, action, author, or story identifiers.
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, aiModel, action, inputTokens, outputTokens, estimatedCostInEuros]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: model
+          in: query
+          schema:
+            type: string
+          description: Exact match on `aiModel`.
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum:
+              - story_structure
+              - story_outline
+              - chapter_writing
+              - image_generation
+              - story_review
+              - character_generation
+              - story_enhancement
+              - audio_generation
+              - content_validation
+              - image_edit
+              - test
+        
+      responses:
+        '200':
+          description: Token usage records returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenUsageListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/ai-usage/stats:
+    get:
+      tags: [AI Usage]
+      summary: Aggregate token usage analytics
+      description: Summarizes cost and token consumption by model, action, and day for the requested lookback window.
+      parameters:
+        - $ref: '#/components/parameters/PeriodParam'
+      responses:
+        '200':
+          description: Aggregated analytics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenUsageStatsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/notifications/channels:
+    get:
+      tags: [Notifications]
+      summary: List notification delivery channels
+      description: Currently backed by mock data until persistence is implemented.
+      responses:
+        '200':
+          description: Channel definitions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationChannel'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Notifications]
+      summary: Create a notification channel (mock)
+      description: Persists to in-memory mocks and logs the payload for future implementation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationChannelInput'
+      responses:
+        '201':
+          description: Channel created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/NotificationChannel'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/notifications/templates:
+    get:
+      tags: [Notifications]
+      summary: List notification templates (mock)
+      responses:
+        '200':
+          description: Templates in the mock catalogue.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationTemplate'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+ef: '#/components/responses/InternalError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Notifications]
+      summary: Create a notification template (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationTemplateInput'
+      responses:
+        '201':
+          description: Template created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/NotificationTemplate'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/notifications/rules:
+    get:
+      tags: [Notifications]
+      summary: List notification automation rules (mock)
+      responses:
+        '200':
+          description: Automation rules.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationRule'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Notifications]
+      summary: Create a notification automation rule (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRuleInput'
+      responses:
+        '201':
+          description: Rule created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/NotificationRule'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/notifications/rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Rule identifier.
+    get:
+      tags: [Notifications]
+      summary: Retrieve a notification rule (mock)
+      responses:
+        '200':
+          description: Rule details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/NotificationRule'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Notifications]
+      summary: Update a notification rule (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRuleInput'
+      responses:
+        '200':
+          description: Updated rule.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/NotificationRule'
+                required: [success, data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Notifications]
+      summary: Delete a notification rule (mock)
+      responses:
+        '200':
+          description: Rule removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  message:
+                    type: string
+                required: [success]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/credit-packages:
+    get:
+      tags: [Credits]
+      summary: List credit packages
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+          description: Page size.
+      responses:
+        '200':
+          description: Credit packages and pagination hints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditPackageListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Credits]
+      summary: Create a credit package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditPackageInput'
+      responses:
+        '201':
+          description: Newly created credit package.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditPackage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/credit-packages/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CreditPackageIdPath'
+    get:
+      tags: [Credits]
+      summary: Get a credit package by identifier
+      responses:
+        '200':
+          description: Credit package detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditPackage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Credits]
+      summary: Update a credit package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditPackageUpdate'
+      responses:
+        '200':
+          description: Updated credit package.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditPackage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Credits]
+      summary: Delete a credit package
+      responses:
+        '200':
+          description: Package removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                required: [success]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/credit-packages/{id}/toggle:
+    parameters:
+      - $ref: '#/components/parameters/CreditPackageIdPath'
+    post:
+      tags: [Credits]
+      summary: Toggle credit package active flag
+      responses:
+        '200':
+          description: Toggled package.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditPackage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/services:
+    get:
+      tags: [Pricing Services]
+      summary: List pricing services
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [serviceCode, credits, isActive, createdAt]
+            default: serviceCode
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Pricing services overview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingServiceListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Pricing Services]
+      summary: Create a pricing service entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricingServiceInput'
+      responses:
+        '201':
+          description: Newly created pricing service.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingService'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/services/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Pricing Services]
+      summary: Fetch a pricing service by id
+      responses:
+        '200':
+          description: Pricing service detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingService'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Pricing Services]
+      summary: Update pricing service credits or activation state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricingServiceUpdate'
+      responses:
+        '200':
+          description: Updated pricing service.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingService'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/tickets:
+    get:
+      tags: [Tickets]
+      summary: Query support tickets
+      security:
+        - AdminSession: []
+        - AdminApiKey: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            description: Comma separated list of statuses (open,in_progress,resolved,closed).
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket slice with pagination metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Tickets]
+      summary: Create a ticket
+      security:
+        - AdminSession: []
+        - AdminApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+      responses:
+        '201':
+          description: Newly created ticket.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/tickets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Tickets]
+      summary: Get ticket with comments
+      responses:
+        '200':
+          description: Ticket detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Tickets]
+      summary: Update ticket status or priority
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdateRequest'
+      responses:
+        '200':
+          description: Updated ticket detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/tickets/{id}/comments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Tickets]
+      summary: Add a ticket comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCommentCreateRequest'
+      responses:
+        '201':
+          description: Comment persisted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketComment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/tickets/metrics:
+    get:
+      tags: [Tickets]
+      summary: Ticket metrics for dashboards
+      responses:
+        '200':
+          description: Ticket KPIs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/kpis:
+    get:
+      tags: [Admin Users]
+      summary: Get high-level KPIs
+      responses:
+        '200':
+          description: Users, stories, and open tickets metrics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminKpiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/managers:
+    get:
+      tags: [Admin Users]
+      summary: List admin managers
+      responses:
+        '200':
+          description: Managers from the backoffice database.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Manager'
+                  count:
+                    type: integer
+                required: [data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Admin Users]
+      summary: Create a manager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerInput'
+      responses:
+        '201':
+          description: Created manager.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manager'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/managers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin Users]
+      summary: Get manager by id
+      responses:
+        '200':
+          description: Manager record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manager'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Admin Users]
+      summary: Update a manager record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerInput'
+      responses:
+        '200':
+          description: Updated manager.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manager'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Admin Users]
+      summary: Delete a manager
+      responses:
+        '200':
+          description: Deletion confirmed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required: [message]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/users:
+    get:
+      tags: [Admin Users]
+      summary: List users
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [displayName, email, createdAt]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: User roster slice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin Users]
+      summary: Get user details and balance
+      responses:
+        '200':
+          description: User profile with credit balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/users/{id}/credits:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin Users]
+      summary: Get user credit history
+      responses:
+        '200':
+          description: Credit ledger entries and current balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreditHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/users/{id}/assign-credits:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Admin Users]
+      summary: Grant manual credits to a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignCreditsRequest'
+      responses:
+        '200':
+          description: Balance adjustment confirmation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignCreditsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/users/{id}/stories:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin Stories]
+      summary: List stories authored by a user
+      responses:
+        '200':
+          description: Story summaries for the author.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StorySummary'
+                required: [data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/blog:
+    get:
+      tags: [Admin Blog]
+      summary: List blog posts with filters
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, scheduled, published]
+        - name: locale
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Blog list with pagination context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Admin Blog]
+      summary: Create a blog post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogCreateRequest'
+      responses:
+        '200':
+          description: Blog post created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/blog/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Admin Blog]
+      summary: Get blog post by id
+      responses:
+        '200':
+          description: Blog detail including translations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlogPost'
+                required: [data]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Admin Blog]
+      summary: Update a blog post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogUpdateRequest'
+      responses:
+        '200':
+          description: Updated blog post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Admin Blog]
+      summary: Delete a blog post
+      responses:
+        '200':
+          description: Post deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                required: [success]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/blog/{id}/publish:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Admin Blog]
+      summary: Publish a blog post
+      responses:
+        '200':
+          description: Publish transition applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlogPost'
+                required: [data]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/blog/mdx/preview:
+    post:
+      tags: [Admin Blog]
+      summary: Render MDX snippet to HTML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MdxPreviewRequest'
+      responses:
+        '200':
+          description: Rendered HTML.
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/stories:
+    get:
+      tags: [Admin Stories]
+      summary: List stories with filters
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: featured
+          in: query
+          schema:
+            type: string
+            enum: [featured, not_featured, all]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [title, createdAt, status]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Story summaries with author context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/stories/{storyId}:
+    parameters:
+      - name: storyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin Stories]
+      summary: Get story with author info
+      responses:
+        '200':
+          description: Story detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Admin Stories]
+      summary: Update story metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryUpdateRequest'
+      responses:
+        '200':
+          description: Updated story.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/stories/{storyId}/feature:
+    parameters:
+      - name: storyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [Admin Stories]
+      summary: Feature or unfeature a story
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryFeatureRequest'
+      responses:
+        '200':
+          description: Story feature state updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/stories/{storyId}/restart:
+    parameters:
+      - name: storyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Admin Stories]
+      summary: Restart story generation workflow
+      responses:
+        '200':
+          description: Workflow restart issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryRestartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/stories/{storyId}/chapters:
+    parameters:
+      - name: storyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Admin Stories]
+      summary: Get latest version of each chapter for a story
+      responses:
+        '200':
+          description: Story metadata and chapter list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryChaptersResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/stories/{storyId}/chapters/{chapterNumber}:
+    parameters:
+      - name: storyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: chapterNumber
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      tags: [Admin Stories]
+      summary: Get chapter detail with navigation context
+      responses:
+        '200':
+          description: Chapter content, story metadata, and available chapters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryChapterDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/print-requests:
+    get:
+      tags: [Print Requests]
+      summary: List print requests
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [requestedAt, status]
+            default: requestedAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Print requests with pagination hints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/promotion-codes:
+    get:
+      tags: [Promotion Codes]
+      summary: List promotion codes
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [partner, referral, book_qr]
+        - name: active
+          in: query
+          schema:
+            type: string
+            enum: [true, false]
+      responses:
+        '200':
+          description: Promotion codes with pagination info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionCodeListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Promotion Codes]
+      summary: Create a promotion code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionCodeCreateRequest'
+      responses:
+        '201':
+          description: Promotion code created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionCode'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/promotion-codes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Promotion Codes]
+      summary: Get promotion code detail
+      responses:
+        '200':
+          description: Promotion code with aggregates.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  promotionCode:
+                    $ref: '#/components/schemas/PromotionCodeDetail'
+                required: [promotionCode]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/promotion-codes/{id}/toggle:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Promotion Codes]
+      summary: Toggle promotion code active flag
+      responses:
+        '200':
+          description: Updated promotion code state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  promotionCode:
+                    $ref: '#/components/schemas/PromotionCode'
+                required: [promotionCode]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/promotion-codes/{id}/redemptions:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/PageParam'
+    get:
+      tags: [Promotion Codes]
+      summary: List redemptions for a promotion code
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Redemption entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionCodeRedemptionList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/workflows:
+    get:
+      tags: [Workflows]
+      summary: Admin workflow status utilities
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [status, health]
+            description: Selects the diagnostic action.
+      responses:
+        '200':
+          description: Workflow diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWorkflowStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Workflows]
+      summary: Admin workflow synchronization actions
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [sync-all, cleanup-stale]
+      responses:
+        '200':
+          description: Synchronization results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWorkflowSyncResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/workflows/{runId}:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Workflows]
+      summary: Inspect a workflow run
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [status, logs]
+      responses:
+        '200':
+          description: Workflow run status or logs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWorkflowRunResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Workflows]
+      summary: Synchronize or mark workflow run
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [sync, mark-failed]
+      responses:
+        '200':
+          description: Workflow run updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWorkflowRunSyncResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/workflows:
+    get:
+      tags: [Workflows]
+      summary: List workflow runs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, running, failed, completed, cancelled]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, startedAt, endedAt]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Workflow runs with pagination data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/workflows/{runId}:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Workflows]
+      summary: Get workflow run with steps
+      responses:
+        '200':
+          description: Workflow run detail and steps.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/workflows/{runId}/retry:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Workflows]
+      summary: Retry a failed workflow run
+      responses:
+        '200':
+          description: Retry accepted with new run id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRetryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/stories/{storyId}/generate-pdfs:
+    parameters:
+      - name: storyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Stories]
+      summary: Trigger PDF generation via Pub/Sub
+      responses:
+        '200':
+          description: PDF generation request published.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryPdfTriggerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    AdminSession:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: NextAuth.js session cookie established after Google OAuth sign-in.
+    AdminApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Service-to-service API key matching `ADMIN_API_KEY`.
+    BearerApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: Bearer token carrying the same `ADMIN_API_KEY` value.
+  parameters:
+    PeriodParam:
+      name: period
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [1d, 7d, 30d, 90d]
+        default: 30d
+      description: Rolling time window to aggregate results.
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 1-indexed page number.
+    PageSizeParam:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+      description: Number of records per page for AI usage endpoints.
+    CreditPackageIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Credit package identifier.
+  responses:
+    BadRequest:
+      description: The request payload failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid:
+              value:
+                error: Bad Request
+                message: Input validation failed.
+    Unauthorized:
+      description: Authentication required or token invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing:
+              value:
+                error: Unauthorized
+                message: Authentication required
+    Forbidden:
+      description: Authenticated caller lacks required domain or permissions.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              value:
+                error: Forbidden
+                message: Insufficient permissions
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing:
+              value:
+                error: Not Found
+                message: Resource does not exist
+    Conflict:
+      description: Resource already exists or violates uniqueness.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            conflict:
+              value:
+                error: Conflict
+                message: Value already exists
+    InternalError:
+      description: Unhandled server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            crash:
+              value:
+                error: Internal Server Error
+                message: Unexpected failure
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+      required: [error]
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        databases:
+          type: object
+          properties:
+            mythoria:
+              $ref: '#/components/schemas/DatabaseStatus'
+            workflows:
+              $ref: '#/components/schemas/DatabaseStatus'
+            backoffice:
+              $ref: '#/components/schemas/DatabaseStatus'
+        network:
+          $ref: '#/components/schemas/NetworkStatus'
+        auth:
+          type: object
+          properties:
+            googleClientId:
+              type: string
+              enum: [configured, missing]
+            googleClientSecret:
+              type: string
+              enum: [configured, missing]
+            authSecret:
+              type: string
+              enum: [configured, missing]
+            nextAuthUrl:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+        debug:
+          type: object
+          additionalProperties: true
+      required: [status, databases, network, auth, timestamp]
+    DatabaseStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [connected, disconnected]
+        error:
+          type: string
+      required: [status]
+    NetworkStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [connected, disconnected]
+        publicDomain:
+          type: string
+          format: uri
+        error:
+          type: string
+      required: [status]
+    ServerStatusResponse:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceStatus'
+        timestamp:
+          type: string
+          format: date-time
+        totalServices:
+          type: integer
+        healthyServices:
+          type: integer
+      required: [services, timestamp]
+    ServiceStatus:
+      type: object
+      properties:
+        service:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+          enum: [healthy, unhealthy, unknown]
+        url:
+          type: string
+          format: uri
+        healthEndpoint:
+          type: string
+          format: uri
+        responseTime:
+          type: integer
+          description: Milliseconds elapsed.
+        lastChecked:
+          type: string
+          format: date-time
+        error:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    PingSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        permissions:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+      required: [success, message, timestamp]
+    PingPostResponse:
+      allOf:
+        - $ref: '#/components/schemas/PingSuccessResponse'
+        - type: object
+          properties:
+            receivedData:
+              type: object
+              additionalProperties: true
+    AuthDebugResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        environmentVariables:
+          type: object
+          additionalProperties: true
+        url:
+          type: string
+        headers:
+          type: object
+          additionalProperties: true
+      required: [message, environmentVariables]
+    WorkflowsDbCheck:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            totalRecords:
+              type: integer
+            latestRecord:
+              type: string
+      required: [status, message]
+    TokenUsageRecord:
+      type: object
+      properties:
+        tokenUsageId:
+          type: string
+        authorId:
+          type: string
+        storyId:
+          type: string
+        action:
+          type: string
+        aiModel:
+          type: string
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        totalTokens:
+          type: integer
+        estimatedCostInEuros:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [tokenUsageId, action, aiModel, inputTokens, outputTokens, estimatedCostInEuros, createdAt]
+    TokenUsageListResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenUsageRecord'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required: [records, total, page, pageSize, totalPages]
+    TokenUsageStatsResponse:
+      type: object
+      properties:
+        totalCost:
+          type: number
+        totalTokens:
+          type: integer
+        totalRequests:
+          type: integer
+        averageCostPerRequest:
+          type: number
+        modelBreakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelUsage'
+        actionBreakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionUsage'
+        dailyUsage:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyUsage'
+        topModels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelUsage'
+      required: [totalCost, totalTokens, totalRequests, modelBreakdown, actionBreakdown, dailyUsage]
+    ModelUsage:
+      type: object
+      properties:
+        model:
+          type: string
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        totalTokens:
+          type: integer
+        totalCost:
+          type: number
+        requests:
+          type: integer
+        averageCostPerRequest:
+          type: number
+    ActionUsage:
+      type: object
+      properties:
+        action:
+          type: string
+        totalCost:
+          type: number
+        requests:
+          type: integer
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        uniqueStories:
+          type: integer
+        averageCostPerRequest:
+          type: number
+        averageCostPerStory:
+          type: number
+    DailyUsage:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        totalCost:
+          type: number
+        requests:
+          type: integer
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        totalTokens:
+          type: integer
+    NotificationChannel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, push, webhook]
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, type, enabled, config]
+    NotificationChannelInput:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, push, webhook]
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+      required: [name, type]
+    NotificationTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, push]
+        language:
+          type: string
+        eventType:
+          type: string
+        subject:
+          type: string
+        htmlContent:
+          type: string
+        textContent:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, type, language, eventType, variables, enabled]
+    NotificationTemplateInput:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, push]
+        language:
+          type: string
+        eventType:
+          type: string
+        subject:
+          type: string
+        htmlContent:
+          type: string
+        textContent:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+      required: [name, type, eventType]
+    NotificationRule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        eventType:
+          type: string
+        channels:
+          type: array
+          items:
+            type: string
+        templateId:
+          type: string
+        enabled:
+          type: boolean
+        conditions:
+          type: object
+          additionalProperties: true
+        recipients:
+          $ref: '#/components/schemas/NotificationRecipientSettings'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, eventType, channels, templateId, enabled]
+    NotificationRuleInput:
+      type: object
+      properties:
+        name:
+          type: string
+        eventType:
+          type: string
+        channels:
+          type: array
+          items:
+            type: string
+        templateId:
+          type: string
+        enabled:
+          type: boolean
+        conditions:
+          type: object
+          additionalProperties: true
+        recipients:
+          $ref: '#/components/schemas/NotificationRecipientSettings'
+      required: [name, eventType, templateId]
+    NotificationRecipientSettings:
+      type: object
+      properties:
+        includeAdmins:
+          type: boolean
+        includeCustomers:
+          type: boolean
+        customEmails:
+          type: array
+          items:
+            type: string
+      required: [includeAdmins, includeCustomers, customEmails]
+    CreditPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        credits:
+          type: integer
+        price:
+          type: string
+        popular:
+          type: boolean
+        bestValue:
+          type: boolean
+        icon:
+          type: string
+        key:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, credits, price, key, isActive]
+    CreditPackageInput:
+      type: object
+      properties:
+        credits:
+          type: integer
+        price:
+          type: string
+        popular:
+          type: boolean
+        bestValue:
+          type: boolean
+        icon:
+          type: string
+        key:
+          type: string
+        isActive:
+          type: boolean
+      required: [credits, price, key]
+    CreditPackageUpdate:
+      allOf:
+        - $ref: '#/components/schemas/CreditPackageInput'
+    CreditPackageListResponse:
+      type: object
+      properties:
+        creditPackages:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditPackage'
+        pagination:
+          $ref: '#/components/schemas/SimplePagination'
+      required: [creditPackages, pagination]
+    SimplePagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        hasMore:
+          type: boolean
+        hasPrev:
+          type: boolean
+      required: [page, limit]
+    PricingService:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serviceCode:
+          type: string
+        credits:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, serviceCode, credits, isActive]
+    PricingServiceInput:
+      type: object
+      properties:
+        serviceCode:
+          type: string
+        credits:
+          type: integer
+        isActive:
+          type: boolean
+      required: [serviceCode, credits, isActive]
+    PricingServiceUpdate:
+      type: object
+      properties:
+        credits:
+          type: integer
+        isActive:
+          type: boolean
+    PricingServiceListResponse:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingService'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [services, pagination]
+    StandardPagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalCount:
+          type: integer
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrev:
+          type: boolean
+      required: [page, limit]
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          nullable: true
+        category:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, category, subject, description, status, priority, createdAt, updatedAt]
+    TicketListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+        pagination:
+          $ref: '#/components/schemas/SimplePagination'
+      required: [data, pagination]
+    TicketCreateRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        category:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        metadata:
+          type: object
+          additionalProperties: true
+        email:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        message:
+          type: string
+        storyId:
+          type: string
+        shippingAddress:
+          type: object
+          additionalProperties: true
+        printFormat:
+          type: string
+        amount:
+          type: number
+      required: [category]
+    TicketDetail:
+      allOf:
+        - $ref: '#/components/schemas/Ticket'
+        - type: object
+          properties:
+            comments:
+              type: array
+              items:
+                $ref: '#/components/schemas/TicketComment'
+            author:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+              required: [id, name, email]
+    TicketUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        priority:
+          type: string
+          enum: [low, medium, high]
+    TicketCommentCreateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        body:
+          type: string
+        isInternal:
+          type: boolean
+        authorName:
+          type: string
+      required: []
+    TicketComment:
+      type: object
+      properties:
+        id:
+          type: integer
+        ticketId:
+          type: string
+        authorId:
+          type: string
+          nullable: true
+        body:
+          type: string
+        isInternal:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, ticketId, body, isInternal, createdAt]
+    TicketMetrics:
+      type: object
+      properties:
+        totalTickets:
+          type: integer
+        openTickets:
+          type: integer
+        inProgressTickets:
+          type: integer
+        resolvedTickets:
+          type: integer
+        urgentTickets:
+          type: integer
+      required: [totalTickets, openTickets, inProgressTickets, resolvedTickets, urgentTickets]
+    AdminKpiResponse:
+      type: object
+      properties:
+        users:
+          type: integer
+        stories:
+          type: integer
+        openTickets:
+          type: integer
+      required: [users, stories, openTickets]
+    Manager:
+      type: object
+      properties:
+        managerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        mobilePhone:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [managerId, name, email]
+    ManagerInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        mobilePhone:
+          type: string
+        role:
+          type: string
+      required: [name, email]
+    AuthorSummary:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        email:
+          type: string
+        mobilePhone:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [authorId, displayName, email, createdAt]
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorSummary'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [data, pagination]
+    UserDetail:
+      allOf:
+        - $ref: '#/components/schemas/AuthorSummary'
+        - type: object
+          properties:
+            preferredLocale:
+              type: string
+            creditBalance:
+              type: integer
+      required: [creditBalance]
+    UserCreditHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        creditEventType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        storyId:
+          type: string
+          nullable: true
+        purchaseId:
+          type: string
+          nullable: true
+        balanceAfter:
+          type: integer
+      required: [id, amount, creditEventType, createdAt, balanceAfter]
+    UserCreditHistoryResponse:
+      type: object
+      properties:
+        creditHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserCreditHistoryEntry'
+        currentBalance:
+          type: integer
+      required: [creditHistory, currentBalance]
+    AssignCreditsRequest:
+      type: object
+      properties:
+        amount:
+          type: integer
+        eventType:
+          type: string
+          enum: [refund, voucher, promotion]
+      required: [amount, eventType]
+    AssignCreditsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        newBalance:
+          type: integer
+        message:
+          type: string
+        warning:
+          type: string
+      required: [success, newBalance, message]
+    StorySummary:
+      type: object
+      properties:
+        storyId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [storyId, title, status, createdAt]
+    StoryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorySummary'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [data, pagination]
+    StoryDetail:
+      type: object
+      properties:
+        storyId:
+          type: string
+        title:
+          type: string
+        authorId:
+          type: string
+        authorDisplayName:
+          type: string
+        status:
+          type: string
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        featureImageUri:
+          type: string
+          nullable: true
+        storyGenerationStatus:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        targetAudience:
+          type: string
+          nullable: true
+        graphicalStyle:
+          type: string
+          nullable: true
+      required: [storyId, title, authorId, status, createdAt, updatedAt]
+    StoryUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        featureImageUri:
+          type: string
+        storyGenerationStatus:
+          type: string
+        graphicalStyle:
+          type: string
+        targetAudience:
+          type: string
+        slug:
+          type: string
+    StoryFeatureRequest:
+      type: object
+      properties:
+        featureImageUri:
+          type: string
+        unfeature:
+          type: boolean
+      required: []
+    StoryRestartResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        storyId:
+          type: string
+        runId:
+          type: string
+        status:
+          type: string
+      required: [success, message, storyId, runId]
+    StoryChapter:
+      type: object
+      properties:
+        id:
+          type: string
+        chapterNumber:
+          type: integer
+        version:
+          type: integer
+        title:
+          type: string
+        imageUri:
+          type: string
+          nullable: true
+        imageThumbnailUri:
+          type: string
+          nullable: true
+        htmlContent:
+          type: string
+        audioUri:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [chapterNumber, version, title, htmlContent]
+    StoryOverview:
+      type: object
+      properties:
+        title:
+          type: string
+        authorName:
+          type: string
+        targetAudience:
+          type: string
+          nullable: true
+        graphicalStyle:
+          type: string
+          nullable: true
+        coverUri:
+          type: string
+          nullable: true
+        backcoverUri:
+          type: string
+          nullable: true
+      required: [title, authorName]
+    StoryChaptersResponse:
+      type: object
+      properties:
+        story:
+          $ref: '#/components/schemas/StoryOverview'
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoryChapter'
+      required: [story, chapters]
+    StoryChapterDetailResponse:
+      type: object
+      properties:
+        story:
+          $ref: '#/components/schemas/StoryOverview'
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoryChapter'
+        currentChapter:
+          $ref: '#/components/schemas/StoryChapter'
+      required: [story, chapters, currentChapter]
+    PrintRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        storyId:
+          type: string
+        authorId:
+          type: string
+        pdfUrl:
+          type: string
+        status:
+          type: string
+        printProviderId:
+          type: string
+        printingOptions:
+          type: object
+          additionalProperties: true
+        requestedAt:
+          type: string
+          format: date-time
+        printedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, storyId, authorId, pdfUrl, status, printProviderId, printingOptions, requestedAt]
+    PrintRequestListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintRequest'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [data, pagination]
+    PromotionCode:
+      type: object
+      properties:
+        promotionCodeId:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+        creditAmount:
+          type: integer
+        maxGlobalRedemptions:
+          type: integer
+          nullable: true
+        maxRedemptionsPerUser:
+          type: integer
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+        validUntil:
+          type: string
+          format: date-time
+          nullable: true
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [promotionCodeId, code, type, creditAmount, active]
+    PromotionCodeDetail:
+      allOf:
+        - $ref: '#/components/schemas/PromotionCode'
+        - type: object
+          properties:
+            totalRedemptions:
+              type: integer
+            uniqueUsers:
+              type: integer
+            remainingGlobal:
+              type: integer
+              nullable: true
+      required: [totalRedemptions, uniqueUsers]
+    PromotionCodeCreateRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        type:
+          type: string
+          enum: [partner, referral, book_qr]
+        creditAmount:
+          type: integer
+        maxGlobalRedemptions:
+          type: integer
+          nullable: true
+        maxRedemptionsPerUser:
+          type: integer
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+        validUntil:
+          type: string
+          format: date-time
+          nullable: true
+        active:
+          type: boolean
+      required: [code, creditAmount]
+    PromotionCodeListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromotionCodeDetail'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [data, pagination]
+    PromotionCodeRedemption:
+      type: object
+      properties:
+        promotionCodeRedemptionId:
+          type: string
+        promotionCodeId:
+          type: string
+        authorId:
+          type: string
+        creditsGranted:
+          type: integer
+        redeemedAt:
+          type: string
+          format: date-time
+        authorDisplayName:
+          type: string
+        authorEmail:
+          type: string
+      required: [promotionCodeRedemptionId, promotionCodeId, authorId, creditsGranted, redeemedAt]
+    PromotionCodeRedemptionList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromotionCodeRedemption'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [data, pagination]
+    AdminWorkflowStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        summary:
+          type: object
+          additionalProperties: true
+        workflows:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowExecutionStatus'
+        healthy:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+        runningWorkflows:
+          type: integer
+      required: [success]
+    WorkflowExecutionStatus:
+      type: object
+      properties:
+        runId:
+          type: string
+        storyId:
+          type: string
+        workflowExecutionName:
+          type: string
+          nullable: true
+        currentDbStatus:
+          type: string
+        workflowStatus:
+          type: string
+        statusMatch:
+          type: boolean
+        lastHeartbeat:
+          type: string
+          format: date-time
+          nullable: true
+        isStale:
+          type: boolean
+        errorMessage:
+          type: string
+          nullable: true
+      required: [runId, storyId, currentDbStatus, workflowStatus, statusMatch, isStale]
+    AdminWorkflowSyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        summary:
+          type: object
+          additionalProperties: true
+        synced:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowSyncResult'
+      required: [success]
+    WorkflowSyncResult:
+      type: object
+      properties:
+        runId:
+          type: string
+        previousStatus:
+          type: string
+        newStatus:
+          type: string
+        workflowExecutionName:
+          type: string
+          nullable: true
+        syncReason:
+          type: string
+        errorMessage:
+          type: string
+          nullable: true
+      required: [runId, previousStatus, newStatus, syncReason]
+    AdminWorkflowRunResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        workflow:
+          oneOf:
+            - $ref: '#/components/schemas/WorkflowExecutionStatus'
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
+        logs:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required: [success]
+    AdminWorkflowRunSyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        synced:
+          $ref: '#/components/schemas/WorkflowSyncResult'
+        updated:
+          $ref: '#/components/schemas/WorkflowSyncResult'
+      required: [success]
+    WorkflowRunListResponse:
+      type: object
+      properties:
+        workflows:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowRun'
+        pagination:
+          type: object
+          properties:
+            currentPage:
+              type: integer
+            totalPages:
+              type: integer
+            totalItems:
+              type: integer
+            itemsPerPage:
+              type: integer
+      required: [workflows, pagination]
+    WorkflowRun:
+      type: object
+      properties:
+        runId:
+          type: string
+        storyId:
+          type: string
+        gcpWorkflowExecution:
+          type: string
+          nullable: true
+        status:
+          type: string
+        currentStep:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [runId, storyId, status, createdAt, updatedAt]
+    WorkflowRunDetailResponse:
+      type: object
+      properties:
+        workflowRun:
+          $ref: '#/components/schemas/WorkflowRun'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowStep'
+      required: [workflowRun, steps]
+    WorkflowStep:
+      type: object
+      properties:
+        runId:
+          type: string
+        stepName:
+          type: string
+        status:
+          type: string
+        detailJson:
+          type: object
+          additionalProperties: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [runId, stepName, status, createdAt, updatedAt]
+    WorkflowRetryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        newRunId:
+          type: string
+        originalRunId:
+          type: string
+      required: [success, message, newRunId, originalRunId]
+    StoryPdfTriggerResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
+    BlogTranslation:
+      type: object
+      properties:
+        locale:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        contentMdx:
+          type: string
+      required: [locale, slug, title, summary]
+    BlogPost:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        translations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlogTranslation'
+      required: [id, status, createdAt, updatedAt, translations]
+    BlogListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlogPost'
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [data, page, limit]
+    BlogCreateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        translations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlogTranslation'
+      required: [status, translations]
+    BlogUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/BlogCreateRequest'
+    MdxPreviewRequest:
+      type: object
+      properties:
+        contentMdx:
+          type: string
+      required: [contentMdx]
