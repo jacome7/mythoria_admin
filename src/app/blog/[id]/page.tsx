@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
-const LOCALES = ['en-US','pt-PT','es-ES'];
+const LOCALES = ['en-US','pt-PT','es-ES','fr-FR'];
 
 interface TranslationState { 
   locale: string; 
@@ -107,7 +107,22 @@ export default function EditBlogPostPage() {
     }));
   }
 
-  async function save() {
+  function generateSummary(content: string): string {
+    // Strip basic markdown syntax for a crude plaintext summary
+    const plain = content
+      .replace(/`{3}[\s\S]*?`{3}/g, ' ') // code blocks
+      .replace(/`[^`]*`/g, ' ') // inline code
+      .replace(/<!--.*?-->/g, ' ') // comments
+      .replace(/\!\[[^\]]*\]\([^)]*\)/g, ' ') // images
+      .replace(/\[[^\]]*\]\([^)]*\)/g, ' ') // links text
+      .replace(/[#>*_~`-]+/g, ' ') // md tokens
+      .replace(/\s+/g, ' ') // collapse
+      .trim();
+    return plain.slice(0, 300);
+  }
+
+  // Core save method; accepts optional overrides so publish can reuse it
+  async function save(overrides?: { forceStatus?: 'draft' | 'published' | 'archived'; forcePublishedAt?: string | null }) {
     setError('');
     // Validate mandatory fields before saving
     const missingLocales = getLocalesMissingSlugOrTitle();
@@ -118,11 +133,21 @@ export default function EditBlogPostPage() {
     setSaving(true);
     
     try {
+      const prepared = Object.values(translations)
+        .filter(t => t.slug && t.title && t.contentMdx) // allow empty summary, will generate
+        .map(t => ({
+          ...t,
+          summary: (t.summary && t.summary.trim().length > 0)
+            ? t.summary.trim()
+            : generateSummary(t.contentMdx || '') || t.title.slice(0, 160), // fallback to title
+        }))
+        .filter(t => t.summary && t.summary.length > 0); // DB requires non-empty
+
       const body = {
         heroImageUrl: heroImageUrl || null,
-        status: status_,
-        publishedAt: publishedAt,
-        translations: Object.values(translations).filter(t => t.slug && t.title && t.summary && t.contentMdx)
+        status: overrides?.forceStatus ?? status_,
+        publishedAt: overrides?.forcePublishedAt ?? publishedAt,
+        translations: prepared,
       };
       
       const res = await fetch(`/api/admin/blog/${id}`, { 
@@ -151,31 +176,12 @@ export default function EditBlogPostPage() {
     }
   }
 
-  async function publish() {
-    setError('');
-    // Validate mandatory fields before publishing as well
-    const missingLocales = getLocalesMissingSlugOrTitle();
-    if (missingLocales.length > 0) {
-      setError(`Slug and Title are required for: ${missingLocales.join(', ')}`);
-      return;
-    }
-    
-    try {
-      const res = await fetch(`/api/admin/blog/${id}/publish`, { method: 'POST' });
-      
-      if (res.ok) {
-        const json = await res.json();
-        setStatus(json.data.status);
-        setPublishedAt(json.data.publishedAt);
-        // Redirect to listings after publish
-        router.push('/blog');
-      } else {
-        const errorData = await res.json();
-        setError(errorData.error || 'Publish failed');
-      }
-  } catch {
-      setError('Network error during publish');
-    }
+  // Helper that forces publish while saving all editable fields (including hero image & translations)
+  async function saveAndPublish() {
+    // Force local state to published so UI badges reflect immediately
+    if (status_ !== 'published') setStatus('published');
+    if (!publishedAt) setPublishedAt(new Date().toISOString());
+    await save({ forceStatus: 'published', forcePublishedAt: publishedAt ?? new Date().toISOString() });
   }
 
   async function preview() {
@@ -256,7 +262,7 @@ export default function EditBlogPostPage() {
             <div className="flex gap-2">
               <button 
                 className="btn btn-outline" 
-                onClick={save} 
+                onClick={() => { if (!saving) save(); }} 
                 disabled={saving}
               >
                 {saving ? (
@@ -275,16 +281,7 @@ export default function EditBlogPostPage() {
               </button>
               <button 
                 className="btn btn-primary" 
-                onClick={() => {
-                  if (status_ !== 'published') {
-                    setStatus('published');
-                    if (!publishedAt) {
-                      setPublishedAt(new Date().toISOString());
-                    }
-                  }
-                  // Use publish endpoint to ensure server sets status and date, then redirect
-                  publish();
-                }}
+                onClick={() => { if (!saving) saveAndPublish(); }}
                 disabled={saving}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -424,7 +421,7 @@ export default function EditBlogPostPage() {
                   <div className="space-y-2">
                     {LOCALES.map(locale => {
                       const tr = translations[locale];
-                      const isComplete = tr && tr.slug && tr.title && tr.summary && tr.contentMdx;
+                      const isComplete = tr && tr.slug && tr.title && tr.contentMdx; // summary now optional (auto-generated)
                       return (
                         <div key={locale} className="flex justify-between items-center">
                           <span className="text-sm">{locale}</span>
@@ -514,7 +511,7 @@ function LocaleEditor({
       
       <div>
         <label className="label">
-          <span className="label-text font-medium">Summary</span>
+          <span className="label-text font-medium">Summary <span className="text-xs text-base-content/60 font-normal">(optional – will auto-generate from content if left blank)</span></span>
         </label>
         <textarea 
           className="textarea textarea-bordered w-full" 
@@ -524,8 +521,11 @@ function LocaleEditor({
           maxLength={600}
           placeholder="A brief summary of the blog post..."
         />
-        <div className="label">
+        <div className="label justify-between">
           <span className="label-text-alt">{`${tr.summary?.length ?? 0}/600`}</span>
+          {!tr.summary?.length && (tr.contentMdx?.length ?? 0) > 20 && (
+            <span className="label-text-alt text-base-content/60">Will be auto-generated on save</span>
+          )}
         </div>
       </div>
       

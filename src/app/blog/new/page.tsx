@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -9,6 +9,38 @@ export default function NewBlogPostPage() {
   const router = useRouter();
   const [slugBase, setSlugBase] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');
+  const draftKey = 'admin_blog_new_draft_v1';
+  const loadedRef = useRef(false);
+
+  // Hydrate draft on first client mount
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(draftKey) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.slugBase) setSlugBase(parsed.slugBase);
+        if (parsed.heroImageUrl) setHeroImageUrl(parsed.heroImageUrl);
+      }
+    } catch {
+      // ignore corrupt draft
+    }
+  }, []);
+
+  // Persist draft (debounced) when fields change
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      try {
+        if (!slugBase && !heroImageUrl) {
+          localStorage.removeItem(draftKey);
+          return;
+        }
+        localStorage.setItem(draftKey, JSON.stringify({ slugBase, heroImageUrl }));
+      } catch { /* ignore quota errors */ }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [slugBase, heroImageUrl]);
   // Local submit/loading state (renamed to avoid shadowing auth loading)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -36,6 +68,8 @@ export default function NewBlogPostPage() {
 
       if (res.ok) {
         const json = await res.json();
+        // Clear draft after successful creation
+        try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
         router.push(`/blog/${json.data.post.id}`);
       } else {
         const errorData = await res.json();
