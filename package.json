@@ -25,7 +25,8 @@
     "sync-workflows-schema": "tsx -r dotenv/config ./scripts/sync-workflows-schema.ts",
     "sync-mythoria-db-schema": "tsx -r dotenv/config ./scripts/sync-mythoria-db-schema.ts",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
-    "deploy:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast"
+    "deploy:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast",
+    "check:env": "tsx ./scripts/check-env-parity.ts"
   },
   "sideEffects": false,
   "dependencies": {

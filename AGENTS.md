@@ -77,6 +77,18 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
 - Health and diagnostics endpoints (`/api/health`, `/api/server-status`, `/api/debug/*`) report connectivity, environment configuration, and downstream service status.
 
 ## Environment configuration
+Canonical definitions live in `env.manifest.ts`. Maintain that manifest FIRST when adding, renaming, or deprecating variables; the parity tooling derives expectations from it.
+
+Run `npm run check:env` to validate parity across:
+1. `env.manifest.ts`
+2. `.env.local` (dev only)
+3. `.env.production` (template – should not contain live secrets; placeholders allowed)
+4. `cloudbuild.yaml` (`--set-env-vars`, `--set-secrets`, and substitutions)
+
+The script reports Missing, Empty, Unexpected, and DeprecatedPresent categories and exits non‑zero only if a required variable is Missing.
+
+Deprecated legacy names retained (do not add new usage): `MYTHORIA_DB_NAME`, `WORKFLOWS_DB_NAME`, `BACKOFFICE_DB_NAME`, `MYTHORIA_WEBAPP_URL`, `MYTHORIA_ADMIN_URL`, `GOOGLE_CLOUD_REGION`.
+
 Create a `.env.local` for local development. Key variables detected in the codebase include:
 
 ### Core authentication
@@ -102,7 +114,13 @@ Create a `.env.local` for local development. Key variables detected in the codeb
 - `PUBSUB_TOPIC`
 - `PUBSUB_AUDIOBOOK_TOPIC`
 
-All of the `NEXT_PUBLIC_*` keys are injected via `next.config.ts` to mirror these backend environment values. Default fallbacks exist for local usage, but production deployments require explicit configuration.
+All of the `NEXT_PUBLIC_*` keys (currently only `NEXT_PUBLIC_ADMIN_URL` and `NEXT_PUBLIC_APP_URL`) are exposed for client usage. Defaults exist for local development; production sets explicit values through Cloud Build substitutions.
+
+Secrets (`*_SECRET`, credentials, API keys) are never committed with values in `.env.production`; Cloud Build injects them via `--set-secrets`. If you introduce a new secret:
+1. Add descriptor to `env.manifest.ts` with `secret: true` and scopes including `runtime` (and `prod` if required in production).
+2. Add to the Cloud Build `--set-secrets` list referencing the Secret Manager secret (`NAME=secret-id:latest`).
+3. (Optional) Provide a dummy or blank entry in `.env.production` ONLY if the build phase requires a value; prefer leaving it absent.
+4. Re-run `npm run check:env`.
 
 ## Deployment & operations
 - `npm run build` produces a standalone output consumed by the Dockerfile. The resulting image exposes port 3000 and runs `server.js` in production mode as the non-root `nextjs` user.
