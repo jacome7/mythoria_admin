@@ -57,7 +57,7 @@ export default function TicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = params.id as string;
-  
+
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [comments, setComments] = useState<TicketComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +71,7 @@ export default function TicketDetailPage() {
       if (response.ok) {
         const apiData = await response.json();
         console.log('Individual Ticket API Response:', apiData); // Debug log
-        
+
         // Transform the ticket data if needed
         if (apiData && apiData.id) {
           const transformedTicket = {
@@ -89,23 +89,20 @@ export default function TicketDetailPage() {
             createdAt: apiData.createdAt,
             updatedAt: apiData.updatedAt,
           };
-          
+
           setTicket(transformedTicket);
-          
+
           // Transform comments if available
-          const transformedComments = (apiData.comments || []).map((comment: {
-            id: number;
-            body: string;
-            authorId?: string;
-            createdAt: string;
-          }) => ({
-            id: comment.id.toString(),
-            content: comment.body,
-            authorType: comment.authorId ? 'admin' : 'system',
-            authorName: comment.authorId ? 'Admin' : 'System',
-            createdAt: comment.createdAt
-          }));
-          
+          const transformedComments = (apiData.comments || []).map(
+            (comment: { id: number; body: string; authorId?: string; createdAt: string }) => ({
+              id: comment.id.toString(),
+              content: comment.body,
+              authorType: comment.authorId ? 'admin' : 'system',
+              authorName: comment.authorId ? 'Admin' : 'System',
+              createdAt: comment.createdAt,
+            }),
+          );
+
           setComments(transformedComments);
         }
       } else if (response.status === 404) {
@@ -142,7 +139,7 @@ export default function TicketDetailPage() {
       if (response.ok) {
         const apiData = await response.json();
         console.log('Update Ticket API Response:', apiData); // Debug log
-        
+
         // Transform the updated ticket data
         const transformedTicket = {
           id: apiData.id.toString(),
@@ -159,14 +156,14 @@ export default function TicketDetailPage() {
           createdAt: apiData.createdAt,
           updatedAt: apiData.updatedAt,
         };
-        
+
         setTicket(transformedTicket);
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to update ticket:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorData
+          error: errorData,
         });
       }
     } catch (error) {
@@ -194,16 +191,16 @@ export default function TicketDetailPage() {
 
       if (response.ok) {
         const apiComment = await response.json();
-        
+
         // Transform the API response to match our frontend interface
         const transformedComment: TicketComment = {
           id: apiComment.id.toString(),
           content: apiComment.body,
           authorType: apiComment.authorId ? 'admin' : 'system',
           authorName: session.user.name || 'Admin',
-          createdAt: apiComment.createdAt
+          createdAt: apiComment.createdAt,
         };
-        
+
         setComments([...comments, transformedComment]);
         setNewComment('');
       } else {
@@ -211,7 +208,7 @@ export default function TicketDetailPage() {
         console.error('Failed to add comment:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorData
+          error: errorData,
         });
       }
     } catch (error) {
@@ -223,47 +220,68 @@ export default function TicketDetailPage() {
 
   const getPriorityBadgeClass = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'badge-error';
-      case 'high': return 'badge-warning';
-      case 'medium': return 'badge-info';
-      case 'low': return 'badge-ghost';
-      default: return 'badge-ghost';
+      case 'urgent':
+        return 'badge-error';
+      case 'high':
+        return 'badge-warning';
+      case 'medium':
+        return 'badge-info';
+      case 'low':
+        return 'badge-ghost';
+      default:
+        return 'badge-ghost';
     }
   };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'open': return 'badge-error';
-      case 'in_progress': return 'badge-warning';
-      case 'resolved': return 'badge-success';
-      case 'closed': return 'badge-neutral';
-      default: return 'badge-ghost';
+      case 'open':
+        return 'badge-error';
+      case 'in_progress':
+        return 'badge-warning';
+      case 'resolved':
+        return 'badge-success';
+      case 'closed':
+        return 'badge-neutral';
+      default:
+        return 'badge-ghost';
     }
   };
 
   const getTypeBadgeClass = (type: string) => {
     switch (type) {
-      case 'contact': return 'badge-primary';
-      case 'print_request': return 'badge-secondary';
-      case 'buy_credits': return 'badge-accent';
-      default: return 'badge-ghost';
+      case 'contact':
+        return 'badge-primary';
+      case 'print_request':
+        return 'badge-secondary';
+      case 'buy_credits':
+        return 'badge-accent';
+      default:
+        return 'badge-ghost';
     }
   };
 
   const formatType = (type: string) => {
     switch (type) {
-      case 'contact': return 'Contact Us';
-      case 'print_request': return 'Print Request';
-      case 'buy_credits': return 'Buy Credits';
-      case 'other': return 'Other';
-      default: return type;
+      case 'contact':
+        return 'Contact Us';
+      case 'print_request':
+        return 'Print Request';
+      case 'buy_credits':
+        return 'Buy Credits';
+      case 'other':
+        return 'Other';
+      default:
+        return type;
     }
   };
 
   const formatStatus = (status: string) => {
     switch (status) {
-      case 'in_progress': return 'In Progress';
-      default: return status.charAt(0).toUpperCase() + status.slice(1);
+      case 'in_progress':
+        return 'In Progress';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -274,7 +292,7 @@ export default function TicketDetailPage() {
       // Check if this is an email field and we have author ID
       if (key === 'email' && typeof value === 'string' && metadata.author?.id) {
         return (
-          <Link 
+          <Link
             href={`/users/${metadata.author.id}`}
             className="text-primary hover:text-primary-focus underline"
           >
@@ -282,12 +300,12 @@ export default function TicketDetailPage() {
           </Link>
         );
       }
-      
+
       // For complex objects, pretty print them
       if (typeof value === 'object') {
         return JSON.stringify(value, null, 2);
       }
-      
+
       return String(value);
     };
 
@@ -299,11 +317,9 @@ export default function TicketDetailPage() {
             {Object.entries(metadata).map(([key, value]) => (
               <div key={key} className="flex flex-col sm:flex-row">
                 <span className="font-medium min-w-32 capitalize">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}:
                 </span>
-                <span className="text-base-content/70 break-words">
-                  {renderValue(key, value)}
-                </span>
+                <span className="text-base-content/70 break-words">{renderValue(key, value)}</span>
               </div>
             ))}
           </div>
@@ -345,13 +361,14 @@ export default function TicketDetailPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      
       <main className="container mx-auto p-4">
         {/* Header */}
         <div className="mb-6">
           <div className="breadcrumbs text-sm">
             <ul>
-              <li><Link href="/tickets">Tickets</Link></li>
+              <li>
+                <Link href="/tickets">Tickets</Link>
+              </li>
               <li>{getFormattedTicketNumber(ticket.id)}</li>
             </ul>
           </div>
@@ -375,7 +392,7 @@ export default function TicketDetailPage() {
                     {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)} Priority
                   </span>
                 </div>
-                
+
                 <h3 className="text-lg font-semibold mb-2">Description</h3>
                 <p className="text-base-content/90 whitespace-pre-wrap mb-4">
                   {ticket.description}
@@ -395,7 +412,7 @@ export default function TicketDetailPage() {
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">
                 <h3 className="card-title">Comments ({comments.length})</h3>
-                
+
                 {/* Add Comment */}
                 <div className="space-y-4">
                   <textarea
@@ -430,9 +447,11 @@ export default function TicketDetailPage() {
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{comment.authorName}</span>
-                            <span className={`badge badge-sm ${
-                              comment.authorType === 'admin' ? 'badge-primary' : 'badge-ghost'
-                            }`}>
+                            <span
+                              className={`badge badge-sm ${
+                                comment.authorType === 'admin' ? 'badge-primary' : 'badge-ghost'
+                              }`}
+                            >
                               {comment.authorType}
                             </span>
                           </div>
@@ -468,7 +487,7 @@ export default function TicketDetailPage() {
                       <div>
                         <span className="font-medium">Email:</span>
                         {ticket.author.id ? (
-                          <Link 
+                          <Link
                             href={`/users/${ticket.author.id}`}
                             className="text-primary hover:text-primary-focus underline"
                           >
@@ -487,7 +506,7 @@ export default function TicketDetailPage() {
                       <div className="divider my-2"></div>
                     </>
                   )}
-                  
+
                   {/* Fallback to metadata if no author information */}
                   {!ticket.author && ticket.customerName && (
                     <div>
@@ -499,7 +518,7 @@ export default function TicketDetailPage() {
                     <div>
                       <span className="font-medium">Email:</span>
                       {ticket.metadata?.author?.id ? (
-                        <Link 
+                        <Link
                           href={`/users/${ticket.metadata.author.id}`}
                           className="text-primary hover:text-primary-focus underline"
                         >
@@ -510,7 +529,7 @@ export default function TicketDetailPage() {
                       )}
                     </div>
                   )}
-                  
+
                   {/* Display phone number from metadata if no author or author has no phone */}
                   {(!ticket.author || !ticket.author.phone) && ticket.metadata && (
                     <>
@@ -521,7 +540,7 @@ export default function TicketDetailPage() {
                           <p className="text-base-content/70">{ticket.metadata.phone}</p>
                         </div>
                       )}
-                      
+
                       {/* Check for phone in metadata.author.phone (contact forms) */}
                       {!ticket.metadata.phone && ticket.metadata.author?.phone && (
                         <div>
@@ -531,7 +550,7 @@ export default function TicketDetailPage() {
                       )}
                     </>
                   )}
-                  
+
                   <div>
                     <span className="font-medium">Ticket ID:</span>
                     <p className="text-base-content/70 font-mono text-sm">{ticket.id}</p>
@@ -569,7 +588,9 @@ export default function TicketDetailPage() {
                     <select
                       className="select select-bordered select-sm"
                       value={ticket.priority}
-                      onChange={(e) => updateTicket({ priority: e.target.value as Ticket['priority'] })}
+                      onChange={(e) =>
+                        updateTicket({ priority: e.target.value as Ticket['priority'] })
+                      }
                       disabled={isUpdating}
                     >
                       <option value="low">Low</option>
@@ -589,7 +610,6 @@ export default function TicketDetailPage() {
           </div>
         </div>
       </main>
-
     </div>
   );
 }

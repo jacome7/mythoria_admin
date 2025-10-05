@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import Image from "next/image";
-import { useSession, signOut } from "next-auth/react";
-import { useState, useRef, useCallback, useEffect } from "react";
+import Link from 'next/link';
+import Image from 'next/image';
+import { useSession, signOut } from 'next-auth/react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export default function AdminHeader() {
   const { data: session } = useSession();
@@ -31,7 +31,7 @@ export default function AdminHeader() {
       }
       setActiveDropdown(dropdown);
     },
-    [setActiveDropdown]
+    [setActiveDropdown],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -87,10 +87,7 @@ export default function AdminHeader() {
           </button>
 
           <Link href="/" className="btn btn-ghost normal-case text-xl px-2 py-1">
-            <Image
-              src="/just_lettering.png"
-              alt="Mythoria Logo" width={150} height={49}
-            />
+            <Image src="/just_lettering.png" alt="Mythoria Logo" width={150} height={49} />
           </Link>
         </div>
 
@@ -126,14 +123,14 @@ export default function AdminHeader() {
             {/* Management Dropdown */}
             <li
               className="dropdown"
-              onMouseEnter={() => handleMouseEnter("management")}
+              onMouseEnter={() => handleMouseEnter('management')}
               onMouseLeave={handleMouseLeave}
             >
               <div
                 tabIndex={0}
                 role="button"
                 className="btn btn-ghost"
-                onClick={() => handleDropdownToggle("management")}
+                onClick={() => handleDropdownToggle('management')}
               >
                 Management
                 <svg
@@ -147,7 +144,7 @@ export default function AdminHeader() {
               <ul
                 tabIndex={0}
                 className={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 ${
-                  activeDropdown === "management" ? "block" : "hidden"
+                  activeDropdown === 'management' ? 'block' : 'hidden'
                 }`}
                 onMouseEnter={handleSubmenuMouseEnter}
                 onMouseLeave={handleSubmenuMouseLeave}
@@ -178,14 +175,14 @@ export default function AdminHeader() {
             {/* Financials Dropdown */}
             <li
               className="dropdown"
-              onMouseEnter={() => handleMouseEnter("financials")}
+              onMouseEnter={() => handleMouseEnter('financials')}
               onMouseLeave={handleMouseLeave}
             >
               <div
                 tabIndex={0}
                 role="button"
                 className="btn btn-ghost"
-                onClick={() => handleDropdownToggle("financials")}
+                onClick={() => handleDropdownToggle('financials')}
               >
                 Financials
                 <svg
@@ -199,7 +196,7 @@ export default function AdminHeader() {
               <ul
                 tabIndex={0}
                 className={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 ${
-                  activeDropdown === "financials" ? "block" : "hidden"
+                  activeDropdown === 'financials' ? 'block' : 'hidden'
                 }`}
                 onMouseEnter={handleSubmenuMouseEnter}
                 onMouseLeave={handleSubmenuMouseLeave}
@@ -249,7 +246,7 @@ export default function AdminHeader() {
                     />
                   ) : (
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center text-primary-content text-sm sm:text-base">
-                      {session.user.name?.charAt(0).toUpperCase() || "U"}
+                      {session.user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   )}
                 </div>
@@ -265,14 +262,19 @@ export default function AdminHeader() {
                 </li>
                 <li>
                   <div className="justify-between">
-                    <span className="text-xs sm:text-sm opacity-70 truncate">{session.user.email}</span>
+                    <span className="text-xs sm:text-sm opacity-70 truncate">
+                      {session.user.email}
+                    </span>
                   </div>
                 </li>
                 <li>
                   <hr />
                 </li>
                 <li>
-                  <button onClick={() => signOut({ callbackUrl: "/" })} className="text-sm sm:text-base">
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="text-sm sm:text-base"
+                  >
                     Logout
                   </button>
                 </li>
@@ -307,10 +309,14 @@ export default function AdminHeader() {
                 </Link>
               </li>
               <li>
-                <Link href="/workflows" onClick={closeDrawer}>Workflows</Link>
+                <Link href="/workflows" onClick={closeDrawer}>
+                  Workflows
+                </Link>
               </li>
               <li>
-                <Link href="/blog" onClick={closeDrawer}>Blog</Link>
+                <Link href="/blog" onClick={closeDrawer}>
+                  Blog
+                </Link>
               </li>
               <li>
                 <button className="justify-between" onClick={() => setMobileMgmtOpen((v) => !v)}>
@@ -325,32 +331,81 @@ export default function AdminHeader() {
                 </button>
                 {mobileMgmtOpen && (
                   <ul className="pl-4">
-                    <li><Link href="/managers" onClick={closeDrawer}>Managers</Link></li>
-                    <li><Link href="/users" onClick={closeDrawer}>Users</Link></li>
-                    <li><Link href="/stories" onClick={closeDrawer}>Stories</Link></li>
-                    <li><Link href="/notifications" onClick={closeDrawer}>Notifications</Link></li>
+                    <li>
+                      <Link href="/managers" onClick={closeDrawer}>
+                        Managers
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/users" onClick={closeDrawer}>
+                        Users
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/stories" onClick={closeDrawer}>
+                        Stories
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/notifications" onClick={closeDrawer}>
+                        Notifications
+                      </Link>
+                    </li>
                   </ul>
                 )}
               </li>
               <li>
                 <button className="justify-between" onClick={() => setMobileFinOpen((v) => !v)}>
                   <span>Financials</span>
-                  <svg className={`w-4 h-4 transition-transform ${mobileFinOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.293 7.293L10 12l4.707-4.707-1.414-1.414L10 9.172 6.707 5.879z" /></svg>
+                  <svg
+                    className={`w-4 h-4 transition-transform ${mobileFinOpen ? 'rotate-180' : ''}`}
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M5.293 7.293L10 12l4.707-4.707-1.414-1.414L10 9.172 6.707 5.879z" />
+                  </svg>
                 </button>
                 {mobileFinOpen && (
                   <ul className="pl-4">
-                    <li><Link href="/revenue" onClick={closeDrawer}>Revenue</Link></li>
-                    <li><Link href="/ai-usage" onClick={closeDrawer}>AI Usage</Link></li>
-                    <li><Link href="/pricing" onClick={closeDrawer}>Pricing</Link></li>
-                    <li><Link href="/promotion-codes" onClick={closeDrawer}>Promotion Codes</Link></li>
-                    <li><Link href="/services" onClick={closeDrawer}>Services</Link></li>
+                    <li>
+                      <Link href="/revenue" onClick={closeDrawer}>
+                        Revenue
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/ai-usage" onClick={closeDrawer}>
+                        AI Usage
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/pricing" onClick={closeDrawer}>
+                        Pricing
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/promotion-codes" onClick={closeDrawer}>
+                        Promotion Codes
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/services" onClick={closeDrawer}>
+                        Services
+                      </Link>
+                    </li>
                   </ul>
                 )}
               </li>
 
               {session?.user && (
                 <li className="mt-2 border-t pt-2">
-                  <button onClick={() => { closeDrawer(); signOut({ callbackUrl: "/" }); }}>Logout</button>
+                  <button
+                    onClick={() => {
+                      closeDrawer();
+                      signOut({ callbackUrl: '/' });
+                    }}
+                  >
+                    Logout
+                  </button>
                 </li>
               )}
             </ul>

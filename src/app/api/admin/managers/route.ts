@@ -18,9 +18,7 @@ export async function GET() {
     }
 
     // Check if user has the required email domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -30,22 +28,15 @@ export async function GET() {
     const db = getBackofficeDb();
 
     // Fetch all managers ordered by creation date (newest first)
-    const allManagers = await db
-      .select()
-      .from(managers)
-      .orderBy(managers.createdAt);
+    const allManagers = await db.select().from(managers).orderBy(managers.createdAt);
 
     return Response.json({
       data: allManagers,
-      count: allManagers.length
+      count: allManagers.length,
     });
-
   } catch (error) {
     console.error('Error fetching managers:', error);
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -62,9 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has the required email domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -76,19 +65,13 @@ export async function POST(request: NextRequest) {
 
     // Basic validation
     if (!name || !email) {
-      return Response.json(
-        { error: 'Name and email are required' },
-        { status: 400 }
-      );
+      return Response.json({ error: 'Name and email are required' }, { status: 400 });
     }
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return Response.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+      return Response.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
     // Get backoffice database connection
@@ -102,10 +85,7 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (existingManager.length > 0) {
-      return Response.json(
-        { error: 'Manager with this email already exists' },
-        { status: 409 }
-      );
+      return Response.json({ error: 'Manager with this email already exists' }, { status: 409 });
     }
 
     // Create new manager
@@ -116,27 +96,17 @@ export async function POST(request: NextRequest) {
       role: role?.trim() || null,
     };
 
-    const [createdManager] = await db
-      .insert(managers)
-      .values(newManagerData)
-      .returning();
+    const [createdManager] = await db.insert(managers).values(newManagerData).returning();
 
     return Response.json(createdManager, { status: 201 });
-
   } catch (error) {
     console.error('Error creating manager:', error);
-    
+
     // Handle unique constraint violation
     if (error instanceof Error && error.message.includes('unique constraint')) {
-      return Response.json(
-        { error: 'Manager with this email already exists' },
-        { status: 409 }
-      );
+      return Response.json({ error: 'Manager with this email already exists' }, { status: 409 });
     }
 
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -8,11 +8,7 @@ export const metadata: Metadata = {
   description: 'Administrative portal for Mythoria platform',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="mythoria">
       <body className="antialiased">

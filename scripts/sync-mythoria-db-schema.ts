@@ -2,13 +2,13 @@
 
 /**
  * Schema & Types Sync Script for Mythoria-db Database
- * 
+ *
  * This script synchronizes:
  *  1. Schema files from mythoria-webapp/src/db/schema -> mythoria_admin/src/db/schema
  *  2. Type definition .ts files from mythoria-webapp/src/types -> mythoria_admin/src/db/type
- * 
+ *
  * Excludes: clerk.ts, translation-keys.d.ts, and any *.d.ts files.
- * 
+ *
  * Usage: npm run sync-mythoria-db-schema
  */
 
@@ -38,10 +38,10 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
 
 async function copyFile(sourcePath: string, targetPath: string): Promise<void> {
   let content = await fs.readFile(sourcePath, 'utf-8');
-  
+
   // Fix import paths - remove .js extensions for TypeScript
   content = content.replace(/from ['"](\.\/[^'"]+)\.js['"]/g, 'from "$1"');
-  
+
   await fs.writeFile(targetPath, content, 'utf-8');
 }
 
@@ -49,7 +49,7 @@ async function syncSchemaFiles(): Promise<SyncResult> {
   const result: SyncResult = {
     copied: [],
     skipped: [],
-    errors: []
+    errors: [],
   };
 
   try {
@@ -65,12 +65,10 @@ async function syncSchemaFiles(): Promise<SyncResult> {
 
   // Read all files from source directory
   const sourceFiles = await fs.readdir(SOURCE_SCHEMA_DIR);
-  const schemaFiles = sourceFiles.filter(file => 
-    file.endsWith('.ts') && !file.endsWith('.d.ts')
-  );
+  const schemaFiles = sourceFiles.filter((file) => file.endsWith('.ts') && !file.endsWith('.d.ts'));
 
   console.log(`Found ${schemaFiles.length} schema files to sync:`);
-  schemaFiles.forEach(file => console.log(`  - ${file}`));
+  schemaFiles.forEach((file) => console.log(`  - ${file}`));
 
   // Copy each schema file
   for (const file of schemaFiles) {
@@ -79,15 +77,15 @@ async function syncSchemaFiles(): Promise<SyncResult> {
 
     try {
       console.log(`\nSyncing ${file}...`);
-      
+
       // Check if target file exists and compare modification times
       let shouldCopy = true;
       try {
         const [sourceStats, targetStats] = await Promise.all([
           fs.stat(sourcePath),
-          fs.stat(targetPath)
+          fs.stat(targetPath),
         ]);
-        
+
         if (sourceStats.mtime <= targetStats.mtime) {
           console.log(`  ↳ Target file is up to date, skipping`);
           result.skipped.push(file);
@@ -114,20 +112,20 @@ async function syncSchemaFiles(): Promise<SyncResult> {
 
 async function updateIndexFile(): Promise<void> {
   const indexPath = path.join(TARGET_SCHEMA_DIR, 'index.ts');
-  
+
   // Read all schema files
   const files = await fs.readdir(TARGET_SCHEMA_DIR);
-  const schemaFiles = files.filter(file => 
-    file.endsWith('.ts') && 
-    file !== 'index.ts' && 
-    !file.endsWith('.d.ts')
+  const schemaFiles = files.filter(
+    (file) => file.endsWith('.ts') && file !== 'index.ts' && !file.endsWith('.d.ts'),
   );
 
   // Generate index content
-  const exports = schemaFiles.map(file => {
-    const baseName = path.basename(file, '.ts');
-    return `export * from './${baseName}';`;
-  }).join('\n');
+  const exports = schemaFiles
+    .map((file) => {
+      const baseName = path.basename(file, '.ts');
+      return `export * from './${baseName}';`;
+    })
+    .join('\n');
 
   const indexContent = `// Auto-generated index file for mythoria-db schema
 // Last updated: ${new Date().toISOString()}
@@ -154,11 +152,12 @@ async function syncTypeFiles(): Promise<SyncResult> {
   await ensureDirectoryExists(TARGET_TYPES_DIR);
 
   const sourceFiles = await fs.readdir(SOURCE_TYPES_DIR);
-  const typeFiles = sourceFiles.filter(file =>
-    file.endsWith('.ts') &&
-    !file.endsWith('.d.ts') &&
-    file !== 'clerk.ts' &&
-    file !== 'translation-keys.d.ts'
+  const typeFiles = sourceFiles.filter(
+    (file) =>
+      file.endsWith('.ts') &&
+      !file.endsWith('.d.ts') &&
+      file !== 'clerk.ts' &&
+      file !== 'translation-keys.d.ts',
   );
 
   if (typeFiles.length === 0) {
@@ -167,7 +166,7 @@ async function syncTypeFiles(): Promise<SyncResult> {
   }
 
   console.log(`\nFound ${typeFiles.length} type files to sync:`);
-  typeFiles.forEach(f => console.log(`  - ${f}`));
+  typeFiles.forEach((f) => console.log(`  - ${f}`));
 
   for (const file of typeFiles) {
     const sourcePath = path.join(SOURCE_TYPES_DIR, file);
@@ -209,22 +208,22 @@ async function main(): Promise<void> {
 
     console.log('\n📊 Schema Synchronization Summary:');
     console.log(`✅ Files copied: ${schemaResult.copied.length}`);
-    schemaResult.copied.forEach(f => console.log(`   - ${f}`));
+    schemaResult.copied.forEach((f) => console.log(`   - ${f}`));
     console.log(`⏭️  Files skipped: ${schemaResult.skipped.length}`);
-    schemaResult.skipped.forEach(f => console.log(`   - ${f}`));
+    schemaResult.skipped.forEach((f) => console.log(`   - ${f}`));
     if (schemaResult.errors.length) {
       console.log(`❌ Errors: ${schemaResult.errors.length}`);
-      schemaResult.errors.forEach(e => console.log(`   - ${e.file}: ${e.error}`));
+      schemaResult.errors.forEach((e) => console.log(`   - ${e.file}: ${e.error}`));
     }
 
     console.log('\n📁 Types Synchronization Summary:');
     console.log(`✅ Files copied: ${typesResult.copied.length}`);
-    typesResult.copied.forEach(f => console.log(`   - ${f}`));
+    typesResult.copied.forEach((f) => console.log(`   - ${f}`));
     console.log(`⏭️  Files skipped: ${typesResult.skipped.length}`);
-    typesResult.skipped.forEach(f => console.log(`   - ${f}`));
+    typesResult.skipped.forEach((f) => console.log(`   - ${f}`));
     if (typesResult.errors.length) {
       console.log(`❌ Errors: ${typesResult.errors.length}`);
-      typesResult.errors.forEach(e => console.log(`   - ${e.file}: ${e.error}`));
+      typesResult.errors.forEach((e) => console.log(`   - ${e.file}: ${e.error}`));
     }
 
     const hadErrors = schemaResult.errors.length || typesResult.errors.length;
@@ -238,7 +237,6 @@ async function main(): Promise<void> {
     console.log('   1. Review copied schema & type files');
     console.log('   2. Run any necessary migrations');
     console.log('   3. Adjust imports if new types are used');
-
   } catch (error) {
     console.error('\n❌ Synchronization failed:');
     console.error(error instanceof Error ? error.message : String(error));

@@ -80,9 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has access (domain validation)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -97,7 +95,7 @@ export async function GET(request: NextRequest) {
     // Build the base where condition
     const whereCondition = and(
       gte(tokenUsageTracking.createdAt, startDate.toISOString()),
-      lte(tokenUsageTracking.createdAt, endDate.toISOString())
+      lte(tokenUsageTracking.createdAt, endDate.toISOString()),
     );
 
     // Get overall stats
@@ -106,12 +104,13 @@ export async function GET(request: NextRequest) {
         totalCost: sql<number>`COALESCE(SUM(CAST(${tokenUsageTracking.estimatedCostInEuros} AS DECIMAL)), 0)`,
         totalInputTokens: sql<number>`COALESCE(SUM(${tokenUsageTracking.inputTokens}), 0)`,
         totalOutputTokens: sql<number>`COALESCE(SUM(${tokenUsageTracking.outputTokens}), 0)`,
-        totalRequests: sql<number>`COUNT(*)`
+        totalRequests: sql<number>`COUNT(*)`,
       })
       .from(tokenUsageTracking)
       .where(whereCondition);
 
-    const totalTokens = (Number(overallStats.totalInputTokens) || 0) + (Number(overallStats.totalOutputTokens) || 0);
+    const totalTokens =
+      (Number(overallStats.totalInputTokens) || 0) + (Number(overallStats.totalOutputTokens) || 0);
     const totalCost = Number(overallStats.totalCost) || 0;
     const totalRequests = Number(overallStats.totalRequests) || 0;
     const averageCostPerRequest = totalRequests > 0 ? totalCost / totalRequests : 0;
@@ -123,7 +122,7 @@ export async function GET(request: NextRequest) {
         inputTokens: sql<number>`SUM(${tokenUsageTracking.inputTokens})`,
         outputTokens: sql<number>`SUM(${tokenUsageTracking.outputTokens})`,
         totalCost: sql<number>`SUM(CAST(${tokenUsageTracking.estimatedCostInEuros} AS DECIMAL))`,
-        requests: sql<number>`COUNT(*)`
+        requests: sql<number>`COUNT(*)`,
       })
       .from(tokenUsageTracking)
       .where(whereCondition)
@@ -131,14 +130,17 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(sql`SUM(CAST(${tokenUsageTracking.estimatedCostInEuros} AS DECIMAL))`));
 
     // Calculate additional fields for model breakdown
-    const enhancedModelBreakdown: ModelUsage[] = modelBreakdown.map(model => ({
+    const enhancedModelBreakdown: ModelUsage[] = modelBreakdown.map((model) => ({
       ...model,
       inputTokens: Number(model.inputTokens) || 0,
       outputTokens: Number(model.outputTokens) || 0,
       totalCost: Number(model.totalCost) || 0,
       requests: Number(model.requests) || 0,
       totalTokens: (Number(model.inputTokens) || 0) + (Number(model.outputTokens) || 0),
-      averageCostPerRequest: (Number(model.requests) || 0) > 0 ? (Number(model.totalCost) || 0) / (Number(model.requests) || 0) : 0
+      averageCostPerRequest:
+        (Number(model.requests) || 0) > 0
+          ? (Number(model.totalCost) || 0) / (Number(model.requests) || 0)
+          : 0,
     }));
 
     // Get action breakdown
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
         requests: sql<number>`COUNT(*)`,
         inputTokens: sql<number>`SUM(${tokenUsageTracking.inputTokens})`,
         outputTokens: sql<number>`SUM(${tokenUsageTracking.outputTokens})`,
-        uniqueStories: sql<number>`COUNT(DISTINCT ${tokenUsageTracking.storyId})`
+        uniqueStories: sql<number>`COUNT(DISTINCT ${tokenUsageTracking.storyId})`,
       })
       .from(tokenUsageTracking)
       .where(whereCondition)
@@ -157,15 +159,21 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(sql`SUM(CAST(${tokenUsageTracking.estimatedCostInEuros} AS DECIMAL))`));
 
     // Calculate additional fields for action breakdown
-    const enhancedActionBreakdown: ActionUsage[] = actionBreakdown.map(action => ({
+    const enhancedActionBreakdown: ActionUsage[] = actionBreakdown.map((action) => ({
       ...action,
       totalCost: Number(action.totalCost) || 0,
       requests: Number(action.requests) || 0,
       inputTokens: Number(action.inputTokens) || 0,
       outputTokens: Number(action.outputTokens) || 0,
       uniqueStories: Number(action.uniqueStories) || 0,
-      averageCostPerRequest: (Number(action.requests) || 0) > 0 ? (Number(action.totalCost) || 0) / (Number(action.requests) || 0) : 0,
-      averageCostPerStory: (Number(action.uniqueStories) || 0) > 0 ? (Number(action.totalCost) || 0) / (Number(action.uniqueStories) || 0) : 0
+      averageCostPerRequest:
+        (Number(action.requests) || 0) > 0
+          ? (Number(action.totalCost) || 0) / (Number(action.requests) || 0)
+          : 0,
+      averageCostPerStory:
+        (Number(action.uniqueStories) || 0) > 0
+          ? (Number(action.totalCost) || 0) / (Number(action.uniqueStories) || 0)
+          : 0,
     }));
 
     // Get daily usage (aggregate by date)
@@ -175,7 +183,7 @@ export async function GET(request: NextRequest) {
         totalCost: sql<number>`SUM(CAST(${tokenUsageTracking.estimatedCostInEuros} AS DECIMAL))`,
         requests: sql<number>`COUNT(*)`,
         inputTokens: sql<number>`SUM(${tokenUsageTracking.inputTokens})`,
-        outputTokens: sql<number>`SUM(${tokenUsageTracking.outputTokens})`
+        outputTokens: sql<number>`SUM(${tokenUsageTracking.outputTokens})`,
       })
       .from(tokenUsageTracking)
       .where(whereCondition)
@@ -183,13 +191,13 @@ export async function GET(request: NextRequest) {
       .orderBy(sql`DATE(${tokenUsageTracking.createdAt})`);
 
     // Calculate total tokens for daily usage
-    const enhancedDailyUsage: DailyUsage[] = dailyUsage.map(day => ({
+    const enhancedDailyUsage: DailyUsage[] = dailyUsage.map((day) => ({
       ...day,
       totalCost: Number(day.totalCost) || 0,
       requests: Number(day.requests) || 0,
       inputTokens: Number(day.inputTokens) || 0,
       outputTokens: Number(day.outputTokens) || 0,
-      totalTokens: (Number(day.inputTokens) || 0) + (Number(day.outputTokens) || 0)
+      totalTokens: (Number(day.inputTokens) || 0) + (Number(day.outputTokens) || 0),
     }));
 
     // Get top 5 models for quick overview
@@ -203,16 +211,12 @@ export async function GET(request: NextRequest) {
       modelBreakdown: enhancedModelBreakdown,
       actionBreakdown: enhancedActionBreakdown,
       dailyUsage: enhancedDailyUsage,
-      topModels
+      topModels,
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
     console.error('Error fetching token usage stats:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

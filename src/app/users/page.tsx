@@ -43,31 +43,34 @@ export default function UsersPage() {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  const fetchUsers = useCallback(async (page: number) => {
-    try {
-      setIsLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '100',
-        ...(searchTerm && { search: searchTerm }),
-        sortBy: sortField,
-        sortOrder: sortOrder,
-      });
-      
-      const response = await fetch(`/api/admin/users?${params.toString()}`);
-      if (response.ok) {
-        const data: UsersResponse = await response.json();
-        setUsers(data.data);
-        setPagination(data.pagination);
-      } else {
-        console.error('Failed to fetch users');
+  const fetchUsers = useCallback(
+    async (page: number) => {
+      try {
+        setIsLoading(true);
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '100',
+          ...(searchTerm && { search: searchTerm }),
+          sortBy: sortField,
+          sortOrder: sortOrder,
+        });
+
+        const response = await fetch(`/api/admin/users?${params.toString()}`);
+        if (response.ok) {
+          const data: UsersResponse = await response.json();
+          setUsers(data.data);
+          setPagination(data.pagination);
+        } else {
+          console.error('Failed to fetch users');
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchTerm, sortField, sortOrder]);
+    },
+    [searchTerm, sortField, sortOrder],
+  );
 
   useEffect(() => {
     if (!loading && session?.user) {
@@ -119,7 +122,9 @@ export default function UsersPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl md:text-4xl font-bold">Users Management</h1>
-            <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">Manage registered authors and their data</p>
+            <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">
+              Manage registered authors and their data
+            </p>
           </div>
           <div className="text-xs md:text-sm text-gray-500">
             {pagination && `${pagination.totalCount} total users`}
@@ -159,13 +164,13 @@ export default function UsersPage() {
         </div>
 
         {/* Users Table */}
-  <div className="bg-base-100 rounded-lg shadow-sm">
+        <div className="bg-base-100 rounded-lg shadow-sm">
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="loading loading-spinner loading-lg"></div>
             </div>
           ) : (
-      <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="table table-zebra w-full">
                 <thead>
                   <tr>
@@ -194,20 +199,20 @@ export default function UsersPage() {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-	<tr
-            key={user.authorId}
-            className="hover:bg-base-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
-            role="button"
-            tabIndex={0}
-            aria-label={`View details for ${user.displayName}`}
-            onClick={() => handleUserRowClick(user.authorId)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleUserRowClick(user.authorId);
-              }
-            }}
-          >
+                    <tr
+                      key={user.authorId}
+                      className="hover:bg-base-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View details for ${user.displayName}`}
+                      onClick={() => handleUserRowClick(user.authorId)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleUserRowClick(user.authorId);
+                        }
+                      }}
+                    >
                       <td>
                         <div className="font-medium">{user.displayName}</div>
                       </td>
@@ -220,16 +225,15 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td>
-                        <div className="text-sm">
-                          {formatAdminDate(user.createdAt)}
-                        </div>
+                        <div className="text-sm">{formatAdminDate(user.createdAt)}</div>
                       </td>
                       <td>
                         <div className="text-sm">
-                          {user.lastLoginAt 
-                            ? formatAdminDate(user.lastLoginAt)
-                            : <span className="text-gray-400">Never</span>
-                          }
+                          {user.lastLoginAt ? (
+                            formatAdminDate(user.lastLoginAt)
+                          ) : (
+                            <span className="text-gray-400">Never</span>
+                          )}
                         </div>
                       </td>
                       <td>
@@ -245,7 +249,7 @@ export default function UsersPage() {
                   ))}
                 </tbody>
               </table>
-              
+
               {users.length === 0 && !isLoading && (
                 <div className="text-center py-12">
                   <p className="text-gray-500">No users found</p>
@@ -266,12 +270,12 @@ export default function UsersPage() {
               >
                 Previous
               </button>
-              
+
               {/* Page numbers */}
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 const pageNum = Math.max(1, currentPage - 2) + i;
                 if (pageNum > pagination.totalPages) return null;
-                
+
                 return (
                   <button
                     key={pageNum}
@@ -282,7 +286,7 @@ export default function UsersPage() {
                   </button>
                 );
               })}
-              
+
               <button
                 className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
                 onClick={() => handlePageChange(currentPage + 1)}

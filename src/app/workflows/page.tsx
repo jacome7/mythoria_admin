@@ -79,7 +79,7 @@ export default function WorkflowsPage() {
   const handleSyncWorkflows = async () => {
     setIsSyncing(true);
     setSyncMessage(null);
-    
+
     try {
       const response = await fetch('/api/admin/workflows?action=sync-all', {
         method: 'POST',
@@ -93,17 +93,19 @@ export default function WorkflowsPage() {
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         const { summary } = result;
         const syncedCount = summary.completed + summary.failed + summary.cancelled;
-        
+
         if (syncedCount > 0) {
-          setSyncMessage(`Successfully synced ${syncedCount} workflows: ${summary.completed} completed, ${summary.failed} failed, ${summary.cancelled} cancelled`);
+          setSyncMessage(
+            `Successfully synced ${syncedCount} workflows: ${summary.completed} completed, ${summary.failed} failed, ${summary.cancelled} cancelled`,
+          );
         } else {
           setSyncMessage('All workflows are already in sync');
         }
-        
+
         // Reload workflow counts to reflect changes
         const [runningRes, failedRes, completedRes] = await Promise.all([
           fetch('/api/workflows?status=running&limit=1'),
@@ -122,10 +124,10 @@ export default function WorkflowsPage() {
           failed: failedData.pagination?.totalItems || 0,
           completed: completedData.pagination?.totalItems || 0,
         });
-        
+
         // Trigger refresh of workflows list
-        setRefreshTrigger(prev => prev + 1);
-        
+        setRefreshTrigger((prev) => prev + 1);
+
         // Re-check sync status
         checkSyncStatus();
       } else {
@@ -133,7 +135,9 @@ export default function WorkflowsPage() {
       }
     } catch (error) {
       console.error('Error syncing workflows:', error);
-      setSyncMessage('Error syncing workflows: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setSyncMessage(
+        'Error syncing workflows: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      );
     } finally {
       setIsSyncing(false);
     }
@@ -150,13 +154,14 @@ export default function WorkflowsPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3 md:gap-4 mb-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Workflow Management</h1>
-              <p className="text-base-content/70 text-sm md:text-base">Monitor and manage story generation workflows</p>
+              <p className="text-base-content/70 text-sm md:text-base">
+                Monitor and manage story generation workflows
+              </p>
             </div>
             <div className="flex flex-col md:items-end gap-2">
               <button
@@ -171,8 +176,18 @@ export default function WorkflowsPage() {
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                     Sync Workflows
                     {syncStatus?.needsSync && syncStatus.needsSync > 0 && (
@@ -187,11 +202,13 @@ export default function WorkflowsPage() {
                 </div>
               )}
               {syncMessage && (
-                <div className={`text-sm p-2 rounded max-w-md ${
-                  syncMessage.includes('Error') || syncMessage.includes('Failed') 
-                    ? 'bg-error/20 text-error' 
-                    : 'bg-success/20 text-success'
-                }`}>
+                <div
+                  className={`text-sm p-2 rounded max-w-md ${
+                    syncMessage.includes('Error') || syncMessage.includes('Failed')
+                      ? 'bg-error/20 text-error'
+                      : 'bg-success/20 text-success'
+                  }`}
+                >
                   {syncMessage}
                 </div>
               )}
@@ -200,7 +217,7 @@ export default function WorkflowsPage() {
         </div>
 
         {/* Tabs */}
-  <div className="tabs tabs-lifted mb-4 md:mb-6">
+        <div className="tabs tabs-lifted mb-4 md:mb-6">
           <a
             className={`tab tab-lifted ${activeTab === 'running' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('running')}
@@ -235,7 +252,6 @@ export default function WorkflowsPage() {
           <WorkflowsList status={activeTab} refreshTrigger={refreshTrigger} />
         </div>
       </div>
-
     </div>
   );
 }

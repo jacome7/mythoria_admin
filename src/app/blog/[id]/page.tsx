@@ -1,17 +1,17 @@
-"use client";
+'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
-const LOCALES = ['en-US','pt-PT','es-ES','fr-FR'];
+const LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR'];
 
-interface TranslationState { 
-  locale: string; 
-  slug: string; 
-  title: string; 
-  summary: string; 
-  contentMdx: string; 
+interface TranslationState {
+  locale: string;
+  slug: string;
+  title: string;
+  summary: string;
+  contentMdx: string;
 }
 
 export default function EditBlogPostPage() {
@@ -19,7 +19,7 @@ export default function EditBlogPostPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
-  
+
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [status_, setStatus] = useState('draft');
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
@@ -34,39 +34,39 @@ export default function EditBlogPostPage() {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/admin/blog/${id}`);
-      
+
       if (res.ok) {
         const json = await res.json();
         const { post, translations: trs } = json.data;
-        
+
         setHeroImageUrl(post.heroImageUrl || '');
         setStatus(post.status);
         setPublishedAt(post.publishedAt);
-        
+
         const map: Record<string, TranslationState> = {};
-        trs.forEach((t: Record<string, string>) => { 
-          map[t.locale] = { 
-            locale: t.locale, 
-            slug: t.slug, 
-            title: t.title, 
-            summary: t.summary, 
-            contentMdx: t.contentMdx 
-          }; 
+        trs.forEach((t: Record<string, string>) => {
+          map[t.locale] = {
+            locale: t.locale,
+            slug: t.slug,
+            title: t.title,
+            summary: t.summary,
+            contentMdx: t.contentMdx,
+          };
         });
-        
+
         // Initialize empty translations for missing locales
-        LOCALES.forEach(l => { 
+        LOCALES.forEach((l) => {
           if (!map[l]) {
-            map[l] = { 
-              locale: l, 
-              slug: '', 
-              title: '', 
-              summary: '', 
-              contentMdx: '' 
-            }; 
+            map[l] = {
+              locale: l,
+              slug: '',
+              title: '',
+              summary: '',
+              contentMdx: '',
+            };
           }
         });
-        
+
         setTranslations(map);
       } else if (res.status === 404) {
         setError('Blog post not found');
@@ -83,8 +83,10 @@ export default function EditBlogPostPage() {
   // Helper: find locales that have content/summary but missing slug or title
   const getLocalesMissingSlugOrTitle = () => {
     const missing: string[] = [];
-    Object.values(translations).forEach(t => {
-      const hasContent = (t.summary && t.summary.trim().length > 0) || (t.contentMdx && t.contentMdx.trim().length > 0);
+    Object.values(translations).forEach((t) => {
+      const hasContent =
+        (t.summary && t.summary.trim().length > 0) ||
+        (t.contentMdx && t.contentMdx.trim().length > 0);
       const missingRequired = !t.slug?.trim() || !t.title?.trim();
       if (hasContent && missingRequired) {
         missing.push(t.locale);
@@ -101,9 +103,9 @@ export default function EditBlogPostPage() {
   }, [loading, session, loadBlogPost]);
 
   function updateField(locale: string, field: keyof TranslationState, value: string) {
-    setTranslations(prev => ({ 
-      ...prev, 
-      [locale]: { ...prev[locale], [field]: value } 
+    setTranslations((prev) => ({
+      ...prev,
+      [locale]: { ...prev[locale], [field]: value },
     }));
   }
 
@@ -122,7 +124,10 @@ export default function EditBlogPostPage() {
   }
 
   // Core save method; accepts optional overrides so publish can reuse it
-  async function save(overrides?: { forceStatus?: 'draft' | 'published' | 'archived'; forcePublishedAt?: string | null }) {
+  async function save(overrides?: {
+    forceStatus?: 'draft' | 'published' | 'archived';
+    forcePublishedAt?: string | null;
+  }) {
     setError('');
     // Validate mandatory fields before saving
     const missingLocales = getLocalesMissingSlugOrTitle();
@@ -131,17 +136,18 @@ export default function EditBlogPostPage() {
       return;
     }
     setSaving(true);
-    
+
     try {
       const prepared = Object.values(translations)
-        .filter(t => t.slug && t.title && t.contentMdx) // allow empty summary, will generate
-        .map(t => ({
+        .filter((t) => t.slug && t.title && t.contentMdx) // allow empty summary, will generate
+        .map((t) => ({
           ...t,
-          summary: (t.summary && t.summary.trim().length > 0)
-            ? t.summary.trim()
-            : generateSummary(t.contentMdx || '') || t.title.slice(0, 160), // fallback to title
+          summary:
+            t.summary && t.summary.trim().length > 0
+              ? t.summary.trim()
+              : generateSummary(t.contentMdx || '') || t.title.slice(0, 160), // fallback to title
         }))
-        .filter(t => t.summary && t.summary.length > 0); // DB requires non-empty
+        .filter((t) => t.summary && t.summary.length > 0); // DB requires non-empty
 
       const body = {
         heroImageUrl: heroImageUrl || null,
@@ -149,13 +155,13 @@ export default function EditBlogPostPage() {
         publishedAt: overrides?.forcePublishedAt ?? publishedAt,
         translations: prepared,
       };
-      
-      const res = await fetch(`/api/admin/blog/${id}`, { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(body) 
+
+      const res = await fetch(`/api/admin/blog/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         setError(errorData.error || 'Save failed');
@@ -169,7 +175,7 @@ export default function EditBlogPostPage() {
         // Redirect to listings after successful save
         router.push('/blog');
       }
-  } catch {
+    } catch {
       setError('Network error during save');
     } finally {
       setSaving(false);
@@ -181,7 +187,10 @@ export default function EditBlogPostPage() {
     // Force local state to published so UI badges reflect immediately
     if (status_ !== 'published') setStatus('published');
     if (!publishedAt) setPublishedAt(new Date().toISOString());
-    await save({ forceStatus: 'published', forcePublishedAt: publishedAt ?? new Date().toISOString() });
+    await save({
+      forceStatus: 'published',
+      forcePublishedAt: publishedAt ?? new Date().toISOString(),
+    });
   }
 
   async function preview() {
@@ -190,21 +199,21 @@ export default function EditBlogPostPage() {
       setPreviewHtml('<p>No content to preview</p>');
       return;
     }
-    
+
     try {
-      const res = await fetch('/api/admin/blog/mdx/preview', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ contentMdx: tr.contentMdx }) 
+      const res = await fetch('/api/admin/blog/mdx/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentMdx: tr.contentMdx }),
       });
-      
+
       if (res.ok) {
         const html = await res.text();
         setPreviewHtml(html);
       } else {
         setPreviewHtml('<p>Preview failed</p>');
       }
-  } catch {
+    } catch {
       setPreviewHtml('<p>Preview error</p>');
     }
   }
@@ -230,7 +239,12 @@ export default function EditBlogPostPage() {
           <div className="max-w-2xl mx-auto">
             <div className="alert alert-error">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span>{error}</span>
             </div>
@@ -253,16 +267,23 @@ export default function EditBlogPostPage() {
             <div className="flex items-center gap-4">
               <Link href="/blog" className="btn btn-ghost btn-sm">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
                 Back to Blog List
               </Link>
               <h1 className="text-3xl font-bold">Edit Blog Post</h1>
             </div>
             <div className="flex gap-2">
-              <button 
-                className="btn btn-outline" 
-                onClick={() => { if (!saving) save(); }} 
+              <button
+                className="btn btn-outline"
+                onClick={() => {
+                  if (!saving) save();
+                }}
                 disabled={saving}
               >
                 {saving ? (
@@ -272,20 +293,37 @@ export default function EditBlogPostPage() {
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4" />
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3m1 0h4"
+                      />
                     </svg>
                     Save Changes
                   </>
                 )}
               </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => { if (!saving) saveAndPublish(); }}
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  if (!saving) saveAndPublish();
+                }}
                 disabled={saving}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
                 </svg>
                 {status_ === 'published' ? 'Update & Keep Published' : 'Publish Now'}
               </button>
@@ -295,7 +333,12 @@ export default function EditBlogPostPage() {
           {error && (
             <div className="alert alert-error">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span>{error}</span>
             </div>
@@ -306,22 +349,22 @@ export default function EditBlogPostPage() {
               <div className="card bg-base-100 shadow-md">
                 <div className="card-body">
                   <div className="tabs tabs-bordered">
-                    {LOCALES.map(locale => (
-                      <a 
-                        key={locale} 
-                        className={`tab ${activeLocale === locale ? 'tab-active' : ''}`} 
+                    {LOCALES.map((locale) => (
+                      <a
+                        key={locale}
+                        className={`tab ${activeLocale === locale ? 'tab-active' : ''}`}
                         onClick={() => setActiveLocale(locale)}
                       >
                         {locale}
                       </a>
                     ))}
                   </div>
-                  
-                  <LocaleEditor 
-                    tr={translations[activeLocale]} 
-                    update={(field, value) => updateField(activeLocale, field, value)} 
-                    onPreview={preview} 
-                    previewHtml={previewHtml} 
+
+                  <LocaleEditor
+                    tr={translations[activeLocale]}
+                    update={(field, value) => updateField(activeLocale, field, value)}
+                    onPreview={preview}
+                    previewHtml={previewHtml}
                   />
                 </div>
               </div>
@@ -331,15 +374,15 @@ export default function EditBlogPostPage() {
               <div className="card bg-base-100 shadow-md">
                 <div className="card-body">
                   <h3 className="card-title">Post Settings</h3>
-                  
+
                   <div>
                     <label className="label">
                       <span className="label-text font-medium">Hero Image URL</span>
                     </label>
-                    <input 
-                      className="input input-bordered w-full" 
-                      value={heroImageUrl} 
-                      onChange={e => setHeroImageUrl(e.target.value)}
+                    <input
+                      className="input input-bordered w-full"
+                      value={heroImageUrl}
+                      onChange={(e) => setHeroImageUrl(e.target.value)}
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
@@ -348,10 +391,10 @@ export default function EditBlogPostPage() {
                     <label className="label">
                       <span className="label-text font-medium">Status</span>
                     </label>
-                    <select 
-                      className="select select-bordered w-full" 
-                      value={status_} 
-                      onChange={e => setStatus(e.target.value)}
+                    <select
+                      className="select select-bordered w-full"
+                      value={status_}
+                      onChange={(e) => setStatus(e.target.value)}
                     >
                       <option value="draft">Draft</option>
                       <option value="published">Published</option>
@@ -364,13 +407,17 @@ export default function EditBlogPostPage() {
                       <span className="label-text font-medium">Publish Date</span>
                     </label>
                     <div className="flex gap-2">
-                      <input 
-                        type="datetime-local" 
-                        className="input input-bordered flex-1" 
-                        value={publishedAt ? new Date(publishedAt).toISOString().slice(0, 16) : ''} 
-                        onChange={e => setPublishedAt(e.target.value ? new Date(e.target.value).toISOString() : null)}
+                      <input
+                        type="datetime-local"
+                        className="input input-bordered flex-1"
+                        value={publishedAt ? new Date(publishedAt).toISOString().slice(0, 16) : ''}
+                        onChange={(e) =>
+                          setPublishedAt(
+                            e.target.value ? new Date(e.target.value).toISOString() : null,
+                          )
+                        }
                       />
-                      <button 
+                      <button
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => setPublishedAt(new Date().toISOString())}
@@ -378,7 +425,7 @@ export default function EditBlogPostPage() {
                       >
                         Now
                       </button>
-                      <button 
+                      <button
                         type="button"
                         className="btn btn-ghost btn-sm"
                         onClick={() => setPublishedAt(null)}
@@ -397,14 +444,19 @@ export default function EditBlogPostPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="font-medium">Current Status:</span>
-                      <span className={`badge ${
-                        status_ === 'published' ? 'badge-success' : 
-                        status_ === 'draft' ? 'badge-warning' : 'badge-neutral'
-                      }`}>
+                      <span
+                        className={`badge ${
+                          status_ === 'published'
+                            ? 'badge-success'
+                            : status_ === 'draft'
+                              ? 'badge-warning'
+                              : 'badge-neutral'
+                        }`}
+                      >
                         {status_}
                       </span>
                     </div>
-                    
+
                     <div className="flex justify-between">
                       <span className="font-medium">Will be published:</span>
                       <span className="text-sm">
@@ -419,13 +471,15 @@ export default function EditBlogPostPage() {
                 <div className="card-body">
                   <h3 className="card-title text-lg">Translation Status</h3>
                   <div className="space-y-2">
-                    {LOCALES.map(locale => {
+                    {LOCALES.map((locale) => {
                       const tr = translations[locale];
                       const isComplete = tr && tr.slug && tr.title && tr.contentMdx; // summary now optional (auto-generated)
                       return (
                         <div key={locale} className="flex justify-between items-center">
                           <span className="text-sm">{locale}</span>
-                          <span className={`badge badge-sm ${isComplete ? 'badge-success' : 'badge-warning'}`}>
+                          <span
+                            className={`badge badge-sm ${isComplete ? 'badge-success' : 'badge-warning'}`}
+                          >
                             {isComplete ? 'Complete' : 'Incomplete'}
                           </span>
                         </div>
@@ -442,15 +496,15 @@ export default function EditBlogPostPage() {
   );
 }
 
-function LocaleEditor({ 
-  tr, 
-  update, 
-  onPreview, 
-  previewHtml 
-}: { 
-  tr: TranslationState; 
-  update: (field: keyof TranslationState, value: string) => void; 
-  onPreview: () => void; 
+function LocaleEditor({
+  tr,
+  update,
+  onPreview,
+  previewHtml,
+}: {
+  tr: TranslationState;
+  update: (field: keyof TranslationState, value: string) => void;
+  onPreview: () => void;
   previewHtml: string | null;
 }) {
   return (
@@ -458,24 +512,29 @@ function LocaleEditor({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="label">
-            <span className="label-text font-medium">Slug <span className="text-error">(required with content)</span></span>
+            <span className="label-text font-medium">
+              Slug <span className="text-error">(required with content)</span>
+            </span>
           </label>
           {(() => {
-            const hasContent = (tr.summary?.trim()?.length ?? 0) > 0 || (tr.contentMdx?.trim()?.length ?? 0) > 0;
+            const hasContent =
+              (tr.summary?.trim()?.length ?? 0) > 0 || (tr.contentMdx?.trim()?.length ?? 0) > 0;
             const missingSlug = !tr.slug?.trim();
             return (
               <>
-                <input 
-                  className={`input input-bordered w-full ${hasContent && missingSlug ? 'input-error' : ''}`} 
-                  value={tr.slug} 
-                  onChange={e => update('slug', e.target.value)}
+                <input
+                  className={`input input-bordered w-full ${hasContent && missingSlug ? 'input-error' : ''}`}
+                  value={tr.slug}
+                  onChange={(e) => update('slug', e.target.value)}
                   maxLength={160}
                   pattern="[a-z0-9-]+"
                   placeholder="blog-post-slug"
                 />
                 {hasContent && missingSlug && (
                   <label className="label">
-                    <span className="label-text-alt text-error">Slug is required when Summary or Content is filled</span>
+                    <span className="label-text-alt text-error">
+                      Slug is required when Summary or Content is filled
+                    </span>
                   </label>
                 )}
               </>
@@ -484,23 +543,28 @@ function LocaleEditor({
         </div>
         <div>
           <label className="label">
-            <span className="label-text font-medium">Title <span className="text-error">(required with content)</span></span>
+            <span className="label-text font-medium">
+              Title <span className="text-error">(required with content)</span>
+            </span>
           </label>
           {(() => {
-            const hasContent = (tr.summary?.trim()?.length ?? 0) > 0 || (tr.contentMdx?.trim()?.length ?? 0) > 0;
+            const hasContent =
+              (tr.summary?.trim()?.length ?? 0) > 0 || (tr.contentMdx?.trim()?.length ?? 0) > 0;
             const missingTitle = !tr.title?.trim();
             return (
               <>
-                <input 
-                  className={`input input-bordered w-full ${hasContent && missingTitle ? 'input-error' : ''}`} 
-                  value={tr.title} 
-                  onChange={e => update('title', e.target.value)}
+                <input
+                  className={`input input-bordered w-full ${hasContent && missingTitle ? 'input-error' : ''}`}
+                  value={tr.title}
+                  onChange={(e) => update('title', e.target.value)}
                   maxLength={255}
                   placeholder="Blog Post Title"
                 />
                 {hasContent && missingTitle && (
                   <label className="label">
-                    <span className="label-text-alt text-error">Title is required when Summary or Content is filled</span>
+                    <span className="label-text-alt text-error">
+                      Title is required when Summary or Content is filled
+                    </span>
                   </label>
                 )}
               </>
@@ -508,63 +572,77 @@ function LocaleEditor({
           })()}
         </div>
       </div>
-      
+
       <div>
         <label className="label">
-          <span className="label-text font-medium">Summary <span className="text-xs text-base-content/60 font-normal">(optional – will auto-generate from content if left blank)</span></span>
+          <span className="label-text font-medium">
+            Summary{' '}
+            <span className="text-xs text-base-content/60 font-normal">
+              (optional – will auto-generate from content if left blank)
+            </span>
+          </span>
         </label>
-        <textarea 
-          className="textarea textarea-bordered w-full" 
-          rows={3} 
-          value={tr.summary} 
-          onChange={e => update('summary', e.target.value)}
+        <textarea
+          className="textarea textarea-bordered w-full"
+          rows={3}
+          value={tr.summary}
+          onChange={(e) => update('summary', e.target.value)}
           maxLength={600}
           placeholder="A brief summary of the blog post..."
         />
         <div className="label justify-between">
           <span className="label-text-alt">{`${tr.summary?.length ?? 0}/600`}</span>
           {!tr.summary?.length && (tr.contentMdx?.length ?? 0) > 20 && (
-            <span className="label-text-alt text-base-content/60">Will be auto-generated on save</span>
+            <span className="label-text-alt text-base-content/60">
+              Will be auto-generated on save
+            </span>
           )}
         </div>
       </div>
-      
+
       <div>
         <label className="label">
           <span className="label-text font-medium">Content (MDX)</span>
         </label>
-        <textarea 
-          className="textarea textarea-bordered w-full font-mono text-sm" 
-          rows={16} 
-          value={tr.contentMdx} 
-          onChange={e => update('contentMdx', e.target.value)}
+        <textarea
+          className="textarea textarea-bordered w-full font-mono text-sm"
+          rows={16}
+          value={tr.contentMdx}
+          onChange={(e) => update('contentMdx', e.target.value)}
           placeholder="# Your blog content here&#10;&#10;Write your content using Markdown with MDX support..."
         />
       </div>
-      
+
       <div className="flex items-center gap-2">
-        <button 
-          type="button" 
-          className="btn btn-outline btn-sm" 
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
           onClick={onPreview}
           disabled={!tr.contentMdx}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+            />
           </svg>
           Preview
         </button>
       </div>
-      
+
       {previewHtml && (
         <div className="card bg-base-50">
           <div className="card-body">
             <h4 className="card-title text-lg">Preview</h4>
-            <div 
-              className="prose max-w-none" 
-              dangerouslySetInnerHTML={{ __html: previewHtml }} 
-            />
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: previewHtml }} />
           </div>
         </div>
       )}

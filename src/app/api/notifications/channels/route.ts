@@ -71,15 +71,13 @@ const mockChannels: NotificationChannel[] = [
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -88,36 +86,31 @@ export async function GET() {
     // TODO: Implement database query to fetch notification channels
     return NextResponse.json({
       success: true,
-      data: mockChannels
+      data: mockChannels,
     });
   } catch (error) {
     console.error('Error fetching notification channels:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch notification channels' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch notification channels' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
-    
+
     const newChannel: NotificationChannel = {
       id: body.id || Date.now().toString(),
       name: body.name,
@@ -131,15 +124,15 @@ export async function POST(request: NextRequest) {
     // TODO: Implement database insert
     console.log('Creating notification channel:', newChannel);
 
-    return NextResponse.json({
-      success: true,
-      data: newChannel
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: newChannel,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error creating notification channel:', error);
-    return NextResponse.json(
-      { error: 'Failed to create notification channel' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create notification channel' }, { status: 500 });
   }
 }

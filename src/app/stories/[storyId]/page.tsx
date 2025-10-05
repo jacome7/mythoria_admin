@@ -17,10 +17,14 @@ export default function StoryDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'badge-neutral';
-      case 'writing': return 'badge-warning';
-      case 'published': return 'badge-success';
-      default: return 'badge-neutral';
+      case 'draft':
+        return 'badge-neutral';
+      case 'writing':
+        return 'badge-warning';
+      case 'published':
+        return 'badge-success';
+      default:
+        return 'badge-neutral';
     }
   };
 
@@ -164,4 +168,3 @@ export default function StoryDetailPage() {
     </div>
   );
 }
-

@@ -14,7 +14,9 @@ export function StoryHeader({ title, children }: StoryHeaderProps) {
       <div>
         <div className="breadcrumbs text-sm">
           <ul>
-            <li><Link href="/stories">Stories</Link></li>
+            <li>
+              <Link href="/stories">Stories</Link>
+            </li>
             <li>Story Details</li>
           </ul>
         </div>
@@ -24,4 +26,3 @@ export function StoryHeader({ title, children }: StoryHeaderProps) {
     </div>
   );
 }
-

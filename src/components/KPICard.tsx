@@ -12,16 +12,21 @@ interface KPICardProps {
   isLoading?: boolean;
 }
 
-export default function KPICard({ title, value, icon, href, description, isLoading = false }: KPICardProps) {
+export default function KPICard({
+  title,
+  value,
+  icon,
+  href,
+  description,
+  isLoading = false,
+}: KPICardProps) {
   return (
     <Link href={href} className="block">
       <div className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-200 hover:bg-base-200">
         <div className="card-body">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-primary text-xl md:text-2xl">
-                {icon}
-              </div>
+              <div className="text-primary text-xl md:text-2xl">{icon}</div>
               <div>
                 <h3 className="card-title text-base md:text-lg">{title}</h3>
                 {description && (

@@ -13,9 +13,7 @@ export async function GET() {
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -25,13 +23,13 @@ export async function GET() {
     const [usersCount, storiesCount, ticketMetrics] = await Promise.all([
       adminService.getTotalAuthorsCount(),
       adminService.getTotalStoriesCount(),
-      TicketService.getMetrics()
+      TicketService.getMetrics(),
     ]);
 
     const kpis = {
       users: usersCount,
       stories: storiesCount,
-      openTickets: ticketMetrics.openTickets + ticketMetrics.inProgressTickets
+      openTickets: ticketMetrics.openTickets + ticketMetrics.inProgressTickets,
     };
 
     return NextResponse.json(kpis);

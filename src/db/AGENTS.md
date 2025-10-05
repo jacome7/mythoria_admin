@@ -3,13 +3,15 @@
 This file provides directory-specific instructions for everything under `src/db`. Follow these guidelines whenever you touch schema definitions, migrations, seeds, or database services.
 
 ## Database topology & ownership
-| Database | Canonical owner / source of truth | What lives here | Access helpers |
-| --- | --- | --- | --- |
-| `mythoria_db` | Schema and types are synchronized from the `mythoria-webapp` repository, so treat that application as the upstream owner and make structural changes there first.【F:scripts/sync-mythoria-db-schema.ts†L3-L23】 | Core customer data such as accounts, stories, generated assets, and notification history that the admin portal surfaces for moderation and insights.【F:docs/ARCHITECTURE.md†L141-L147】 | Use `getMythoriaDb()` for Drizzle queries or the `db.mythoria` export when you only need the pooled client.【F:src/db/index.ts†L55-L118】 |
-| `workflows_db` | Schema snapshots flow in from the `story-generation-workflow` service; coordinate schema updates in that project before syncing them here.【F:scripts/sync-workflows-schema.ts†L3-L73】 | Workflow execution metadata, run logs, and token usage metrics that drive the AI workflow dashboards.【F:docs/ARCHITECTURE.md†L149-L155】 | Use `getWorkflowsDb()` or `db.workflows`—they share the same pooled connection management as the other databases.【F:src/db/index.ts†L55-L118】 |
-| `backoffice_db` | Fully owned by the admin portal—Drizzle migrations, resets, and seeds in this repo manage its schema end-to-end.【F:drizzle.config.ts†L11-L22】【F:src/db/migrate.ts†L19-L35】【F:src/db/seed.ts†L20-L41】 | Admin-facing tables for managers, auth, ticketing, credits, and other operational content.【F:docs/ARCHITECTURE.md†L157-L163】 | Prefer the shared `getBackofficeDb()` helper or `db.backoffice`; avoid instantiating your own `Pool` instances.【F:src/db/index.ts†L55-L118】 |
+
+| Database        | Canonical owner / source of truth                                                                                                                                                                                | What lives here                                                                                                                                                                          | Access helpers                                                                                                                                  |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mythoria_db`   | Schema and types are synchronized from the `mythoria-webapp` repository, so treat that application as the upstream owner and make structural changes there first.【F:scripts/sync-mythoria-db-schema.ts†L3-L23】 | Core customer data such as accounts, stories, generated assets, and notification history that the admin portal surfaces for moderation and insights.【F:docs/ARCHITECTURE.md†L141-L147】 | Use `getMythoriaDb()` for Drizzle queries or the `db.mythoria` export when you only need the pooled client.【F:src/db/index.ts†L55-L118】       |
+| `workflows_db`  | Schema snapshots flow in from the `story-generation-workflow` service; coordinate schema updates in that project before syncing them here.【F:scripts/sync-workflows-schema.ts†L3-L73】                          | Workflow execution metadata, run logs, and token usage metrics that drive the AI workflow dashboards.【F:docs/ARCHITECTURE.md†L149-L155】                                                | Use `getWorkflowsDb()` or `db.workflows`—they share the same pooled connection management as the other databases.【F:src/db/index.ts†L55-L118】 |
+| `backoffice_db` | Fully owned by the admin portal—Drizzle migrations, resets, and seeds in this repo manage its schema end-to-end.【F:drizzle.config.ts†L11-L22】【F:src/db/migrate.ts†L19-L35】【F:src/db/seed.ts†L20-L41】       | Admin-facing tables for managers, auth, ticketing, credits, and other operational content.【F:docs/ARCHITECTURE.md†L157-L163】                                                           | Prefer the shared `getBackofficeDb()` helper or `db.backoffice`; avoid instantiating your own `Pool` instances.【F:src/db/index.ts†L55-L118】   |
 
 ## Key commands
+
 - Generate SQL artifacts for the backoffice-managed schema subset: `npm run db:generate` (uses the `drizzle.config.ts` backoffice credentials and schema list).【F:drizzle.config.ts†L11-L22】
 - Run backoffice migrations via Drizzle migrator: `npm run db:migrate` (targets `backoffice_db`).【F:src/db/migrate.ts†L19-L35】
 - Push schema changes from the same backoffice subset to the connected instance: `npm run db:push`.
@@ -22,6 +24,7 @@ This file provides directory-specific instructions for everything under `src/db`
 Always load environment variables (typically via `.env.local`) before running these commands so that `getMultiDatabaseConfig` can resolve credentials for all three databases.
 
 ## Directory layout
+
 - `schema/`: Drizzle table/enums definitions. Files under the root mirror the Mythoria webapp schema; anything in `schema/workflows/` mirrors the story-generation-workflow service. Use the sync scripts instead of hand-editing generated modules.【F:scripts/sync-mythoria-db-schema.ts†L3-L23】【F:scripts/sync-workflows-schema.ts†L3-L73】
 - `schema/index.ts`: Auto-generated by the sync scripts; regenerate rather than editing by hand.【F:scripts/sync-mythoria-db-schema.ts†L75-L113】
 - `type/`: Type-only helpers mirrored from the webapp for shared DTOs. Keep in sync via the schema sync scripts.【F:scripts/sync-mythoria-db-schema.ts†L3-L108】
@@ -29,23 +32,26 @@ Always load environment variables (typically via `.env.local`) before running th
 - `migrate.ts`, `reset.ts`, `seed.ts`: Node scripts that wrap Drizzle to manage the backoffice database (Auth + ticketing tables) with helpful logging.
 
 ## Multi-database expectations
+
 - `getMythoriaDb()`, `getWorkflowsDb()`, and `getBackofficeDb()` return separate Drizzle instances. Always choose the correct database for your feature and avoid cross-database joins inside SQL—compose results in application code when you need data from multiple sources.【F:src/db/index.ts†L55-L118】
 - Build and test phases skip live connections (`process.env.NEXT_PHASE === 'phase-production-build'`), so defensive coding is required if you import DB modules at build time. Prefer lazy access inside handlers over module-top calls.【F:src/db/index.ts†L5-L43】
 - Connection pooling is handled internally; do not instantiate new `Pool` objects inside request handlers—reuse the exported helpers to share the lifecycle hooks and graceful shutdown behavior.【F:src/db/index.ts†L18-L143】
 - Treat `mythoria_db` and `workflows_db` as upstream-owned, read-only datasets from this repo's perspective; if you need new columns or tables, coordinate with their source projects and rerun the sync commands instead of editing files locally.【F:scripts/sync-mythoria-db-schema.ts†L3-L23】【F:scripts/sync-workflows-schema.ts†L3-L73】
 
 ## Schema & migration conventions
+
 - Stick to Drizzle's `pgTable`/`pgEnum` APIs as demonstrated in existing files such as `stories.ts` and `tickets.ts`.
 - When adding a new table that belongs to the shared Mythoria data model, update the source project first and rerun `npm run sync-mythoria-db-schema` here. This keeps both codebases aligned and refreshes `schema/index.ts` automatically.
 - Only the subset of schema files listed in `drizzle.config.ts` (`auth`, `tickets`, `credits`, `managers`) feeds the migration output today. If you need migrations for additional tables, expand that list and regenerate SQL.
 - Keep column comments and indexes consistent with existing naming; many downstream analytics depend on these names.
 
 ## Seeds & fixtures
+
 - `src/db/seed.ts` bootstraps the backoffice connection, verifies it with `SELECT 1`, and then calls `TicketService.seedNotificationConfig()` from `@/lib/ticketing/seed`.
 - Extend `seedTicketingData` if you need more fixtures. Make sure new seed helpers are idempotent so repeated runs are safe.
 
 ## Testing & troubleshooting
+
 - Unit tests that exercise database services should mock `getMythoriaDb`/`getWorkflowsDb` rather than hitting real databases. The Jest environment does not initialize pools.
 - If migrations fail, check `.env.local` for the backoffice credentials and confirm VPC routing (see `isVpcDirectEgress()` in `src/lib/database-config.ts`).
 - Use `npm run db:studio` for manual inspection when working locally; it connects with the same configuration used by the scripts above.
-

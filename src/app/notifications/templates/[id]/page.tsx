@@ -28,7 +28,7 @@ export default function NotificationTemplatePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'subject' | 'html' | 'text' | 'preview'>('subject');
-  
+
   const [template, setTemplate] = useState<NotificationTemplate>({
     name: '',
     type: 'email',
@@ -61,7 +61,7 @@ export default function NotificationTemplatePage() {
   const loadTemplate = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       if (isEditing && params?.id) {
         // TODO: Replace with actual API call
         const mockTemplate: NotificationTemplate = {
@@ -103,7 +103,16 @@ Customer Information:
 - Email: {{customer.email}}
 
 Created on: {{ticket.createdAt}}`,
-          variables: ['ticket.id', 'ticket.subject', 'ticket.priority', 'ticket.type', 'ticket.description', 'customer.name', 'customer.email', 'ticket.createdAt'],
+          variables: [
+            'ticket.id',
+            'ticket.subject',
+            'ticket.priority',
+            'ticket.type',
+            'ticket.description',
+            'customer.name',
+            'customer.email',
+            'ticket.createdAt',
+          ],
           enabled: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -131,13 +140,13 @@ Created on: {{ticket.createdAt}}`,
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
+
       // TODO: Implement actual API call
       console.log('Saving template:', template);
-      
+
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       router.push('/notifications');
     } catch (error) {
       console.error('Error saving template:', error);
@@ -155,18 +164,27 @@ Created on: {{ticket.createdAt}}`,
   };
 
   const availableVariables = [
-    'ticket.id', 'ticket.subject', 'ticket.description', 'ticket.status', 
-    'ticket.priority', 'ticket.type', 'ticket.createdAt', 'ticket.updatedAt',
-    'customer.name', 'customer.email',
+    'ticket.id',
+    'ticket.subject',
+    'ticket.description',
+    'ticket.status',
+    'ticket.priority',
+    'ticket.type',
+    'ticket.createdAt',
+    'ticket.updatedAt',
+    'customer.name',
+    'customer.email',
     'admin.name',
-    'comment.content', 'comment.author', 'comment.createdAt'
+    'comment.content',
+    'comment.author',
+    'comment.createdAt',
   ];
 
   const insertVariable = (variable: string, field: 'subject' | 'htmlContent' | 'textContent') => {
     const variableText = `{{${variable}}}`;
-    setTemplate(prev => ({
+    setTemplate((prev) => ({
       ...prev,
-      [field]: (prev[field] || '') + variableText
+      [field]: (prev[field] || '') + variableText,
     }));
   };
 
@@ -182,15 +200,12 @@ Created on: {{ticket.createdAt}}`,
 
   return (
     <div className="min-h-screen bg-base-200">
-      
       <div className="container mx-auto p-4">
         <div className="flex items-center gap-4 mb-6">
           <Link href="/notifications" className="btn btn-ghost">
             ← Back
           </Link>
-          <h1 className="text-3xl font-bold">
-            {isEditing ? 'Edit Template' : 'Create Template'}
-          </h1>
+          <h1 className="text-3xl font-bold">{isEditing ? 'Edit Template' : 'Create Template'}</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -206,10 +221,16 @@ Created on: {{ticket.createdAt}}`,
                   <button
                     key={variable}
                     className="btn btn-ghost btn-sm justify-start w-full text-left"
-                    onClick={() => insertVariable(variable, 
-                      activeTab === 'subject' ? 'subject' : 
-                      activeTab === 'html' ? 'htmlContent' : 'textContent'
-                    )}
+                    onClick={() =>
+                      insertVariable(
+                        variable,
+                        activeTab === 'subject'
+                          ? 'subject'
+                          : activeTab === 'html'
+                            ? 'htmlContent'
+                            : 'textContent',
+                      )
+                    }
                   >
                     <code className="text-xs">{'{{' + variable + '}}'}</code>
                   </button>
@@ -233,7 +254,7 @@ Created on: {{ticket.createdAt}}`,
                       placeholder="Enter template name"
                       className="input input-bordered"
                       value={template.name}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => setTemplate((prev) => ({ ...prev, name: e.target.value }))}
                     />
                   </div>
 
@@ -244,7 +265,9 @@ Created on: {{ticket.createdAt}}`,
                     <select
                       className="select select-bordered"
                       value={template.eventType}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, eventType: e.target.value }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({ ...prev, eventType: e.target.value }))
+                      }
                     >
                       <option value="ticket.created">Ticket Created</option>
                       <option value="ticket.status_updated">Ticket Status Updated</option>
@@ -259,10 +282,12 @@ Created on: {{ticket.createdAt}}`,
                     <select
                       className="select select-bordered"
                       value={template.type}
-                      onChange={(e) => setTemplate(prev => ({ 
-                        ...prev, 
-                        type: e.target.value as NotificationTemplate['type']
-                      }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          type: e.target.value as NotificationTemplate['type'],
+                        }))
+                      }
                     >
                       <option value="email">Email</option>
                       <option value="sms">SMS</option>
@@ -277,7 +302,9 @@ Created on: {{ticket.createdAt}}`,
                     <select
                       className="select select-bordered"
                       value={template.language}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, language: e.target.value }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({ ...prev, language: e.target.value }))
+                      }
                     >
                       <option value="en">English</option>
                       <option value="es">Spanish</option>
@@ -288,7 +315,7 @@ Created on: {{ticket.createdAt}}`,
 
                 {/* Template Content Tabs */}
                 <div className="tabs tabs-bordered mb-4">
-                  <button 
+                  <button
                     className={`tab tab-lg ${activeTab === 'subject' ? 'tab-active' : ''}`}
                     onClick={() => setActiveTab('subject')}
                   >
@@ -296,13 +323,13 @@ Created on: {{ticket.createdAt}}`,
                   </button>
                   {template.type === 'email' && (
                     <>
-                      <button 
+                      <button
                         className={`tab tab-lg ${activeTab === 'html' ? 'tab-active' : ''}`}
                         onClick={() => setActiveTab('html')}
                       >
                         HTML Content
                       </button>
-                      <button 
+                      <button
                         className={`tab tab-lg ${activeTab === 'text' ? 'tab-active' : ''}`}
                         onClick={() => setActiveTab('text')}
                       >
@@ -310,7 +337,7 @@ Created on: {{ticket.createdAt}}`,
                       </button>
                     </>
                   )}
-                  <button 
+                  <button
                     className={`tab tab-lg ${activeTab === 'preview' ? 'tab-active' : ''}`}
                     onClick={() => setActiveTab('preview')}
                   >
@@ -329,7 +356,9 @@ Created on: {{ticket.createdAt}}`,
                       placeholder="Enter subject line with variables like {{ticket.subject}}"
                       className="input input-bordered"
                       value={template.subject || ''}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, subject: e.target.value }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({ ...prev, subject: e.target.value }))
+                      }
                     />
                   </div>
                 )}
@@ -344,7 +373,9 @@ Created on: {{ticket.createdAt}}`,
                       placeholder="Enter HTML content with variables like {{ticket.subject}}"
                       className="textarea textarea-bordered h-96 font-mono text-sm"
                       value={template.htmlContent || ''}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, htmlContent: e.target.value }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({ ...prev, htmlContent: e.target.value }))
+                      }
                     />
                   </div>
                 )}
@@ -359,7 +390,9 @@ Created on: {{ticket.createdAt}}`,
                       placeholder="Enter plain text content with variables like {{ticket.subject}}"
                       className="textarea textarea-bordered h-96 font-mono text-sm"
                       value={template.textContent || ''}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, textContent: e.target.value }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({ ...prev, textContent: e.target.value }))
+                      }
                     />
                   </div>
                 )}
@@ -368,9 +401,12 @@ Created on: {{ticket.createdAt}}`,
                 {activeTab === 'preview' && (
                   <div className="space-y-4">
                     <div className="alert alert-info">
-                      <span>Preview using sample data. Variables will be replaced with actual values when sent.</span>
+                      <span>
+                        Preview using sample data. Variables will be replaced with actual values
+                        when sent.
+                      </span>
                     </div>
-                    
+
                     {template.subject && (
                       <div>
                         <h4 className="font-bold mb-2">Subject:</h4>
@@ -379,17 +415,17 @@ Created on: {{ticket.createdAt}}`,
                         </div>
                       </div>
                     )}
-                    
+
                     {template.htmlContent && (
                       <div>
                         <h4 className="font-bold mb-2">HTML Content:</h4>
-                        <div 
+                        <div
                           className="bg-white p-4 rounded border border-base-300"
                           dangerouslySetInnerHTML={{ __html: renderPreview(template.htmlContent) }}
                         />
                       </div>
                     )}
-                    
+
                     {template.textContent && (
                       <div>
                         <h4 className="font-bold mb-2">Text Content:</h4>
@@ -408,7 +444,9 @@ Created on: {{ticket.createdAt}}`,
                       type="checkbox"
                       className="toggle toggle-primary"
                       checked={template.enabled}
-                      onChange={(e) => setTemplate(prev => ({ ...prev, enabled: e.target.checked }))}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({ ...prev, enabled: e.target.checked }))
+                      }
                     />
                     <span className="label-text ml-2">Enable this template</span>
                   </label>
@@ -433,7 +471,6 @@ Created on: {{ticket.createdAt}}`,
           </div>
         </div>
       </div>
-
     </div>
   );
 }

@@ -20,18 +20,18 @@ async function publishMessage(topic: string, message: unknown, type: string) {
   if (!topic) {
     throw new Error(`PUBSUB topic for ${type} is not set`);
   }
-  
+
   // Debug logging to identify the exact configuration being used
   console.log('🔍 DEBUG: Environment variables:');
   console.log('  - Topic:', topic);
   console.log('  - PubSub client project ID:', pubsub.projectId);
-  
+
   console.log(`📢 PUBSUB: Publishing ${type} message to topic:`, topic);
   console.log('📢 PUBSUB: Message payload:', JSON.stringify(message, null, 2));
-  
+
   const dataBuffer = Buffer.from(JSON.stringify(message));
   const messageId = await pubsub.topic(topic).publishMessage({ data: dataBuffer });
-  
+
   console.log(`✅ PUBSUB: ${type} message published successfully with ID:`, messageId);
   return messageId;
 }

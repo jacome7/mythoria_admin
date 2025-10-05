@@ -21,7 +21,12 @@ interface PromotionCodeRow {
 }
 
 interface PaginationData {
-  page: number; limit: number; totalCount: number; totalPages: number; hasNext: boolean; hasPrev: boolean;
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 interface ListResponse {
@@ -31,7 +36,8 @@ interface ListResponse {
 
 function formatDateRange(from: string | null, until: string | null) {
   if (!from && !until) return '—';
-  const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   if (from && until) return `${fmt(from)} → ${fmt(until)}`;
   if (from) return `From ${fmt(from)}`;
   if (until) return `Until ${fmt(until)}`;
@@ -41,8 +47,10 @@ function formatDateRange(from: string | null, until: string | null) {
 function statusLabel(row: PromotionCodeRow) {
   const now = Date.now();
   if (!row.active) return <span className="badge badge-outline">Inactive</span>;
-  if (row.validFrom && new Date(row.validFrom).getTime() > now) return <span className="badge badge-info">Scheduled</span>;
-  if (row.validUntil && new Date(row.validUntil).getTime() < now) return <span className="badge badge-error">Expired</span>;
+  if (row.validFrom && new Date(row.validFrom).getTime() > now)
+    return <span className="badge badge-info">Scheduled</span>;
+  if (row.validUntil && new Date(row.validUntil).getTime() < now)
+    return <span className="badge badge-error">Expired</span>;
   return <span className="badge badge-success">Active</span>;
 }
 
@@ -88,7 +96,11 @@ export default function PromotionCodesPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><span className="loading loading-spinner loading-lg" /></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
   }
   if (!session?.user) return null;
 
@@ -101,7 +113,9 @@ export default function PromotionCodesPage() {
             <p className="text-gray-500 text-sm mt-1">Manage voucher & referral codes</p>
           </div>
           <div>
-            <Link href="/promotion-codes/new" className="btn btn-primary">Create Code</Link>
+            <Link href="/promotion-codes/new" className="btn btn-primary">
+              Create Code
+            </Link>
           </div>
         </div>
 
@@ -110,15 +124,32 @@ export default function PromotionCodesPage() {
             className="input input-bordered w-full md:max-w-xs"
             placeholder="Search code..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value.toUpperCase());
+              setPage(1);
+            }}
           />
-          <select className="select select-bordered" value={typeFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setTypeFilter(e.target.value as 'all' | 'partner' | 'referral' | 'book_qr'); setPage(1); }}>
+          <select
+            className="select select-bordered"
+            value={typeFilter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setTypeFilter(e.target.value as 'all' | 'partner' | 'referral' | 'book_qr');
+              setPage(1);
+            }}
+          >
             <option value="all">All Types</option>
             <option value="partner">Partner</option>
             <option value="referral">Referral</option>
             <option value="book_qr">Book QR</option>
           </select>
-          <select className="select select-bordered" value={activeFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setActiveFilter(e.target.value as 'all' | 'true' | 'false'); setPage(1); }}>
+          <select
+            className="select select-bordered"
+            value={activeFilter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setActiveFilter(e.target.value as 'all' | 'true' | 'false');
+              setPage(1);
+            }}
+          >
             <option value="all">Any Status</option>
             <option value="true">Active</option>
             <option value="false">Inactive</option>
@@ -127,7 +158,9 @@ export default function PromotionCodesPage() {
 
         <div className="bg-base-100 rounded-lg shadow-sm">
           {isLoading ? (
-            <div className="flex justify-center items-center py-16"><span className="loading loading-spinner loading-lg" /></div>
+            <div className="flex justify-center items-center py-16">
+              <span className="loading loading-spinner loading-lg" />
+            </div>
           ) : codes.length === 0 ? (
             <div className="p-10 text-center text-gray-500">No promotion codes found</div>
           ) : (
@@ -146,19 +179,32 @@ export default function PromotionCodesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {codes.map(c => {
-                    const usage = c.maxGlobalRedemptions != null ? `${c.totalRedemptions}/${c.maxGlobalRedemptions}` : c.totalRedemptions;
+                  {codes.map((c) => {
+                    const usage =
+                      c.maxGlobalRedemptions != null
+                        ? `${c.totalRedemptions}/${c.maxGlobalRedemptions}`
+                        : c.totalRedemptions;
                     return (
-                      <tr key={c.promotionCodeId} className="hover cursor-pointer" onClick={() => handleRowClick(c.promotionCodeId)}>
+                      <tr
+                        key={c.promotionCodeId}
+                        className="hover cursor-pointer"
+                        onClick={() => handleRowClick(c.promotionCodeId)}
+                      >
                         <td className="font-mono text-sm">{c.code}</td>
-                        <td className="capitalize">{c.type.replace('_',' ')}</td>
+                        <td className="capitalize">{c.type.replace('_', ' ')}</td>
                         <td>{c.creditAmount}</td>
                         <td>{usage}</td>
                         <td className="text-xs">{formatDateRange(c.validFrom, c.validUntil)}</td>
                         <td>{statusLabel(c)}</td>
                         <td className="text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
                         <td>
-                          <Link href={`/promotion-codes/${c.promotionCodeId}`} className="btn btn-sm btn-outline" onClick={e => e.stopPropagation()}>View</Link>
+                          <Link
+                            href={`/promotion-codes/${c.promotionCodeId}`}
+                            className="btn btn-sm btn-outline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View
+                          </Link>
                         </td>
                       </tr>
                     );
@@ -172,9 +218,21 @@ export default function PromotionCodesPage() {
         {pagination && pagination.totalPages > 1 && (
           <div className="flex justify-center mt-8">
             <div className="btn-group">
-              <button className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`} disabled={!pagination.hasPrev} onClick={() => setPage(p => p - 1)}>Prev</button>
+              <button
+                className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`}
+                disabled={!pagination.hasPrev}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Prev
+              </button>
               <button className="btn btn-active">Page {pagination.page}</button>
-              <button className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`} disabled={!pagination.hasNext} onClick={() => setPage(p => p + 1)}>Next</button>
+              <button
+                className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
+                disabled={!pagination.hasNext}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </button>
             </div>
           </div>
         )}

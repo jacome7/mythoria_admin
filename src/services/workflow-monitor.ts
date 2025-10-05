@@ -25,7 +25,12 @@ export interface WorkflowSyncResult {
   previousStatus: string;
   newStatus: string;
   workflowExecutionName: string | null;
-  syncReason: 'workflow_completed' | 'workflow_failed' | 'workflow_cancelled' | 'stale_timeout' | 'manual_sync';
+  syncReason:
+    | 'workflow_completed'
+    | 'workflow_failed'
+    | 'workflow_cancelled'
+    | 'stale_timeout'
+    | 'manual_sync';
   errorMessage?: string;
 }
 
@@ -43,10 +48,12 @@ export class WorkflowMonitorService {
   /**
    * Get workflow execution status from Google Workflows
    */
-  private async getWorkflowExecutionStatus(executionName: string): Promise<'ACTIVE' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN'> {
+  private async getWorkflowExecutionStatus(
+    executionName: string,
+  ): Promise<'ACTIVE' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN'> {
     try {
       const [execution] = await this.executionsClient.getExecution({
-        name: executionName
+        name: executionName,
       });
 
       // Map Google Workflow states to our status enum
@@ -60,16 +67,16 @@ export class WorkflowMonitorService {
         case 'CANCELLED':
           return 'CANCELLED';
         default:
-          console.warn('Unknown workflow execution state', { 
-            executionName, 
-            state: execution.state 
+          console.warn('Unknown workflow execution state', {
+            executionName,
+            state: execution.state,
           });
           return 'UNKNOWN';
       }
     } catch (error) {
       console.error('Failed to get workflow execution status', {
         executionName,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       return 'UNKNOWN';
     }
@@ -90,7 +97,7 @@ export class WorkflowMonitorService {
         .where(eq(storyGenerationRuns.status, 'running'));
 
       console.log('Checking status of running workflow runs', {
-        count: runningRuns.length
+        count: runningRuns.length,
       });
 
       for (const run of runningRuns) {
@@ -101,7 +108,7 @@ export class WorkflowMonitorService {
       return statusResults;
     } catch (error) {
       console.error('Failed to check running workflows', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -138,13 +145,13 @@ export class WorkflowMonitorService {
         statusMatch: false,
         lastHeartbeat: new Date(run.updatedAt),
         isStale,
-        errorMessage: run.errorMessage || undefined
+        errorMessage: run.errorMessage || undefined,
       };
 
       // If we have a GCP workflow execution name, check its status
       if (run.gcpWorkflowExecution) {
         status.workflowStatus = await this.getWorkflowExecutionStatus(run.gcpWorkflowExecution);
-        
+
         // Check if statuses match
         status.statusMatch = this.doStatusesMatch(status.currentDbStatus, status.workflowStatus);
       } else {
@@ -158,7 +165,7 @@ export class WorkflowMonitorService {
     } catch (error) {
       console.error('Failed to check workflow run status', {
         runId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -169,11 +176,11 @@ export class WorkflowMonitorService {
    */
   private doStatusesMatch(dbStatus: string, workflowStatus: string): boolean {
     const statusMapping: Record<string, string[]> = {
-      'running': ['ACTIVE'],
-      'completed': ['SUCCEEDED'],
-      'failed': ['FAILED'],
-      'cancelled': ['CANCELLED'],
-      'queued': [] // Queued jobs shouldn't have a workflow execution yet
+      running: ['ACTIVE'],
+      completed: ['SUCCEEDED'],
+      failed: ['FAILED'],
+      cancelled: ['CANCELLED'],
+      queued: [], // Queued jobs shouldn't have a workflow execution yet
     };
 
     return statusMapping[dbStatus]?.includes(workflowStatus) || false;
@@ -182,7 +189,10 @@ export class WorkflowMonitorService {
   /**
    * Synchronize workflow status with database
    */
-  async syncWorkflowStatus(runId: string, reason: WorkflowSyncResult['syncReason'] = 'manual_sync'): Promise<WorkflowSyncResult> {
+  async syncWorkflowStatus(
+    runId: string,
+    reason: WorkflowSyncResult['syncReason'] = 'manual_sync',
+  ): Promise<WorkflowSyncResult> {
     const db = getWorkflowsDb();
     const status = await this.checkWorkflowRunStatus(runId);
 
@@ -218,18 +228,18 @@ export class WorkflowMonitorService {
           previousStatus: status.currentDbStatus,
           newStatus: status.currentDbStatus,
           workflowExecutionName: status.workflowExecutionName,
-          syncReason: reason
+          syncReason: reason,
         };
       }
 
       // Update the database
       const updateData: {
-        status: "queued" | "running" | "completed" | "failed" | "cancelled";
+        status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
         updatedAt: string;
         errorMessage?: string;
         endedAt?: string;
       } = {
-        status: newStatus as "queued" | "running" | "completed" | "failed" | "cancelled",
+        status: newStatus as 'queued' | 'running' | 'completed' | 'failed' | 'cancelled',
         updatedAt: new Date().toISOString(),
       };
 
@@ -251,7 +261,7 @@ export class WorkflowMonitorService {
         previousStatus: status.currentDbStatus,
         newStatus,
         workflowExecutionName: status.workflowExecutionName,
-        syncReason: reason
+        syncReason: reason,
       });
 
       return {
@@ -260,13 +270,12 @@ export class WorkflowMonitorService {
         newStatus,
         workflowExecutionName: status.workflowExecutionName,
         syncReason: reason,
-        errorMessage
+        errorMessage,
       };
-
     } catch (error) {
       console.error('Failed to sync workflow status', {
         runId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -287,7 +296,7 @@ export class WorkflowMonitorService {
         } catch (error) {
           console.error('Failed to sync workflow', {
             runId: status.runId,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
@@ -314,21 +323,23 @@ export class WorkflowMonitorService {
 
       // Get execution details with steps
       const [execution] = await this.executionsClient.getExecution({
-        name: run.gcpWorkflowExecution
+        name: run.gcpWorkflowExecution,
       });
 
       // Return execution info - steps are available in the execution object
-      return [{
-        state: execution.state,
-        result: execution.result,
-        error: execution.error,
-        startTime: execution.startTime,
-        endTime: execution.endTime
-      }];
+      return [
+        {
+          state: execution.state,
+          result: execution.result,
+          error: execution.error,
+          startTime: execution.startTime,
+          endTime: execution.endTime,
+        },
+      ];
     } catch (error) {
       console.error('Failed to get workflow logs', {
         runId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       return [];
     }
@@ -365,7 +376,7 @@ export class WorkflowMonitorService {
       }
 
       const [execution] = await this.executionsClient.getExecution({
-        name: run.gcpWorkflowExecution
+        name: run.gcpWorkflowExecution,
       });
 
       return {
@@ -376,12 +387,12 @@ export class WorkflowMonitorService {
         result: execution.result,
         error: execution.error,
         workflowRevisionId: String(execution.workflowRevisionId || ''),
-        callLogLevel: String(execution.callLogLevel || 'None')
+        callLogLevel: String(execution.callLogLevel || 'None'),
       };
     } catch (error) {
       console.error('Failed to get workflow execution logs', {
         runId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -402,13 +413,13 @@ export class WorkflowMonitorService {
         .where(
           and(
             eq(storyGenerationRuns.status, 'running'),
-            lt(storyGenerationRuns.updatedAt, cutoffTime.toISOString())
-          )
+            lt(storyGenerationRuns.updatedAt, cutoffTime.toISOString()),
+          ),
         );
 
       console.log('Cleaning up stale workflow runs', {
         count: staleRuns.length,
-        cutoffTime
+        cutoffTime,
       });
 
       const cleanupResults: WorkflowSyncResult[] = [];
@@ -420,7 +431,7 @@ export class WorkflowMonitorService {
         } catch (error) {
           console.error('Failed to clean up stale workflow', {
             runId: run.runId,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
@@ -428,7 +439,7 @@ export class WorkflowMonitorService {
       return cleanupResults;
     } catch (error) {
       console.error('Failed to cleanup stale workflows', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -461,14 +472,14 @@ export class WorkflowMonitorService {
           status: 'failed',
           errorMessage: reason,
           endedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(storyGenerationRuns.runId, runId));
 
       console.log('Workflow run force marked as failed', {
         runId,
         previousStatus,
-        reason
+        reason,
       });
 
       return {
@@ -477,12 +488,12 @@ export class WorkflowMonitorService {
         newStatus: 'failed',
         workflowExecutionName: run.gcpWorkflowExecution,
         syncReason: 'manual_sync',
-        errorMessage: reason
+        errorMessage: reason,
       };
     } catch (error) {
       console.error('Failed to force mark workflow as failed', {
         runId,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }

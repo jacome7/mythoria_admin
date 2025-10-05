@@ -13,13 +13,11 @@ export interface AuthResult {
  * @param request - The incoming request
  * @returns Authentication result
  */
-export async function authenticateRequest(
-  request: NextRequest
-): Promise<AuthResult> {
+export async function authenticateRequest(request: NextRequest): Promise<AuthResult> {
   try {
     // Check for API key authentication first
     const apiKey = request.headers.get('x-api-key') || request.headers.get('X-API-Key');
-    
+
     if (apiKey) {
       return await authenticateApiKey(apiKey);
     }
@@ -40,7 +38,7 @@ export async function authenticateRequest(
  */
 async function authenticateApiKey(apiKey: string): Promise<AuthResult> {
   const validApiKey = process.env.ADMIN_API_KEY;
-  
+
   if (!validApiKey) {
     console.error('ADMIN_API_KEY not configured in environment');
     return {
@@ -50,7 +48,8 @@ async function authenticateApiKey(apiKey: string): Promise<AuthResult> {
   }
 
   if (apiKey !== validApiKey) {
-    const mask = (key: string) => key.length <= 6 ? '***' : `${key.slice(0,3)}***${key.slice(-3)}`;
+    const mask = (key: string) =>
+      key.length <= 6 ? '***' : `${key.slice(0, 3)}***${key.slice(-3)}`;
     console.warn('Invalid API key attempt:', mask(apiKey), 'expected:', mask(validApiKey));
     return {
       success: false,
@@ -72,7 +71,7 @@ async function authenticateApiKey(apiKey: string): Promise<AuthResult> {
 async function authenticateSession(): Promise<AuthResult> {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return {
         success: false,
@@ -103,7 +102,7 @@ export function unauthorizedResponse(error?: string): NextResponse {
       error: 'Unauthorized',
       message: error || 'Authentication required',
     },
-    { status: 401 }
+    { status: 401 },
   );
 }
 
@@ -116,7 +115,7 @@ export function forbiddenResponse(error?: string): NextResponse {
       error: 'Forbidden',
       message: error || 'Insufficient permissions',
     },
-    { status: 403 }
+    { status: 403 },
   );
 }
 
@@ -125,11 +124,11 @@ export function forbiddenResponse(error?: string): NextResponse {
  * Usage: Apply to specific routes that need authentication
  */
 export function withAuth(
-  handler: (request: NextRequest, context?: Record<string, unknown>) => Promise<NextResponse>
+  handler: (request: NextRequest, context?: Record<string, unknown>) => Promise<NextResponse>,
 ) {
   return async (request: NextRequest, context?: Record<string, unknown>) => {
     const auth = await authenticateRequest(request);
-    
+
     if (!auth.success) {
       return unauthorizedResponse(auth.error);
     }
@@ -137,7 +136,7 @@ export function withAuth(
     // Add auth info to request for handler to use
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (request as any).auth = auth;
-    
+
     return handler(request, context);
   };
 }

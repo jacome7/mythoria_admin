@@ -8,7 +8,7 @@ import type { Session } from 'next-auth';
 function ensureAdmin(session: Session | null) {
   const email = session?.user?.email;
   if (!email) return false;
-  return ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
+  return ALLOWED_DOMAINS.some((domain) => email.endsWith(domain));
 }
 
 export async function GET(req: NextRequest) {
@@ -63,10 +63,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(created, { status: 201 });
     } catch (err) {
       const code = (err as { code?: string }).code;
-      if (code === 'code_exists') return NextResponse.json({ error: 'code_exists' }, { status: 409 });
-      if (code === 'invalid_code_format') return NextResponse.json({ error: 'invalid_code_format' }, { status: 400 });
-      if (code === 'invalid_credit_amount') return NextResponse.json({ error: 'invalid_credit_amount' }, { status: 400 });
-      if (code === 'invalid_validity_window') return NextResponse.json({ error: 'invalid_validity_window' }, { status: 400 });
+      if (code === 'code_exists')
+        return NextResponse.json({ error: 'code_exists' }, { status: 409 });
+      if (code === 'invalid_code_format')
+        return NextResponse.json({ error: 'invalid_code_format' }, { status: 400 });
+      if (code === 'invalid_credit_amount')
+        return NextResponse.json({ error: 'invalid_credit_amount' }, { status: 400 });
+      if (code === 'invalid_validity_window')
+        return NextResponse.json({ error: 'invalid_validity_window' }, { status: 400 });
       throw err;
     }
   } catch (e) {

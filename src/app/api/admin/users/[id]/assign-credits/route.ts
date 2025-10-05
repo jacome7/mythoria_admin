@@ -4,19 +4,14 @@ import { adminService } from '@/db/services';
 import { notificationClient } from '@/lib/notifications/client';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
-export async function POST(
-  request: Request, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -24,7 +19,10 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { amount, eventType } = body as { amount: number; eventType: 'refund' | 'voucher' | 'promotion' };
+    const { amount, eventType } = body as {
+      amount: number;
+      eventType: 'refund' | 'voucher' | 'promotion';
+    };
 
     if (!amount || amount < 1 || amount > 200) {
       return NextResponse.json({ error: 'Amount must be between 1 and 200' }, { status: 400 });
@@ -34,7 +32,9 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid event type' }, { status: 400 });
     }
 
-    const user = await adminService.getUserById(id) as { email: string; displayName: string; preferredLocale?: string; authorId: string } | undefined;
+    const user = (await adminService.getUserById(id)) as
+      | { email: string; displayName: string; preferredLocale?: string; authorId: string }
+      | undefined;
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -50,7 +50,7 @@ export async function POST(
         name: user.displayName,
         credits: amount,
         preferredLocale: user.preferredLocale,
-        authorId: user.authorId
+        authorId: user.authorId,
       });
       if (!notifyResult.success) {
         warning = `Credits assigned but refund email failed: ${notifyResult.error}`;
@@ -61,7 +61,7 @@ export async function POST(
       success: true,
       newBalance,
       message: `Successfully assigned ${amount} credits to ${user.displayName}`,
-      ...(warning ? { warning } : {})
+      ...(warning ? { warning } : {}),
     });
   } catch (error) {
     console.error('Error assigning credits:', error);

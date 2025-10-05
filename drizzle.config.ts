@@ -9,7 +9,12 @@ dotenv.config({ path: '.env.local' });
 const config = getMultiDatabaseConfig();
 
 export default defineConfig({
-  schema: ['./src/db/schema/auth.ts', './src/db/schema/tickets.ts', './src/db/schema/credits.ts', './src/db/schema/managers.ts'],
+  schema: [
+    './src/db/schema/auth.ts',
+    './src/db/schema/tickets.ts',
+    './src/db/schema/credits.ts',
+    './src/db/schema/managers.ts',
+  ],
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {

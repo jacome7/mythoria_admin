@@ -7,6 +7,7 @@ The Mythoria Admin Portal is the administrative interface for the Mythoria platf
 ## System Architecture
 
 ### High-Level Architecture
+
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │  Administrators │───►│  Load Balancer   │───►│  Mythoria       │
@@ -24,6 +25,7 @@ The Mythoria Admin Portal is the administrative interface for the Mythoria platf
 ```
 
 ### Component Architecture
+
 ```
 mythoria-admin/
 ├── Frontend Layer (React/Next.js)
@@ -55,6 +57,7 @@ mythoria-admin/
 ```
 
 ### Multi-Database Architecture
+
 ```
 ┌─────────────────┐
 │  Admin Portal   │
@@ -77,34 +80,40 @@ mythoria-admin/
 ## Technology Stack
 
 ### Core Framework
+
 - **Next.js 15.3.4** - Full-stack React framework with App Router
 - **React 19.1.0** - UI library with latest concurrent features
 - **TypeScript 5** - Type safety and enhanced developer experience
 
 ### Authentication & Security
+
 - **NextAuth.js v5 (Auth.js)** - Authentication framework
 - **Google OAuth 2.0** - Identity provider
 - **Domain Restriction** - Limited to `@mythoria.pt` and `@caravanconcierge.com`
 - **JWT Strategy** - Secure session management
 
 ### Styling & UI
+
 - **Tailwind CSS 4** - Utility-first CSS framework
 - **DaisyUI 5.0.43** - Component library for Tailwind
 - **Custom Admin Theme** - Tailored for administrative interfaces
 
 ### Database & ORM
+
 - **Drizzle ORM 0.44.2** - Type-safe database operations
 - **PostgreSQL** - Primary database system
 - **Connection Pooling** - Optimized database connections
 - **Multi-Database Support** - Independent connections to 3 databases
 
 ### Development & Testing
+
 - **Jest** - Testing framework
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
 - **Turbopack** - Fast development builds
 
 ### Deployment & Infrastructure
+
 - **Docker** - Containerization
 - **Google Cloud Run** - Serverless container platform
 - **Google Cloud Build** - CI/CD pipeline
@@ -113,24 +122,28 @@ mythoria-admin/
 ## Core Features
 
 ### User Management
+
 - **User Account Administration** - View, edit, and manage user accounts
 - **Role-Based Access Control** - Define and assign user roles
 - **Account Status Management** - Enable, disable, or suspend accounts
 - **User Activity Monitoring** - Track user actions and engagement
 
 ### Content Management
+
 - **Story Administration** - Manage user-generated stories
 - **Content Moderation** - Review and moderate platform content
 - **Asset Management** - Handle images, audio, and other media
 - **Bulk Operations** - Perform actions on multiple items
 
 ### System Monitoring
+
 - **Health Checks** - Monitor system and database health
 - **Performance Metrics** - Track application performance
 - **Error Monitoring** - Centralized error tracking and alerting
 - **Usage Analytics** - Platform usage statistics and insights
 
 ### Workflow Management
+
 - **AI Workflow Oversight** - Monitor story generation workflows
 - **Token Usage Tracking** - Track and analyze AI token consumption
 - **Processing Status** - View workflow execution status
@@ -139,7 +152,9 @@ mythoria-admin/
 ## Database Schema
 
 ### Mythoria Database (mythoria_db)
+
 Primary application database containing:
+
 - User accounts and profiles
 - Story content and metadata
 - Generated content (text, images, audio)
@@ -147,7 +162,9 @@ Primary application database containing:
 - Notification history
 
 ### Workflows Database (workflows_db)
+
 Workflow management database containing:
+
 - Workflow execution runs
 - Step-by-step processing logs
 - Token usage tracking
@@ -155,7 +172,9 @@ Workflow management database containing:
 - Error logs and diagnostics
 
 ### Backoffice Database (backoffice_db)
+
 Admin-specific database containing:
+
 - Administrator accounts
 - Audit logs and activity tracking
 - System configuration
@@ -165,6 +184,7 @@ Admin-specific database containing:
 ## API Architecture
 
 ### Authentication Flow
+
 ```
 1. User visits admin portal
 2. Redirected to Google OAuth
@@ -176,6 +196,7 @@ Admin-specific database containing:
 ```
 
 ### API Route Structure
+
 ```
 /api/
 ├── auth/
@@ -189,12 +210,13 @@ Admin-specific database containing:
 ```
 
 ### Database Connection Management
+
 ```typescript
 // Multi-database connection pattern
 const connections = {
   mythoria: drizzle(mythoria_pool),
   workflows: drizzle(workflows_pool),
-  backoffice: drizzle(backoffice_pool)
+  backoffice: drizzle(backoffice_pool),
 };
 
 // Health check implementation
@@ -202,13 +224,13 @@ const checkDatabaseHealth = async () => {
   const results = await Promise.allSettled([
     connections.mythoria.select().from(users).limit(1),
     connections.workflows.select().from(runs).limit(1),
-    connections.backoffice.select().from(admin_users).limit(1)
+    connections.backoffice.select().from(admin_users).limit(1),
   ]);
-  
+
   return {
     mythoria: results[0].status === 'fulfilled',
     workflows: results[1].status === 'fulfilled',
-    backoffice: results[2].status === 'fulfilled'
+    backoffice: results[2].status === 'fulfilled',
   };
 };
 ```
@@ -216,18 +238,21 @@ const checkDatabaseHealth = async () => {
 ## Security Architecture
 
 ### Authentication Security
+
 - **OAuth 2.0 with Google** - Industry-standard authentication
 - **Domain Restriction** - Server-side validation of email domains
 - **Email Verification** - Mandatory email verification
 - **JWT Tokens** - Secure session management
 
 ### API Security
+
 - **Middleware Protection** - Route-level authentication
 - **Input Validation** - Comprehensive request validation
 - **Rate Limiting** - Protection against abuse
 - **CORS Configuration** - Secure cross-origin requests
 
 ### Database Security
+
 - **Connection Pooling** - Secure database connections
 - **SQL Injection Prevention** - Parameterized queries via Drizzle ORM
 - **Access Control** - Role-based database access
@@ -236,18 +261,21 @@ const checkDatabaseHealth = async () => {
 ## Performance Optimization
 
 ### Frontend Optimization
+
 - **Next.js 15 Optimizations** - Built-in performance features
 - **Turbopack** - Fast development builds
 - **Code Splitting** - Automatic code splitting
 - **Image Optimization** - Next.js image optimization
 
 ### Backend Optimization
+
 - **Connection Pooling** - Efficient database connections
 - **Caching Strategies** - Strategic caching implementation
 - **Lazy Loading** - On-demand data loading
 - **Pagination** - Efficient data pagination
 
 ### Database Optimization
+
 - **Indexed Queries** - Proper database indexing
 - **Query Optimization** - Efficient database queries
 - **Connection Management** - Optimized connection handling
@@ -256,6 +284,7 @@ const checkDatabaseHealth = async () => {
 ## Deployment Architecture
 
 ### Container Configuration
+
 ```dockerfile
 # Multi-stage build for optimization
 FROM node:22.12-alpine AS builder
@@ -272,6 +301,7 @@ CMD ["npm", "start"]
 ```
 
 ### Cloud Run Configuration
+
 ```yaml
 # Cloud Build configuration
 steps:
@@ -280,7 +310,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/mythoria-admin']
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: 
+    args:
       - 'run'
       - 'deploy'
       - 'mythoria-admin'
@@ -291,6 +321,7 @@ steps:
 ```
 
 ### Environment Configuration
+
 ```bash
 # Authentication
 AUTH_SECRET=your-secret-key
@@ -311,11 +342,13 @@ BACKOFFICE_DB=backoffice_db
 ## Integration Points
 
 ### Service Integration
+
 - **Story Generation Workflow** - Monitor and manage AI workflows
 - **Notification Engine** - Send admin notifications
 - **Main Web App** - User data synchronization
 
 ### External Services
+
 - **Google Cloud Services** - Cloud Run, Cloud SQL, Cloud Storage
 - **Authentication Services** - Google OAuth 2.0
 - **Monitoring Services** - Health checks and metrics

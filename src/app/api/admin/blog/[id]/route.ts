@@ -6,7 +6,7 @@ import { ALLOWED_DOMAINS } from '@/config/auth';
 
 function ensureAdminEmail(email?: string | null) {
   if (!email) return false;
-  return ALLOWED_DOMAINS.some(d => email.endsWith(d));
+  return ALLOWED_DOMAINS.some((d) => email.endsWith(d));
 }
 
 export async function GET(req: Request) {
@@ -40,14 +40,30 @@ export async function PUT(req: Request) {
 
       // Enforce length constraints to avoid DB errors
       const locale = tr.locale || 'unknown locale';
-      if (typeof tr.slug !== 'string' || tr.slug.length < 1 || tr.slug.length > 160 || !/^[a-z0-9-]+$/.test(tr.slug)) {
-        return NextResponse.json({ error: `Invalid slug for ${locale}. Use lowercase letters, numbers, and hyphens only, max 160 characters.` }, { status: 400 });
+      if (
+        typeof tr.slug !== 'string' ||
+        tr.slug.length < 1 ||
+        tr.slug.length > 160 ||
+        !/^[a-z0-9-]+$/.test(tr.slug)
+      ) {
+        return NextResponse.json(
+          {
+            error: `Invalid slug for ${locale}. Use lowercase letters, numbers, and hyphens only, max 160 characters.`,
+          },
+          { status: 400 },
+        );
       }
       if (typeof tr.title !== 'string' || tr.title.length < 1 || tr.title.length > 255) {
-        return NextResponse.json({ error: `Title too long for ${locale}. Maximum 255 characters.` }, { status: 400 });
+        return NextResponse.json(
+          { error: `Title too long for ${locale}. Maximum 255 characters.` },
+          { status: 400 },
+        );
       }
       if (typeof tr.summary !== 'string' || tr.summary.length < 1 || tr.summary.length > 600) {
-        return NextResponse.json({ error: `Summary too long for ${locale}. Maximum 600 characters.` }, { status: 400 });
+        return NextResponse.json(
+          { error: `Summary too long for ${locale}. Maximum 600 characters.` },
+          { status: 400 },
+        );
       }
     }
   }
@@ -57,9 +73,10 @@ export async function PUT(req: Request) {
   } catch (e: unknown) {
     // Provide a cleaner error message
     const message = e instanceof Error ? e.message : 'Update failed';
-    const friendly = message.includes('value too long') || message.includes('length')
-      ? 'One or more fields exceed the allowed length. Title max 255, Summary max 600, Slug max 160.'
-      : message;
+    const friendly =
+      message.includes('value too long') || message.includes('length')
+        ? 'One or more fields exceed the allowed length. Title max 255, Summary max 600, Slug max 160.'
+        : message;
     return NextResponse.json({ error: friendly }, { status: 400 });
   }
 }

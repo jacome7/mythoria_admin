@@ -7,10 +7,12 @@ import { ALLOWED_DOMAINS } from '@/config/auth';
 function ensureAdmin(session: Session | null) {
   const email = session?.user?.email;
   if (!email) return false;
-  return ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
+  return ALLOWED_DOMAINS.some((domain) => email.endsWith(domain));
 }
 
-interface RouteParams { id: string }
+interface RouteParams {
+  id: string;
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   try {

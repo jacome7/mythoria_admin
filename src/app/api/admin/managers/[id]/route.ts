@@ -24,9 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has the required email domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -44,24 +42,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = getBackofficeDb();
 
     // Fetch the manager
-    const manager = await db
-      .select()
-      .from(managers)
-      .where(eq(managers.managerId, id))
-      .limit(1);
+    const manager = await db.select().from(managers).where(eq(managers.managerId, id)).limit(1);
 
     if (manager.length === 0) {
       return Response.json({ error: 'Manager not found' }, { status: 404 });
     }
 
     return Response.json(manager[0]);
-
   } catch (error) {
     console.error('Error fetching manager:', error);
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -78,9 +68,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has the required email domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -100,19 +88,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Basic validation
     if (!name || !email) {
-      return Response.json(
-        { error: 'Name and email are required' },
-        { status: 400 }
-      );
+      return Response.json({ error: 'Name and email are required' }, { status: 400 });
     }
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return Response.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+      return Response.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
     // Get backoffice database connection
@@ -140,7 +122,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (emailTaken.length > 0) {
         return Response.json(
           { error: 'Email is already taken by another manager' },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
@@ -161,22 +143,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .returning();
 
     return Response.json(updatedManager);
-
   } catch (error) {
     console.error('Error updating manager:', error);
-    
+
     // Handle unique constraint violation
     if (error instanceof Error && error.message.includes('unique constraint')) {
-      return Response.json(
-        { error: 'Email is already taken by another manager' },
-        { status: 409 }
-      );
+      return Response.json({ error: 'Email is already taken by another manager' }, { status: 409 });
     }
 
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -193,9 +168,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user has the required email domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -224,17 +197,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete the manager
-    await db
-      .delete(managers)
-      .where(eq(managers.managerId, id));
+    await db.delete(managers).where(eq(managers.managerId, id));
 
     return Response.json({ message: 'Manager deleted successfully' });
-
   } catch (error) {
     console.error('Error deleting manager:', error);
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

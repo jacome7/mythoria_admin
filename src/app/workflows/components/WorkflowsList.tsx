@@ -46,35 +46,38 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const loadWorkflows = useCallback(async (page: number = 1, search: string = '') => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const params = new URLSearchParams({
-        status,
-        page: page.toString(),
-        limit: '20',
-        ...(search && { search }),
-      });
+  const loadWorkflows = useCallback(
+    async (page: number = 1, search: string = '') => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const response = await fetch(`/api/workflows?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load workflows');
+        const params = new URLSearchParams({
+          status,
+          page: page.toString(),
+          limit: '20',
+          ...(search && { search }),
+        });
+
+        const response = await fetch(`/api/workflows?${params}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to load workflows');
+        }
+
+        const data = await response.json();
+
+        setWorkflows(data.workflows || []);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setCurrentPage(page);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
       }
-
-      const data = await response.json();
-      
-      setWorkflows(data.workflows || []);
-      setTotalPages(data.pagination?.totalPages || 1);
-      setCurrentPage(page);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
+    },
+    [status],
+  );
 
   // Load workflows when status changes
   useEffect(() => {
@@ -105,17 +108,17 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
       const response = await fetch(`/api/workflows/${runId}/retry`, {
         method: 'POST',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to retry workflow');
       }
-      
+
       const result = await response.json();
-      
+
       // Show success message
       console.log('Workflow retry successful:', result.message);
-      
+
       // Refresh the list after successful retry
       loadWorkflows(currentPage, searchTerm);
     } catch (err) {
@@ -137,7 +140,12 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
     return (
       <div className="alert alert-error">
         <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         <span>Error loading workflows: {error}</span>
       </div>
@@ -168,20 +176,15 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
           <div className="text-6xl mb-4">🚀</div>
           <h3 className="text-xl font-semibold mb-2">No {status} workflows found</h3>
           <p className="text-base-content/70">
-            {searchTerm 
+            {searchTerm
               ? `No workflows found matching "${searchTerm}"`
-              : `No workflows are currently ${status}`
-            }
+              : `No workflows are currently ${status}`}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           {workflows.map((workflow) => (
-            <WorkflowCard
-              key={workflow.run_id}
-              workflow={workflow}
-              onRetry={handleRetry}
-            />
+            <WorkflowCard key={workflow.run_id} workflow={workflow} onRetry={handleRetry} />
           ))}
         </div>
       )}
@@ -197,7 +200,7 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
             >
               «
             </button>
-            
+
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={`page-${page}`}
@@ -207,7 +210,7 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
                 {page}
               </button>
             ))}
-            
+
             <button
               className="join-item btn"
               onClick={() => handlePageChange(currentPage + 1)}

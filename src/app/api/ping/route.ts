@@ -9,23 +9,23 @@ export async function GET(request: NextRequest) {
   try {
     // Extract API key from Authorization header
     const authHeader = request.headers.get('authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         {
           success: false,
           error: 'Missing or invalid Authorization header',
-          message: 'Expected: Bearer <api_key>'
+          message: 'Expected: Bearer <api_key>',
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
-    
+
     // Validate API key
     const keyInfo = apiKeyService.validateApiKey(apiKey);
-    
+
     if (!keyInfo.isValid) {
       return NextResponse.json(
         {
@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
           debug: {
             receivedKeyLength: apiKey.length,
             receivedKeyPreview: apiKey.substring(0, 8) + '...',
-            isConfigured: apiKeyService.isConfigured()
-          }
+            isConfigured: apiKeyService.isConfigured(),
+          },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -48,19 +48,18 @@ export async function GET(request: NextRequest) {
       message: 'Pong! Communication successful',
       timestamp: new Date().toISOString(),
       permissions: keyInfo.permissions,
-      source: keyInfo.source
+      source: keyInfo.source,
     });
-
   } catch (error) {
     console.error('Ping endpoint error:', error);
-    
+
     return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -72,30 +71,30 @@ export async function POST(request: NextRequest) {
   try {
     // Extract API key from Authorization header
     const authHeader = request.headers.get('authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing or invalid Authorization header'
+          error: 'Missing or invalid Authorization header',
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const apiKey = authHeader.substring(7);
-    
+
     // Validate API key
     const keyInfo = apiKeyService.validateApiKey(apiKey);
-    
+
     if (!keyInfo.isValid) {
       return NextResponse.json(
         {
           success: false,
           error: 'Invalid API key',
-          source: keyInfo.source
+          source: keyInfo.source,
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -108,19 +107,18 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
       permissions: keyInfo.permissions,
       receivedData: body,
-      source: keyInfo.source
+      source: keyInfo.source,
     });
-
   } catch (error) {
     console.error('Ping POST endpoint error:', error);
-    
+
     return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -89,7 +89,7 @@ export default function ServerStatusPage() {
   // Check service health via backend API
   const checkAllServices = async () => {
     setIsRefreshing(true);
-    
+
     try {
       const response = await fetch('/api/server-status');
       if (response.ok) {
@@ -108,23 +108,27 @@ export default function ServerStatusPage() {
         setServices(updatedServices);
       } else {
         // If API call fails, mark all services as unknown
-        setServices(services.map(service => ({
-          ...service,
-          status: 'unknown' as const,
-          error: 'Failed to fetch status from backend',
-          lastChecked: new Date().toISOString(),
-        })));
+        setServices(
+          services.map((service) => ({
+            ...service,
+            status: 'unknown' as const,
+            error: 'Failed to fetch status from backend',
+            lastChecked: new Date().toISOString(),
+          })),
+        );
       }
     } catch (error) {
       // If API call fails, mark all services as unknown
-      setServices(services.map(service => ({
-        ...service,
-        status: 'unknown' as const,
-        error: error instanceof Error ? error.message : 'Network error',
-        lastChecked: new Date().toISOString(),
-      })));
+      setServices(
+        services.map((service) => ({
+          ...service,
+          status: 'unknown' as const,
+          error: error instanceof Error ? error.message : 'Network error',
+          lastChecked: new Date().toISOString(),
+        })),
+      );
     }
-    
+
     setIsRefreshing(false);
   };
 
@@ -137,7 +141,7 @@ export default function ServerStatusPage() {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    
+
     const interval = setInterval(() => {
       if (session?.user) {
         checkAllServices();
@@ -209,30 +213,37 @@ export default function ServerStatusPage() {
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6 md:mb-8">
             <div>
               <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Server Status</h1>
-              <p className="text-gray-600 text-sm md:text-base">Monitor the health and performance of all Mythoria services</p>
+              <p className="text-gray-600 text-sm md:text-base">
+                Monitor the health and performance of all Mythoria services
+              </p>
             </div>
             <div className="flex gap-3 md:gap-4 items-center">
               {/* Auto-refresh toggle */}
               <div className="form-control">
                 <label className="label cursor-pointer">
                   <span className="label-text mr-2">Auto-refresh</span>
-                  <input 
-                    type="checkbox" 
-                    className="toggle toggle-primary" 
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-primary"
                     checked={autoRefresh}
                     onChange={(e) => setAutoRefresh(e.target.checked)}
                   />
                 </label>
               </div>
               {/* Manual refresh button */}
-              <button 
+              <button
                 className={`btn btn-primary ${isRefreshing ? 'loading' : ''}`}
                 onClick={checkAllServices}
                 disabled={isRefreshing}
               >
                 {!isRefreshing && (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                 )}
                 Refresh
@@ -265,7 +276,9 @@ export default function ServerStatusPage() {
                     {service.responseTime && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Response Time:</span>
-                        <span className={`font-mono ${service.responseTime > 1000 ? 'text-warning' : 'text-success'}`}>
+                        <span
+                          className={`font-mono ${service.responseTime > 1000 ? 'text-warning' : 'text-success'}`}
+                        >
                           {service.responseTime}ms
                         </span>
                       </div>
@@ -288,14 +301,24 @@ export default function ServerStatusPage() {
 
                   {/* Actions */}
                   <div className="card-actions justify-end mt-4">
-                    <a 
-                      href={service.debugUrl} 
-                      target="_blank" 
+                    <a
+                      href={service.debugUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-outline btn-sm"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
                       </svg>
                       Debug Info
                     </a>
@@ -311,28 +334,37 @@ export default function ServerStatusPage() {
               <div className="stat">
                 <div className="stat-title">Healthy Services</div>
                 <div className="stat-value text-success">
-                  {services.filter(s => s.status === 'healthy').length}
+                  {services.filter((s) => s.status === 'healthy').length}
                 </div>
                 <div className="stat-desc">out of {services.length} total services</div>
               </div>
               <div className="stat">
                 <div className="stat-title">Average Response Time</div>
                 <div className="stat-value">
-                  {services.filter(s => s.responseTime).length > 0 
-                    ? Math.round(services.reduce((acc, s) => acc + (s.responseTime || 0), 0) / services.filter(s => s.responseTime).length)
-                    : 0}ms
+                  {services.filter((s) => s.responseTime).length > 0
+                    ? Math.round(
+                        services.reduce((acc, s) => acc + (s.responseTime || 0), 0) /
+                          services.filter((s) => s.responseTime).length,
+                      )
+                    : 0}
+                  ms
                 </div>
                 <div className="stat-desc">across all services</div>
               </div>
               <div className="stat">
                 <div className="stat-title">Last Update</div>
                 <div className="stat-value text-sm">
-                  {services.find(s => s.lastChecked) 
-                    ? new Date(services.filter(s => s.lastChecked).sort((a, b) => 
-                        new Date(b.lastChecked!).getTime() - new Date(a.lastChecked!).getTime()
-                      )[0].lastChecked!).toLocaleTimeString()
-                    : 'Never'
-                  }
+                  {services.find((s) => s.lastChecked)
+                    ? new Date(
+                        services
+                          .filter((s) => s.lastChecked)
+                          .sort(
+                            (a, b) =>
+                              new Date(b.lastChecked!).getTime() -
+                              new Date(a.lastChecked!).getTime(),
+                          )[0].lastChecked!,
+                      ).toLocaleTimeString()
+                    : 'Never'}
                 </div>
                 <div className="stat-desc">
                   {autoRefresh ? 'Auto-refresh enabled' : 'Auto-refresh disabled'}

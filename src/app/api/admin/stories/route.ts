@@ -12,9 +12,7 @@ export async function GET(request: Request) {
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -31,7 +29,15 @@ export async function GET(request: Request) {
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get stories data with author information
-    const stories = await adminService.getStoriesWithAuthors(page, limit, search, status, featured, sortBy, sortOrder);
+    const stories = await adminService.getStoriesWithAuthors(
+      page,
+      limit,
+      search,
+      status,
+      featured,
+      sortBy,
+      sortOrder,
+    );
 
     return NextResponse.json({
       data: stories,
@@ -41,8 +47,8 @@ export async function GET(request: Request) {
         totalCount: stories.length, // This should be improved with proper count query
         totalPages: Math.ceil(stories.length / limit),
         hasNext: stories.length === limit,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     });
   } catch (error) {
     console.error('Error fetching stories:', error);

@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations } from 'drizzle-orm';
 import { authors, addresses, events } from './authors';
 import { stories, storyVersions } from './stories';
 import { characters, storyCharacters } from './characters';
@@ -59,7 +59,8 @@ export const storiesRelations = relations(stories, ({ one, many }) => ({
 }));
 
 export const charactersRelations = relations(characters, ({ one, many }) => ({
-  author: one(authors, { // If character is directly linked to an author
+  author: one(authors, {
+    // If character is directly linked to an author
     fields: [characters.authorId],
     references: [authors.authorId],
   }),

@@ -3,7 +3,10 @@ import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 
 // GET /api/workflows/[runId] - Get workflow run details
-export async function GET(request: NextRequest, { params }: { params: Promise<{ runId: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ runId: string }> },
+) {
   try {
     const session = await auth();
     if (!session) {
@@ -11,10 +14,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const { runId } = await params;
-    
+
     // Get workflow run details
     const workflowRun = await adminService.getWorkflowRunById(runId);
-    
+
     if (!workflowRun) {
       return NextResponse.json({ error: 'Workflow run not found' }, { status: 404 });
     }
@@ -28,9 +31,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     console.error('Error fetching workflow run:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

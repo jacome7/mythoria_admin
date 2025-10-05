@@ -125,9 +125,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg">Feature Story</h3>
-            <p className="py-4">
-              Enter the relative path to the feature image for this story:
-            </p>
+            <p className="py-4">Enter the relative path to the feature image for this story:</p>
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Feature Image Path</span>
@@ -172,9 +170,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg">Unfeature Story</h3>
-            <p className="py-4">
-              Are you sure you want to unfeature this story? This will:
-            </p>
+            <p className="py-4">Are you sure you want to unfeature this story? This will:</p>
             <div className="alert alert-warning">
               <div className="flex-1">
                 <ul className="list-disc list-inside space-y-1">
@@ -208,9 +204,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg">Restart Story Generation</h3>
-            <p className="py-4">
-              Are you sure you want to restart the story generation workflow?
-            </p>
+            <p className="py-4">Are you sure you want to restart the story generation workflow?</p>
             <div className="alert alert-warning">
               <div className="flex-1">
                 <ul className="list-disc list-inside space-y-1">
@@ -243,4 +237,3 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
     </>
   );
 }
-

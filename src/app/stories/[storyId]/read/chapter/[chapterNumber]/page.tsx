@@ -55,10 +55,12 @@ export default function ReadChapterPage() {
             latestByNumber[ch.chapterNumber] = ch;
           }
         }
-        const deduped = Object.values(latestByNumber).sort((a, b) => a.chapterNumber - b.chapterNumber);
+        const deduped = Object.values(latestByNumber).sort(
+          (a, b) => a.chapterNumber - b.chapterNumber,
+        );
         setChapters(deduped);
         // Pick the latest version for the requested chapter number
-        const latestRequested = deduped.find(c => c.chapterNumber === chapterNumber);
+        const latestRequested = deduped.find((c) => c.chapterNumber === chapterNumber);
         setCurrentChapter(latestRequested || null);
       } else if (response.status === 404) {
         setError('Chapter not found');
@@ -103,10 +105,7 @@ export default function ReadChapterPage() {
             <div className="text-6xl mb-4">📚</div>
             <h1 className="text-3xl font-bold mb-4">Error</h1>
             <p className="text-lg mb-6">{error}</p>
-            <button
-              onClick={() => router.push(`/stories/${storyId}`)}
-              className="btn btn-primary"
-            >
+            <button onClick={() => router.push(`/stories/${storyId}`)} className="btn btn-primary">
               Back to Story Details
             </button>
           </div>
@@ -137,7 +136,6 @@ export default function ReadChapterPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 text-black">
-      
       {/* Story Reader */}
       <AdminStoryReader
         storyId={storyId}
@@ -145,7 +143,6 @@ export default function ReadChapterPage() {
         chapters={chapters}
         currentChapter={chapterNumber}
       />
-
     </div>
   );
 }

@@ -100,7 +100,9 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this credit package? This action cannot be undone.')) {
+    if (
+      !confirm('Are you sure you want to delete this credit package? This action cannot be undone.')
+    ) {
       return;
     }
 
@@ -161,10 +163,7 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
-            <button 
-              onClick={handleCancel}
-              className="btn btn-ghost btn-sm"
-            >
+            <button onClick={handleCancel} className="btn btn-ghost btn-sm">
               ← Back to Credit Packages
             </button>
           </div>
@@ -192,7 +191,9 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
                         placeholder="5"
                         min="1"
                         value={formData.credits || ''}
-                        onChange={(e) => setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })
+                        }
                         required
                       />
                     </div>
@@ -216,8 +217,18 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
 
                   {/* Cost per Credit Display */}
                   <div className="alert alert-info">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      className="stroke-current shrink-0 w-6 h-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      ></path>
                     </svg>
                     <div>
                       <h3 className="font-bold">Cost per Credit</h3>
@@ -237,7 +248,9 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
                         />
                       </label>
                       <label className="label">
-                        <span className="label-text-alt">Mark this package as popular to highlight it</span>
+                        <span className="label-text-alt">
+                          Mark this package as popular to highlight it
+                        </span>
                       </label>
                     </div>
 
@@ -248,11 +261,15 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
                           type="checkbox"
                           className="toggle toggle-accent"
                           checked={formData.bestValue}
-                          onChange={(e) => setFormData({ ...formData, bestValue: e.target.checked })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, bestValue: e.target.checked })
+                          }
                         />
                       </label>
                       <label className="label">
-                        <span className="label-text-alt">Mark this package as the best value option</span>
+                        <span className="label-text-alt">
+                          Mark this package as the best value option
+                        </span>
                       </label>
                     </div>
                   </div>
@@ -294,19 +311,25 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span>Active</span>
-                    <span className={`badge ${creditPackage.isActive ? 'badge-success' : 'badge-error'}`}>
+                    <span
+                      className={`badge ${creditPackage.isActive ? 'badge-success' : 'badge-error'}`}
+                    >
                       {creditPackage.isActive ? 'Yes' : 'No'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Popular</span>
-                    <span className={`badge ${formData.popular ? 'badge-secondary' : 'badge-outline'}`}>
+                    <span
+                      className={`badge ${formData.popular ? 'badge-secondary' : 'badge-outline'}`}
+                    >
                       {formData.popular ? 'Yes' : 'No'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Best Value</span>
-                    <span className={`badge ${formData.bestValue ? 'badge-accent' : 'badge-outline'}`}>
+                    <span
+                      className={`badge ${formData.bestValue ? 'badge-accent' : 'badge-outline'}`}
+                    >
                       {formData.bestValue ? 'Yes' : 'No'}
                     </span>
                   </div>
@@ -318,7 +341,8 @@ export default function EditCreditPackagePage({ params }: { params: Promise<{ id
               <div className="card-body">
                 <h3 className="card-title text-lg text-error">Danger Zone</h3>
                 <p className="text-sm opacity-70 mb-4">
-                  Deleting this package will permanently remove it from the system. This action cannot be undone.
+                  Deleting this package will permanently remove it from the system. This action
+                  cannot be undone.
                 </p>
                 <button
                   className="btn btn-error btn-sm"

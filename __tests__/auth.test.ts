@@ -44,24 +44,22 @@ describe('Authentication Configuration', () => {
   it('should validate authentication flow logic', async () => {
     // Test the authentication logic without importing the actual module
     // This simulates the signIn callback behavior
-    
+
     const mockAccount = { provider: 'google' };
-    const mockProfile = { 
-      email: 'test@mythoria.pt', 
-      email_verified: true 
+    const mockProfile = {
+      email: 'test@mythoria.pt',
+      email_verified: true,
     };
-    
+
     // Simulate the signIn callback logic
     const isGoogleProvider = mockAccount.provider === 'google';
     const isEmailVerified = mockProfile.email_verified;
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain =>
-      mockProfile.email.endsWith(domain)
-    );
-    
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => mockProfile.email.endsWith(domain));
+
     expect(isGoogleProvider).toBe(true);
     expect(isEmailVerified).toBe(true);
     expect(isAllowedDomain).toBe(true);
-    
+
     // Test non-Google provider rejection
     const nonGoogleAccount = { provider: 'facebook' };
     const shouldRejectNonGoogle = nonGoogleAccount.provider !== 'google';
@@ -84,13 +82,13 @@ describe('Authentication Configuration', () => {
       'admin@caravanconciergecom',
     ];
 
-    validEmails.forEach(email => {
-      const isValid = ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
+    validEmails.forEach((email) => {
+      const isValid = ALLOWED_DOMAINS.some((domain) => email.endsWith(domain));
       expect(isValid).toBe(true);
     });
 
-    invalidEmails.forEach(email => {
-      const isValid = ALLOWED_DOMAINS.some(domain => email.endsWith(domain));
+    invalidEmails.forEach((email) => {
+      const isValid = ALLOWED_DOMAINS.some((domain) => email.endsWith(domain));
       expect(isValid).toBe(false);
     });
   });
@@ -103,17 +101,15 @@ describe('Authentication Configuration', () => {
       { email: 'test@caravanconcierge.com', email_verified: false },
     ];
 
-    const verifiedProfiles = profiles.filter(profile => profile.email_verified);
-    const unverifiedProfiles = profiles.filter(profile => !profile.email_verified);
+    const verifiedProfiles = profiles.filter((profile) => profile.email_verified);
+    const unverifiedProfiles = profiles.filter((profile) => !profile.email_verified);
 
     expect(verifiedProfiles).toHaveLength(2);
     expect(unverifiedProfiles).toHaveLength(2);
-    
+
     // All verified profiles should have valid domains
-    verifiedProfiles.forEach(profile => {
-      const hasValidDomain = ALLOWED_DOMAINS.some(domain =>
-        profile.email.endsWith(domain)
-      );
+    verifiedProfiles.forEach((profile) => {
+      const hasValidDomain = ALLOWED_DOMAINS.some((domain) => profile.email.endsWith(domain));
       expect(hasValidDomain).toBe(true);
     });
   });

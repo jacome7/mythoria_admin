@@ -26,9 +26,16 @@ const mockTemplates: NotificationTemplate[] = [
     language: 'en',
     eventType: 'ticket.created',
     subject: 'New Ticket Created: {{ticket.subject}}',
-    htmlContent: '<h2>New Ticket Created</h2><p>A new ticket has been created: {{ticket.subject}}</p>',
+    htmlContent:
+      '<h2>New Ticket Created</h2><p>A new ticket has been created: {{ticket.subject}}</p>',
     textContent: 'New Ticket Created\n\nA new ticket has been created: {{ticket.subject}}',
-    variables: ['ticket.id', 'ticket.subject', 'ticket.description', 'customer.name', 'customer.email'],
+    variables: [
+      'ticket.id',
+      'ticket.subject',
+      'ticket.description',
+      'customer.name',
+      'customer.email',
+    ],
     enabled: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -40,8 +47,10 @@ const mockTemplates: NotificationTemplate[] = [
     language: 'en',
     eventType: 'ticket.status_updated',
     subject: 'Ticket Status Updated: {{ticket.subject}}',
-    htmlContent: '<h2>Ticket Status Updated</h2><p>Ticket {{ticket.id}} status changed to {{ticket.status}}</p>',
-    textContent: 'Ticket Status Updated\n\nTicket {{ticket.id}} status changed to {{ticket.status}}',
+    htmlContent:
+      '<h2>Ticket Status Updated</h2><p>Ticket {{ticket.id}} status changed to {{ticket.status}}</p>',
+    textContent:
+      'Ticket Status Updated\n\nTicket {{ticket.id}} status changed to {{ticket.status}}',
     variables: ['ticket.id', 'ticket.subject', 'ticket.status', 'customer.name'],
     enabled: true,
     createdAt: new Date().toISOString(),
@@ -54,7 +63,8 @@ const mockTemplates: NotificationTemplate[] = [
     language: 'en',
     eventType: 'ticket.comment_added',
     subject: 'New Comment on Ticket: {{ticket.subject}}',
-    htmlContent: '<h2>New Comment Added</h2><p>A new comment has been added to ticket {{ticket.id}}</p>',
+    htmlContent:
+      '<h2>New Comment Added</h2><p>A new comment has been added to ticket {{ticket.id}}</p>',
     textContent: 'New Comment Added\n\nA new comment has been added to ticket {{ticket.id}}',
     variables: ['ticket.id', 'ticket.subject', 'comment.content', 'comment.author'],
     enabled: true,
@@ -66,15 +76,13 @@ const mockTemplates: NotificationTemplate[] = [
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -83,36 +91,31 @@ export async function GET() {
     // TODO: Implement database query to fetch notification templates
     return NextResponse.json({
       success: true,
-      data: mockTemplates
+      data: mockTemplates,
     });
   } catch (error) {
     console.error('Error fetching notification templates:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch notification templates' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch notification templates' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
-    
+
     const newTemplate: NotificationTemplate = {
       id: body.id || Date.now().toString(),
       name: body.name,
@@ -131,15 +134,15 @@ export async function POST(request: NextRequest) {
     // TODO: Implement database insert
     console.log('Creating notification template:', newTemplate);
 
-    return NextResponse.json({
-      success: true,
-      data: newTemplate
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: newTemplate,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error creating notification template:', error);
-    return NextResponse.json(
-      { error: 'Failed to create notification template' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create notification template' }, { status: 500 });
   }
 }

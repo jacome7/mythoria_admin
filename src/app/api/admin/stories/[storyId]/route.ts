@@ -3,10 +3,7 @@ import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
-export async function GET(
-  request: Request, 
-  { params }: { params: Promise<{ storyId: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ storyId: string }> }) {
   try {
     // Check if user is authenticated and authorized
     const session = await auth();
@@ -15,19 +12,17 @@ export async function GET(
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { storyId } = await params;
-    
+
     // Get story data with author information
     const story = await adminService.getStoryByIdWithAuthor(storyId);
-    
+
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
@@ -40,8 +35,8 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: Request, 
-  { params }: { params: Promise<{ storyId: string }> }
+  request: Request,
+  { params }: { params: Promise<{ storyId: string }> },
 ) {
   try {
     // Check if user is authenticated and authorized
@@ -51,9 +46,7 @@ export async function PATCH(
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -61,10 +54,10 @@ export async function PATCH(
 
     const { storyId } = await params;
     const body = await request.json();
-    
+
     // Update story
     const updatedStory = await adminService.updateStory(storyId, body);
-    
+
     if (!updatedStory) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }

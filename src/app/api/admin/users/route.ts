@@ -12,9 +12,7 @@ export async function GET(request: Request) {
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -25,7 +23,10 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
     const search = searchParams.get('search') || '';
-    const sortBy = (searchParams.get('sortBy') || 'createdAt') as 'displayName' | 'email' | 'createdAt';
+    const sortBy = (searchParams.get('sortBy') || 'createdAt') as
+      | 'displayName'
+      | 'email'
+      | 'createdAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get users data
@@ -43,8 +44,8 @@ export async function GET(request: Request) {
         totalCount,
         totalPages: Math.ceil(totalCount / limit),
         hasNext: users.length === limit,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     });
   } catch (error) {
     console.error('Error fetching users:', error);

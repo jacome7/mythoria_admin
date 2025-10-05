@@ -61,4 +61,3 @@ export function useStoryDetail(storyId: string, isReady: boolean) {
 
   return { story, isLoading, fetchStory, setStory };
 }
-

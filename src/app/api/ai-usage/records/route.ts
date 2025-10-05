@@ -6,7 +6,18 @@ import { auth } from '@/auth';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // Type for valid AI action types
-type AIActionType = 'story_structure' | 'story_outline' | 'chapter_writing' | 'image_generation' | 'story_review' | 'character_generation' | 'story_enhancement' | 'audio_generation' | 'content_validation' | 'image_edit' | 'test';
+type AIActionType =
+  | 'story_structure'
+  | 'story_outline'
+  | 'chapter_writing'
+  | 'image_generation'
+  | 'story_review'
+  | 'character_generation'
+  | 'story_enhancement'
+  | 'audio_generation'
+  | 'content_validation'
+  | 'image_edit'
+  | 'test';
 
 export interface TokenUsageRecord {
   tokenUsageId: string;
@@ -62,9 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has access (domain validation)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -88,7 +97,7 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const conditions = [
       gte(tokenUsageTracking.createdAt, startDate.toISOString()),
-      lte(tokenUsageTracking.createdAt, endDate.toISOString())
+      lte(tokenUsageTracking.createdAt, endDate.toISOString()),
     ];
 
     // Add search filter
@@ -98,8 +107,8 @@ export async function GET(request: NextRequest) {
           like(tokenUsageTracking.aiModel, `%${search}%`),
           like(tokenUsageTracking.action, `%${search}%`),
           like(tokenUsageTracking.authorId, `%${search}%`),
-          like(tokenUsageTracking.storyId, `%${search}%`)
-        )!
+          like(tokenUsageTracking.storyId, `%${search}%`),
+        )!,
       );
     }
 
@@ -167,9 +176,9 @@ export async function GET(request: NextRequest) {
       .offset(offset);
 
     // Calculate total tokens for each record
-    const enhancedRecords: TokenUsageRecord[] = records.map(record => ({
+    const enhancedRecords: TokenUsageRecord[] = records.map((record) => ({
       ...record,
-      totalTokens: record.inputTokens + record.outputTokens
+      totalTokens: record.inputTokens + record.outputTokens,
     }));
 
     const totalPages = Math.ceil(total / pageSize);
@@ -179,16 +188,12 @@ export async function GET(request: NextRequest) {
       total,
       page,
       pageSize,
-      totalPages
+      totalPages,
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
     console.error('Error fetching token usage records:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

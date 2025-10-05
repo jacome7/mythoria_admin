@@ -14,17 +14,17 @@ import dotenv from 'dotenv';
 import { envManifest, manifestByName } from '../env.manifest';
 
 interface SourceMaps {
-  dev: Record<string,string|undefined>;
-  prodFile: Record<string,string|undefined>;
-  cloudBuildSubstitutions: Record<string,string|undefined>;
-  cloudBuildSetEnv: Record<string,string|undefined>;
+  dev: Record<string, string | undefined>;
+  prodFile: Record<string, string | undefined>;
+  cloudBuildSubstitutions: Record<string, string | undefined>;
+  cloudBuildSetEnv: Record<string, string | undefined>;
   cloudBuildSecrets: Set<string>;
   buildArgs: Set<string>;
 }
 
 const root = path.resolve(__dirname, '..');
 
-function readEnvFile(name: string): Record<string,string|undefined> {
+function readEnvFile(name: string): Record<string, string | undefined> {
   const p = path.join(root, name);
   if (!fs.existsSync(p)) return {};
   return dotenv.parse(fs.readFileSync(p, 'utf8'));
@@ -34,26 +34,34 @@ function parseCloudBuild(): Partial<SourceMaps> {
   const file = path.join(root, 'cloudbuild.yaml');
   if (!fs.existsSync(file)) return {};
   const doc = yaml.load(fs.readFileSync(file, 'utf8')) as any;
-  const substitutions: Record<string,string> = doc?.substitutions || {};
-  const setEnv: Record<string,string> = {};
+  const substitutions: Record<string, string> = doc?.substitutions || {};
+  const setEnv: Record<string, string> = {};
   const secrets = new Set<string>();
   const buildArgs = new Set<string>();
 
-  for (const step of (doc?.steps || [])) {
+  for (const step of doc?.steps || []) {
     if (Array.isArray(step.args)) {
       const args: string[] = step.args;
-      for (let i=0;i<args.length;i++) {
-        if (args[i] === '--set-env-vars' && args[i+1]) {
-          args[i+1].split(',').forEach(p => { const [k,v] = p.split('='); if (k) setEnv[k.trim()] = (v||'').trim(); });
+      for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--set-env-vars' && args[i + 1]) {
+          args[i + 1].split(',').forEach((p) => {
+            const [k, v] = p.split('=');
+            if (k) setEnv[k.trim()] = (v || '').trim();
+          });
         }
-        if (args[i] === '--set-secrets' && args[i+1]) {
-          args[i+1].split(',').forEach(p => { const [k] = p.split('='); if (k) secrets.add(k.trim()); });
+        if (args[i] === '--set-secrets' && args[i + 1]) {
+          args[i + 1].split(',').forEach((p) => {
+            const [k] = p.split('=');
+            if (k) secrets.add(k.trim());
+          });
         }
       }
       // Detect build args patterns --build-arg NAME=VALUE
       for (const a of args) {
         if (typeof a === 'string') {
-          const re = /--build-arg\s+([A-Z0-9_]+)=/g; let m: RegExpExecArray|null; while ((m = re.exec(a))) buildArgs.add(m[1]);
+          const re = /--build-arg\s+([A-Z0-9_]+)=/g;
+          let m: RegExpExecArray | null;
+          while ((m = re.exec(a))) buildArgs.add(m[1]);
         }
       }
     }
@@ -64,21 +72,36 @@ function parseCloudBuild(): Partial<SourceMaps> {
     const raw = fs.readFileSync(file, 'utf8');
     const secretLineMatch = raw.match(/--set-secrets[^\n]*\n\s*-\s*'([^']+)'/);
     if (secretLineMatch) {
-      secretLineMatch[1].split(',').forEach(pair => { const [k] = pair.split('='); if (k) secrets.add(k.trim()); });
+      secretLineMatch[1].split(',').forEach((pair) => {
+        const [k] = pair.split('=');
+        if (k) secrets.add(k.trim());
+      });
     }
   }
   if (Object.keys(setEnv).length === 0) {
     const raw = fs.readFileSync(file, 'utf8');
     const envLineMatch = raw.match(/--set-env-vars[^\n]*\n\s*-\s*'([^']+)'/);
     if (envLineMatch) {
-      envLineMatch[1].split(',').forEach(pair => { const [k,v] = pair.split('='); if (k) setEnv[k.trim()] = (v||'').trim(); });
+      envLineMatch[1].split(',').forEach((pair) => {
+        const [k, v] = pair.split('=');
+        if (k) setEnv[k.trim()] = (v || '').trim();
+      });
     }
   }
 
-  return { cloudBuildSubstitutions: substitutions, cloudBuildSetEnv: setEnv, cloudBuildSecrets: secrets, buildArgs };
+  return {
+    cloudBuildSubstitutions: substitutions,
+    cloudBuildSetEnv: setEnv,
+    cloudBuildSecrets: secrets,
+    buildArgs,
+  };
 }
 
-interface Violation { type: 'Missing' | 'Empty' | 'Unexpected' | 'DeprecatedPresent'; key: string; detail?: string; }
+interface Violation {
+  type: 'Missing' | 'Empty' | 'Unexpected' | 'DeprecatedPresent';
+  key: string;
+  detail?: string;
+}
 
 function analyze(src: SourceMaps) {
   const manifest = manifestByName();
@@ -90,13 +113,15 @@ function analyze(src: SourceMaps) {
     ...Object.keys(src.cloudBuildSetEnv),
     ...Array.from(src.cloudBuildSecrets),
     ...Array.from(src.buildArgs),
-    ...envManifest.map(v=>v.name),
+    ...envManifest.map((v) => v.name),
   ]);
 
   function hasInScope(key: string, scope: string): boolean {
-    switch(scope) {
-      case 'dev': return src.dev[key] !== undefined; // presence only
-      case 'build': return src.buildArgs.has(key) || src.cloudBuildSubstitutions[key] !== undefined;
+    switch (scope) {
+      case 'dev':
+        return src.dev[key] !== undefined; // presence only
+      case 'build':
+        return src.buildArgs.has(key) || src.cloudBuildSubstitutions[key] !== undefined;
       case 'runtime': {
         if (src.cloudBuildSetEnv[key] !== undefined || src.cloudBuildSecrets.has(key)) return true;
         const subKey = `_${key}`;
@@ -106,9 +131,12 @@ function analyze(src: SourceMaps) {
         }
         return false;
       }
-      case 'prod': return true; // satisfied by runtime/build checks
-      case 'public': return /^(NEXT_PUBLIC_|PUBLIC_)/.test(key);
-      default: return false;
+      case 'prod':
+        return true; // satisfied by runtime/build checks
+      case 'public':
+        return /^(NEXT_PUBLIC_|PUBLIC_)/.test(key);
+      default:
+        return false;
     }
   }
 
@@ -121,8 +149,16 @@ function analyze(src: SourceMaps) {
     }
     if (desc.deprecated) {
       // If deprecated still appears in any non-substitution source, warn
-      if (src.cloudBuildSetEnv[key] !== undefined || src.dev[key] !== undefined || src.prodFile[key] !== undefined) {
-        violations.push({ type: 'DeprecatedPresent', key, detail: 'Deprecated variable still present' });
+      if (
+        src.cloudBuildSetEnv[key] !== undefined ||
+        src.dev[key] !== undefined ||
+        src.prodFile[key] !== undefined
+      ) {
+        violations.push({
+          type: 'DeprecatedPresent',
+          key,
+          detail: 'Deprecated variable still present',
+        });
       }
     }
     if (desc.required) {
@@ -134,7 +170,8 @@ function analyze(src: SourceMaps) {
     }
     if (desc.required && desc.scopes.includes('dev')) {
       const v = src.dev[key];
-      if (v !== undefined && v.trim() === '') violations.push({ type: 'Empty', key, detail: '.env.local empty value' });
+      if (v !== undefined && v.trim() === '')
+        violations.push({ type: 'Empty', key, detail: '.env.local empty value' });
     }
   }
   return violations;
@@ -153,8 +190,11 @@ function main() {
     buildArgs: cloud.buildArgs || new Set(),
   };
   const violations = analyze(sources);
-  const grouped = violations.reduce<Record<string,Violation[]>>((a,v)=>{ (a[v.type] ||= []).push(v); return a; }, {});
-  const order: Violation['type'][] = ['Missing','Empty','Unexpected','DeprecatedPresent'];
+  const grouped = violations.reduce<Record<string, Violation[]>>((a, v) => {
+    (a[v.type] ||= []).push(v);
+    return a;
+  }, {});
+  const order: Violation['type'][] = ['Missing', 'Empty', 'Unexpected', 'DeprecatedPresent'];
   if (violations.length === 0) {
     console.log('✅ Admin environment parity check passed.');
     process.exit(0);
@@ -164,7 +204,7 @@ function main() {
     const list = grouped[t];
     if (!list || list.length === 0) continue;
     console.log(`\n== ${t} ==`);
-    for (const v of list) console.log(` - ${v.key.padEnd(30,' ')} ${v.detail || ''}`);
+    for (const v of list) console.log(` - ${v.key.padEnd(30, ' ')} ${v.detail || ''}`);
   }
   process.exit(grouped['Missing']?.length ? 1 : 0);
 }

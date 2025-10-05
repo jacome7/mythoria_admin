@@ -6,12 +6,12 @@ import { sql } from 'drizzle-orm';
 export async function GET() {
   try {
     const db = getWorkflowsDb();
-    
+
     // Simple test query to check if we can connect and get data
     const result = await db
       .select({
         count: sql<number>`COUNT(*)`,
-        latestRecord: sql<string>`MAX(${tokenUsageTracking.createdAt})`
+        latestRecord: sql<string>`MAX(${tokenUsageTracking.createdAt})`,
       })
       .from(tokenUsageTracking);
 
@@ -20,16 +20,18 @@ export async function GET() {
       message: 'Database connection working',
       data: {
         totalRecords: Number(result[0]?.count) || 0,
-        latestRecord: result[0]?.latestRecord || null
-      }
+        latestRecord: result[0]?.latestRecord || null,
+      },
     });
-
   } catch (error) {
     console.error('Database test error:', error);
-    return NextResponse.json({
-      status: 'error',
-      message: 'Database connection failed',
-      error: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        status: 'error',
+        message: 'Database connection failed',
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
   }
 }

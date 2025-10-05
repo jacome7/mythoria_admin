@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -37,7 +37,9 @@ export default function NewBlogPostPage() {
           return;
         }
         localStorage.setItem(draftKey, JSON.stringify({ slugBase, heroImageUrl }));
-      } catch { /* ignore quota errors */ }
+      } catch {
+        /* ignore quota errors */
+      }
     }, 300);
     return () => clearTimeout(handle);
   }, [slugBase, heroImageUrl]);
@@ -47,38 +49,42 @@ export default function NewBlogPostPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!slugBase.trim()) {
       setError('Slug base is required');
       return;
     }
 
-  setSubmitting(true);
+    setSubmitting(true);
     setError('');
 
     try {
       const res = await fetch('/api/admin/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          slugBase: slugBase.trim(), 
-          heroImageUrl: heroImageUrl.trim() || null 
-        })
+        body: JSON.stringify({
+          slugBase: slugBase.trim(),
+          heroImageUrl: heroImageUrl.trim() || null,
+        }),
       });
 
       if (res.ok) {
         const json = await res.json();
         // Clear draft after successful creation
-        try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(draftKey);
+        } catch {
+          /* ignore */
+        }
         router.push(`/blog/${json.data.post.id}`);
       } else {
         const errorData = await res.json();
         setError(errorData.error || 'Failed to create blog post');
       }
-  } catch {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
-  setSubmitting(false);
+      setSubmitting(false);
     }
   }
 
@@ -103,7 +109,12 @@ export default function NewBlogPostPage() {
           <div className="flex items-center gap-4">
             <Link href="/blog" className="btn btn-ghost btn-sm">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Back to Blog List
             </Link>
@@ -116,7 +127,12 @@ export default function NewBlogPostPage() {
                 {error && (
                   <div className="alert alert-error">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     <span>{error}</span>
                   </div>
@@ -128,12 +144,12 @@ export default function NewBlogPostPage() {
                       Slug Base <span className="text-error">*</span>
                     </span>
                   </label>
-                  <input 
+                  <input
                     className={`input input-bordered w-full ${error && !slugBase.trim() ? 'input-error' : ''}`}
-                    value={slugBase} 
-                    onChange={e => setSlugBase(e.target.value)}
+                    value={slugBase}
+                    onChange={(e) => setSlugBase(e.target.value)}
                     placeholder="e.g., my-awesome-blog-post"
-                    required 
+                    required
                   />
                   <label className="label">
                     <span className="label-text-alt text-base-content/60">
@@ -146,10 +162,10 @@ export default function NewBlogPostPage() {
                   <label className="label">
                     <span className="label-text font-medium">Hero Image URL</span>
                   </label>
-                  <input 
+                  <input
                     className="input input-bordered w-full"
-                    value={heroImageUrl} 
-                    onChange={e => setHeroImageUrl(e.target.value)}
+                    value={heroImageUrl}
+                    onChange={(e) => setHeroImageUrl(e.target.value)}
                     placeholder="https://example.com/image.jpg"
                     type="url"
                   />
@@ -164,8 +180,8 @@ export default function NewBlogPostPage() {
                   <Link href="/blog" className="btn btn-ghost">
                     Cancel
                   </Link>
-                  <button 
-                    className="btn btn-primary" 
+                  <button
+                    className="btn btn-primary"
                     disabled={submitting || !slugBase.trim()}
                     type="submit"
                   >
@@ -176,8 +192,18 @@ export default function NewBlogPostPage() {
                       </>
                     ) : (
                       <>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
                         </svg>
                         Create Blog Post
                       </>
@@ -192,7 +218,8 @@ export default function NewBlogPostPage() {
             <div className="card-body">
               <h3 className="card-title text-lg">Next Steps</h3>
               <p className="text-base-content/70">
-                After creating your blog post, you&apos;ll be redirected to the edit page where you can:
+                After creating your blog post, you&apos;ll be redirected to the edit page where you
+                can:
               </p>
               <ul className="list-disc list-inside mt-2 space-y-1 text-base-content/70">
                 <li>Add content in multiple languages</li>

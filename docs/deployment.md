@@ -7,6 +7,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 ## Deployment Architecture
 
 ### Infrastructure Overview
+
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Developer     │───►│  Cloud Source    │───►│  Cloud Build    │
@@ -27,6 +28,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 ```
 
 ### Deployment Configuration
+
 - **Platform**: Google Cloud Run
 - **Region**: europe-west9 (Paris)
 - **Project**: oceanic-beach-460916-n5
@@ -36,6 +38,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 ## Prerequisites
 
 ### 1. Google Cloud Setup
+
 - Google Cloud Platform account with billing enabled
 - Project created: `oceanic-beach-460916-n5`
 - Required APIs enabled:
@@ -45,12 +48,14 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
   - Cloud SQL API
 
 ### 2. Local Development Environment
+
 - Google Cloud SDK installed and configured
 - Docker installed (for local testing)
 - Git repository access
 - Environment variables configured
 
 ### 3. Database Infrastructure
+
 - Cloud SQL PostgreSQL instance running
 - VPC network configured for private connectivity
 - Database schemas deployed:
@@ -61,6 +66,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 ## Deployment Files
 
 ### 1. Dockerfile
+
 ```dockerfile
 # Multi-stage build for production optimization
 FROM node:22.12-alpine AS base
@@ -109,11 +115,12 @@ CMD ["node", "server.js"]
 ```
 
 ### 2. Cloud Build Configuration (`cloudbuild.yaml`)
+
 ```yaml
 steps:
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: 
+    args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/mythoria-admin:$COMMIT_SHA'
@@ -123,12 +130,12 @@ steps:
 
   # Push the Docker image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: 
+    args:
       - 'push'
       - 'gcr.io/$PROJECT_ID/mythoria-admin:$COMMIT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: 
+    args:
       - 'push'
       - 'gcr.io/$PROJECT_ID/mythoria-admin:latest'
 
@@ -172,20 +179,21 @@ options:
 ```
 
 ### 3. Next.js Configuration (`next.config.ts`)
+
 ```typescript
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable standalone output for containerized deployment
   output: 'standalone',
-  
+
   // Environment variables validation
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
-  
+
   // Disable telemetry in production
   telemetry: false,
-  
+
   // Security headers
   async headers() {
     return [
@@ -212,7 +220,7 @@ const nextConfig = {
       },
     ];
   },
-  
+
   // Experimental features
   experimental: {
     // Enable React Server Components
@@ -228,6 +236,7 @@ export default nextConfig;
 ### 1. Production Environment Variables
 
 #### Cloud Run Environment Variables
+
 ```bash
 # Application Configuration
 NODE_ENV=production
@@ -244,6 +253,7 @@ BACKOFFICE_DB=backoffice_db
 ```
 
 #### Google Secret Manager Secrets
+
 ```bash
 # Authentication Secrets
 AUTH_SECRET=<generated-secret-key>
@@ -260,6 +270,7 @@ DB_PASSWORD=<database-password>
 ### 2. Secret Management
 
 #### Create Secrets in Google Secret Manager
+
 ```bash
 # Create authentication secret
 echo -n "your-super-secret-auth-key" | gcloud secrets create auth-secret --data-file=-
@@ -276,6 +287,7 @@ echo -n "your-db-password" | gcloud secrets create db-password --data-file=-
 ```
 
 #### Grant Cloud Run Access to Secrets
+
 ```bash
 # Get the Cloud Run service account
 SERVICE_ACCOUNT=$(gcloud run services describe mythoria-admin --region=europe-west9 --format="value(spec.template.spec.serviceAccountName)")
@@ -295,6 +307,7 @@ gcloud secrets add-iam-policy-binding db-password --member="serviceAccount:$SERV
 ### 1. Automated Deployment (Recommended)
 
 #### Using Cloud Build Trigger
+
 ```bash
 # Create a Cloud Build trigger
 gcloud builds triggers create github \
@@ -306,6 +319,7 @@ gcloud builds triggers create github \
 ```
 
 #### Manual Cloud Build Deployment
+
 ```bash
 # Navigate to project directory
 cd c:\Mythoria\mythoria_admin
@@ -320,6 +334,7 @@ gcloud builds list --limit=5
 ### 2. Local Deployment Script
 
 #### PowerShell Deployment Script (`scripts/deploy.ps1`)
+
 ```powershell
 # Mythoria Admin Portal Deployment Script
 param(
@@ -358,6 +373,7 @@ Write-Host "🌐 Service URL: https://$ServiceName-$ProjectId-$Region.a.run.app"
 ### 3. Database Migration Deployment
 
 #### Pre-Deployment Database Updates
+
 ```bash
 # Run database migrations before deployment
 npm run db:migrate
@@ -374,6 +390,7 @@ curl "https://mythoria-admin-oceanic-beach-460916-n5-europe-west9.a.run.app/api/
 ### 1. Cloud Run Monitoring
 
 #### View Service Logs
+
 ```bash
 # Stream logs in real-time
 gcloud run logs tail mythoria-admin --region=europe-west9
@@ -386,6 +403,7 @@ gcloud run logs read mythoria-admin --region=europe-west9 --log-filter='severity
 ```
 
 #### Monitor Service Metrics
+
 ```bash
 # Get service details
 gcloud run services describe mythoria-admin --region=europe-west9
@@ -397,6 +415,7 @@ gcloud run services list --filter="metadata.name:mythoria-admin"
 ### 2. Health Monitoring
 
 #### Health Check Endpoint
+
 ```bash
 # Basic health check
 curl "https://mythoria-admin-oceanic-beach-460916-n5-europe-west9.a.run.app/api/health"
@@ -406,6 +425,7 @@ curl "https://mythoria-admin-oceanic-beach-460916-n5-europe-west9.a.run.app/api/
 ```
 
 #### Monitoring Scripts
+
 ```bash
 # Create a monitoring script
 #!/bin/bash
@@ -425,6 +445,7 @@ fi
 ### 3. Performance Monitoring
 
 #### Cloud Monitoring Setup
+
 ```bash
 # Create monitoring dashboard
 gcloud monitoring dashboards create --config-from-file=monitoring-dashboard.json
@@ -438,16 +459,18 @@ gcloud alpha monitoring policies create --policy-from-file=alerting-policy.json
 ### 1. Auto-scaling Configuration
 
 #### Cloud Run Scaling Settings
+
 ```yaml
 # Scaling configuration in cloudbuild.yaml
-- '--min-instances=0'      # Scale to zero when no traffic
-- '--max-instances=5'      # Maximum 5 instances
-- '--cpu=1'                # 1 vCPU per instance
-- '--memory=512Mi'         # 512MB memory per instance
-- '--concurrency=100'      # 100 concurrent requests per instance
+- '--min-instances=0' # Scale to zero when no traffic
+- '--max-instances=5' # Maximum 5 instances
+- '--cpu=1' # 1 vCPU per instance
+- '--memory=512Mi' # 512MB memory per instance
+- '--concurrency=100' # 100 concurrent requests per instance
 ```
 
 #### Custom Scaling Policies
+
 ```bash
 # Update scaling settings
 gcloud run services update mythoria-admin \
@@ -461,12 +484,14 @@ gcloud run services update mythoria-admin \
 ### 2. Performance Optimization
 
 #### Container Optimization
+
 - **Multi-stage builds** - Reduce image size
 - **Standalone output** - Optimized Next.js build
 - **Alpine Linux** - Minimal base image
 - **Non-root user** - Security best practice
 
 #### Database Connection Optimization
+
 ```typescript
 // Connection pooling configuration
 const config = {
@@ -474,8 +499,8 @@ const config = {
   port: parseInt(process.env.DB_PORT || '5432'),
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  max: 20,          // Maximum pool size
-  min: 4,           // Minimum pool size
+  max: 20, // Maximum pool size
+  min: 4, // Minimum pool size
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 };
@@ -486,6 +511,7 @@ const config = {
 ### 1. Quick Rollback
 
 #### Rollback to Previous Version
+
 ```bash
 # List recent deployments
 gcloud run revisions list --service=mythoria-admin --region=europe-west9
@@ -499,6 +525,7 @@ gcloud run services update-traffic mythoria-admin \
 ### 2. Emergency Procedures
 
 #### Emergency Rollback Script
+
 ```bash
 #!/bin/bash
 # emergency-rollback.sh
@@ -528,6 +555,7 @@ echo "Rollback completed"
 ### Common Deployment Issues
 
 #### 1. Build Failures
+
 ```bash
 # Check build logs
 gcloud builds log <BUILD_ID>
@@ -540,6 +568,7 @@ gcloud builds log <BUILD_ID>
 ```
 
 #### 2. Runtime Errors
+
 ```bash
 # Check service logs
 gcloud run logs read mythoria-admin --region=europe-west9
@@ -552,6 +581,7 @@ gcloud run logs read mythoria-admin --region=europe-west9
 ```
 
 #### 3. Database Connection Issues
+
 ```bash
 # Test VPC connectivity
 gcloud compute ssh <instance-name> --zone=<zone>
@@ -564,6 +594,7 @@ gcloud compute networks vpc-access connectors list
 ### Debugging Tools
 
 #### Local Development Testing
+
 ```bash
 # Build and test locally
 docker build -t mythoria-admin-local .
@@ -574,6 +605,7 @@ docker run -p 3001:3000 \
 ```
 
 #### Production Debugging
+
 ```bash
 # Enable debug logging
 gcloud run services update mythoria-admin \

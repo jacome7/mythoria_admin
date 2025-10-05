@@ -1,8 +1,4 @@
-import {
-  TargetAudience,
-  NovelStyle,
-  GraphicalStyle,
-} from "@/types/story-enums";
+import { TargetAudience, NovelStyle, GraphicalStyle } from '@/types/story-enums';
 
 export interface StoryData {
   storyId: string;
@@ -21,14 +17,8 @@ export interface StoryData {
 export interface Story {
   storyId: string;
   title: string;
-  status: "draft" | "writing" | "published";
-  storyGenerationStatus?:
-    | "queued"
-    | "running"
-    | "failed"
-    | "completed"
-    | "cancelled"
-    | null;
+  status: 'draft' | 'writing' | 'published';
+  storyGenerationStatus?: 'queued' | 'running' | 'failed' | 'completed' | 'cancelled' | null;
   storyGenerationCompletedPercentage?: number;
   isPublic?: boolean;
   slug?: string;
@@ -36,5 +26,5 @@ export interface Story {
   updatedAt: string;
 }
 
-export type SortField = "title" | "createdAt" | "updatedAt" | "status";
-export type SortDirection = "asc" | "desc";
+export type SortField = 'title' | 'createdAt' | 'updatedAt' | 'status';
+export type SortDirection = 'asc' | 'desc';

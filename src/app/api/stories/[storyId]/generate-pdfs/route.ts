@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ storyId: string }> }
+  { params }: { params: Promise<{ storyId: string }> },
 ) {
   const { storyId } = await params;
   if (!storyId) {
@@ -22,6 +22,9 @@ export async function POST(
     return NextResponse.json({ success: true, message: 'PDF generation triggered.' });
   } catch (err) {
     console.error('Failed to trigger PDF generation:', err);
-    return NextResponse.json({ success: false, error: 'Failed to trigger PDF generation.' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Failed to trigger PDF generation.' },
+      { status: 500 },
+    );
   }
 }

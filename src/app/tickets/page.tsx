@@ -41,37 +41,39 @@ export default function TicketsPage() {
     try {
       const params = new URLSearchParams();
       if (filterStatus !== 'all') params.append('status', filterStatus);
-  if (filterType !== 'all') params.append('category', filterType); // API uses 'category'
+      if (filterType !== 'all') params.append('category', filterType); // API uses 'category'
 
       const response = await fetch(`/api/tickets?${params.toString()}`);
       if (response.ok) {
         const apiData = await response.json();
         console.log('API Response:', apiData); // Debug log
-        
+
         // Transform API data to match frontend interface
-        const transformedTickets = (apiData.data || []).map((ticket: {
-          id: string;
-          category: string;
-          subject: string;
-          status: string;
-          description: string;
-          metadata?: { email?: string; name?: string; [key: string]: unknown };
-          createdAt: string;
-          updatedAt: string;
-        }) => ({
-          id: ticket.id,
-          type: ticket.category as Ticket['type'],
-          subject: ticket.subject,
-          status: ticket.status as Ticket['status'],
-          description: ticket.description,
-          customerEmail: ticket.metadata?.email,
-          customerName: ticket.metadata?.name,
-          metadata: ticket.metadata,
-          createdAt: ticket.createdAt,
-          updatedAt: ticket.updatedAt,
-          commentCount: 0
-        }));
-        
+        const transformedTickets = (apiData.data || []).map(
+          (ticket: {
+            id: string;
+            category: string;
+            subject: string;
+            status: string;
+            description: string;
+            metadata?: { email?: string; name?: string; [key: string]: unknown };
+            createdAt: string;
+            updatedAt: string;
+          }) => ({
+            id: ticket.id,
+            type: ticket.category as Ticket['type'],
+            subject: ticket.subject,
+            status: ticket.status as Ticket['status'],
+            description: ticket.description,
+            customerEmail: ticket.metadata?.email,
+            customerName: ticket.metadata?.name,
+            metadata: ticket.metadata,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            commentCount: 0,
+          }),
+        );
+
         console.log('Transformed Tickets:', transformedTickets); // Debug log
         setTickets(transformedTickets);
       } else {
@@ -90,7 +92,7 @@ export default function TicketsPage() {
       if (response.ok) {
         const apiMetrics = await response.json();
         console.log('API Metrics Response:', apiMetrics); // Debug log
-        
+
         // Transform API metrics to match updated frontend interface (no urgent card)
         const transformedMetrics: TicketMetrics = {
           totalTickets: apiMetrics.totalTickets || apiMetrics.total || 0,
@@ -98,7 +100,7 @@ export default function TicketsPage() {
           inProgressTickets: apiMetrics.inProgressTickets || apiMetrics.inProgress || 0,
           resolvedTickets: apiMetrics.resolvedTickets || apiMetrics.resolved || 0,
         };
-        
+
         console.log('Transformed Metrics:', transformedMetrics); // Debug log
         setMetrics(transformedMetrics);
       }
@@ -118,37 +120,53 @@ export default function TicketsPage() {
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'open': return 'badge-error';
-      case 'in_progress': return 'badge-warning';
-      case 'resolved': return 'badge-success';
-      case 'closed': return 'badge-neutral';
-      default: return 'badge-ghost';
+      case 'open':
+        return 'badge-error';
+      case 'in_progress':
+        return 'badge-warning';
+      case 'resolved':
+        return 'badge-success';
+      case 'closed':
+        return 'badge-neutral';
+      default:
+        return 'badge-ghost';
     }
   };
 
   const getTypeBadgeClass = (type: string) => {
     switch (type) {
-      case 'contact': return 'badge-primary';
-      case 'print_request': return 'badge-secondary';
-      case 'payment_request': return 'badge-accent';
-      default: return 'badge-ghost';
+      case 'contact':
+        return 'badge-primary';
+      case 'print_request':
+        return 'badge-secondary';
+      case 'payment_request':
+        return 'badge-accent';
+      default:
+        return 'badge-ghost';
     }
   };
 
   const formatType = (type: string) => {
     switch (type) {
-      case 'contact': return 'Contact Us';
-      case 'print_request': return 'Print Request';
-      case 'payment_request': return 'Payment Request';
-      case 'other': return 'Other';
-      default: return type;
+      case 'contact':
+        return 'Contact Us';
+      case 'print_request':
+        return 'Print Request';
+      case 'payment_request':
+        return 'Payment Request';
+      case 'other':
+        return 'Other';
+      default:
+        return type;
     }
   };
 
   const formatStatus = (status: string) => {
     switch (status) {
-      case 'in_progress': return 'In Progress';
-      default: return status.charAt(0).toUpperCase() + status.slice(1);
+      case 'in_progress':
+        return 'In Progress';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -170,11 +188,14 @@ export default function TicketsPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      
       <main className="container mx-auto p-4">
         <div className="mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">Customer Tickets</h1>
-          <p className="text-base-content/70 text-sm md:text-base">Manage customer support tickets and requests</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">
+            Customer Tickets
+          </h1>
+          <p className="text-base-content/70 text-sm md:text-base">
+            Manage customer support tickets and requests
+          </p>
         </div>
 
         {/* Metrics Cards */}
@@ -208,7 +229,7 @@ export default function TicketsPage() {
                 <label className="label">
                   <span className="label-text">Status</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -220,12 +241,12 @@ export default function TicketsPage() {
                   <option value="closed">Closed</option>
                 </select>
               </div>
-              
-        <div className="form-control">
+
+              <div className="form-control">
                 <label className="label">
                   <span className="label-text">Type</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered"
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
@@ -233,7 +254,7 @@ export default function TicketsPage() {
                   <option value="all">All Types</option>
                   <option value="contact">Contact Us</option>
                   <option value="print_request">Print Request</option>
-          <option value="payment_request">Payment Request</option>
+                  <option value="payment_request">Payment Request</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -245,7 +266,7 @@ export default function TicketsPage() {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title">Tickets ({tickets.length})</h2>
-            
+
             {tickets.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-6xl mb-4">📋</div>
@@ -271,15 +292,15 @@ export default function TicketsPage() {
                       <tr
                         key={ticket.id}
                         className="cursor-pointer hover"
-                        onClick={() => { window.location.href = `/tickets/${ticket.id}`; }}
+                        onClick={() => {
+                          window.location.href = `/tickets/${ticket.id}`;
+                        }}
                       >
-                        <td className="font-mono text-sm">
-                          {getFormattedTicketNumber(ticket.id)}
-                        </td>
-            <td>
+                        <td className="font-mono text-sm">{getFormattedTicketNumber(ticket.id)}</td>
+                        <td>
                           <div className="font-medium">{getDisplaySubject(ticket)}</div>
                           {ticket.description && (
-              <div className="text-sm text-base-content/70 truncate max-w-[14rem] md:max-w-xs">
+                            <div className="text-sm text-base-content/70 truncate max-w-[14rem] md:max-w-xs">
                               {ticket.description}
                             </div>
                           )}
@@ -328,7 +349,6 @@ export default function TicketsPage() {
           </div>
         </div>
       </main>
-
     </div>
   );
 }

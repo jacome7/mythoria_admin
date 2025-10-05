@@ -1,0 +1,20 @@
+# Build artifacts
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+
+# Dependencies
+node_modules/
+
+# Generated or external assets
+public/
+logs/
+drizzle/**/*.sql
+drizzle/meta/
+false/
+docs/*.yaml
+
+# Misc
+*.swp

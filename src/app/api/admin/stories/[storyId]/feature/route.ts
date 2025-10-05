@@ -4,8 +4,8 @@ import { adminService } from '@/db/services';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export async function PATCH(
-  request: Request, 
-  { params }: { params: Promise<{ storyId: string }> }
+  request: Request,
+  { params }: { params: Promise<{ storyId: string }> },
 ) {
   try {
     // Check if user is authenticated and authorized
@@ -15,9 +15,7 @@ export async function PATCH(
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -25,21 +23,21 @@ export async function PATCH(
 
     const { storyId } = await params;
     const body = await request.json();
-    
+
     // Check if this is an unfeature request
     if (body.unfeature) {
       const updatedStory = await adminService.unfeatureStory(storyId);
-      
+
       if (!updatedStory) {
         return NextResponse.json({ error: 'Story not found' }, { status: 404 });
       }
 
       return NextResponse.json(updatedStory);
     }
-    
+
     // Otherwise, this is a feature request
     const { featureImageUri } = body;
-    
+
     if (!featureImageUri || typeof featureImageUri !== 'string') {
       return NextResponse.json({ error: 'Feature image URI is required' }, { status: 400 });
     }
@@ -53,10 +51,10 @@ export async function PATCH(
     if (!story.isPublic) {
       return NextResponse.json({ error: 'Only public stories can be featured' }, { status: 400 });
     }
-    
+
     // Feature the story (set isFeatured = true and update featureImageUri)
     const updatedStory = await adminService.featureStory(storyId, featureImageUri);
-    
+
     if (!updatedStory) {
       return NextResponse.json({ error: 'Failed to feature story' }, { status: 500 });
     }

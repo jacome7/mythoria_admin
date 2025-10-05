@@ -43,32 +43,74 @@ export default function RevenuePage() {
   const fetchRevenueData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Mock data for now - replace with actual API calls
       const mockRevenueData: RevenueData[] = [
-        { period: '2025-01-01', revenue: 1250.00, transactions: 45, averageOrderValue: 27.78, refunds: 2 },
-        { period: '2024-12-31', revenue: 2100.50, transactions: 78, averageOrderValue: 26.93, refunds: 1 },
-        { period: '2024-12-30', revenue: 1890.25, transactions: 62, averageOrderValue: 30.49, refunds: 3 },
-        { period: '2024-12-29', revenue: 2450.75, transactions: 89, averageOrderValue: 27.54, refunds: 0 },
-        { period: '2024-12-28', revenue: 1675.00, transactions: 56, averageOrderValue: 29.91, refunds: 4 },
-        { period: '2024-12-27', revenue: 3200.25, transactions: 112, averageOrderValue: 28.57, refunds: 2 },
-        { period: '2024-12-26', revenue: 2890.50, transactions: 95, averageOrderValue: 30.43, refunds: 1 }
+        {
+          period: '2025-01-01',
+          revenue: 1250.0,
+          transactions: 45,
+          averageOrderValue: 27.78,
+          refunds: 2,
+        },
+        {
+          period: '2024-12-31',
+          revenue: 2100.5,
+          transactions: 78,
+          averageOrderValue: 26.93,
+          refunds: 1,
+        },
+        {
+          period: '2024-12-30',
+          revenue: 1890.25,
+          transactions: 62,
+          averageOrderValue: 30.49,
+          refunds: 3,
+        },
+        {
+          period: '2024-12-29',
+          revenue: 2450.75,
+          transactions: 89,
+          averageOrderValue: 27.54,
+          refunds: 0,
+        },
+        {
+          period: '2024-12-28',
+          revenue: 1675.0,
+          transactions: 56,
+          averageOrderValue: 29.91,
+          refunds: 4,
+        },
+        {
+          period: '2024-12-27',
+          revenue: 3200.25,
+          transactions: 112,
+          averageOrderValue: 28.57,
+          refunds: 2,
+        },
+        {
+          period: '2024-12-26',
+          revenue: 2890.5,
+          transactions: 95,
+          averageOrderValue: 30.43,
+          refunds: 1,
+        },
       ];
 
       const mockTopProducts: TopProduct[] = [
-        { name: 'Creator Pack (15 Credits)', revenue: 4567.50, units: 183, percentage: 35.2 },
+        { name: 'Creator Pack (15 Credits)', revenue: 4567.5, units: 183, percentage: 35.2 },
         { name: 'Family Pack (35 Credits)', revenue: 3894.75, units: 78, percentage: 30.1 },
         { name: 'Starter Pack (5 Credits)', revenue: 2234.25, units: 224, percentage: 17.3 },
-        { name: 'Enterprise (150 Credits)', revenue: 1999.80, units: 10, percentage: 15.4 },
-        { name: 'Custom Solutions', revenue: 249.90, units: 1, percentage: 2.0 }
+        { name: 'Enterprise (150 Credits)', revenue: 1999.8, units: 10, percentage: 15.4 },
+        { name: 'Custom Solutions', revenue: 249.9, units: 1, percentage: 2.0 },
       ];
 
       const mockPaymentMethods: PaymentMethod[] = [
-        { method: 'Credit Card', revenue: 8234.50, transactions: 387, percentage: 63.6 },
+        { method: 'Credit Card', revenue: 8234.5, transactions: 387, percentage: 63.6 },
         { method: 'PayPal', revenue: 2890.75, transactions: 95, percentage: 22.3 },
         { method: 'Apple Pay', revenue: 1234.25, transactions: 42, percentage: 9.5 },
-        { method: 'Google Pay', revenue: 587.70, transactions: 19, percentage: 4.5 },
-        { method: 'Bank Transfer', revenue: 8.00, transactions: 1, percentage: 0.1 }
+        { method: 'Google Pay', revenue: 587.7, transactions: 19, percentage: 4.5 },
+        { method: 'Bank Transfer', revenue: 8.0, transactions: 1, percentage: 0.1 },
       ];
 
       setRevenueData(mockRevenueData);
@@ -111,10 +153,10 @@ export default function RevenuePage() {
               <h1 className="text-3xl font-bold text-base-content mb-2">Revenue Analytics</h1>
               <p className="text-base-content/70">Track sales performance and revenue metrics</p>
             </div>
-            
+
             <div className="form-control">
-              <select 
-                className="select select-bordered" 
+              <select
+                className="select select-bordered"
                 value={timePeriod}
                 onChange={(e) => setTimePeriod(e.target.value as '7d' | '30d' | '90d' | '1y')}
               >
@@ -132,11 +174,13 @@ export default function RevenuePage() {
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm text-primary">Total Revenue</h3>
-              <p className="text-3xl font-bold">€{totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+              <p className="text-3xl font-bold">
+                €{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </p>
               <div className="text-sm text-success">+12.5% vs previous period</div>
             </div>
           </div>
-          
+
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm text-secondary">Transactions</h3>
@@ -144,7 +188,7 @@ export default function RevenuePage() {
               <div className="text-sm text-success">+8.3% vs previous period</div>
             </div>
           </div>
-          
+
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm text-accent">Avg Order Value</h3>
@@ -152,7 +196,7 @@ export default function RevenuePage() {
               <div className="text-sm text-success">+3.2% vs previous period</div>
             </div>
           </div>
-          
+
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm text-warning">Refunds</h3>
@@ -171,7 +215,9 @@ export default function RevenuePage() {
                 <div className="text-center">
                   <div className="text-4xl mb-2">📈</div>
                   <p className="text-base-content/70">Revenue chart would go here</p>
-                  <p className="text-sm text-base-content/50">Integration with charting library needed</p>
+                  <p className="text-sm text-base-content/50">
+                    Integration with charting library needed
+                  </p>
                 </div>
               </div>
             </div>
@@ -188,11 +234,15 @@ export default function RevenuePage() {
                       <div className="badge badge-primary badge-sm mr-3">{index + 1}</div>
                       <div>
                         <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-base-content/70">{product.units} units sold</div>
+                        <div className="text-sm text-base-content/70">
+                          {product.units} units sold
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold">€{product.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                      <div className="font-bold">
+                        €{product.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </div>
                       <div className="text-sm text-base-content/70">{product.percentage}%</div>
                     </div>
                   </div>
@@ -212,10 +262,14 @@ export default function RevenuePage() {
                   <div key={method.method} className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{method.method}</div>
-                      <div className="text-sm text-base-content/70">{method.transactions} transactions</div>
+                      <div className="text-sm text-base-content/70">
+                        {method.transactions} transactions
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold">€{method.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                      <div className="font-bold">
+                        €{method.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </div>
                       <div className="text-sm text-base-content/70">{method.percentage}%</div>
                     </div>
                   </div>
@@ -244,11 +298,9 @@ export default function RevenuePage() {
                   <tbody>
                     {revenueData.slice(0, 7).map((day) => (
                       <tr key={day.period}>
-                        <td className="text-sm">
-                          {formatAdminDate(day.period)}
-                        </td>
+                        <td className="text-sm">{formatAdminDate(day.period)}</td>
                         <td className="font-bold">
-                          €{day.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                          €{day.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                         <td>{day.transactions}</td>
                         <td>€{day.averageOrderValue.toFixed(2)}</td>

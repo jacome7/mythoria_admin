@@ -37,7 +37,9 @@ interface NotificationChannel {
 export default function NotificationsPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'rules' | 'templates' | 'channels' | 'settings'>('rules');
+  const [activeTab, setActiveTab] = useState<'rules' | 'templates' | 'channels' | 'settings'>(
+    'rules',
+  );
   const [rules, setRules] = useState<NotificationRule[]>([]);
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
@@ -57,7 +59,7 @@ export default function NotificationsPage() {
   const loadNotificationData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Load notification rules
       const rulesResponse = await fetch('/api/notifications/rules');
       if (rulesResponse.ok) {
@@ -96,9 +98,7 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setRules(prev => prev.map(rule => 
-          rule.id === ruleId ? { ...rule, enabled } : rule
-        ));
+        setRules((prev) => prev.map((rule) => (rule.id === ruleId ? { ...rule, enabled } : rule)));
       } else {
         console.error('Failed to update rule');
       }
@@ -118,9 +118,9 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setChannels(prev => prev.map(channel => 
-          channel.id === channelId ? { ...channel, enabled } : channel
-        ));
+        setChannels((prev) =>
+          prev.map((channel) => (channel.id === channelId ? { ...channel, enabled } : channel)),
+        );
       } else {
         console.error('Failed to update channel');
       }
@@ -141,7 +141,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      
       <div className="container mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Notification Management</h1>
@@ -154,25 +153,25 @@ export default function NotificationsPage() {
 
         {/* Tabs */}
         <div className="tabs tabs-bordered mb-6">
-          <button 
+          <button
             className={`tab tab-lg ${activeTab === 'rules' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('rules')}
           >
             Notification Rules
           </button>
-          <button 
+          <button
             className={`tab tab-lg ${activeTab === 'templates' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('templates')}
           >
             Templates
           </button>
-          <button 
+          <button
             className={`tab tab-lg ${activeTab === 'channels' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('channels')}
           >
             Channels
           </button>
-          <button 
+          <button
             className={`tab tab-lg ${activeTab === 'settings' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
@@ -188,7 +187,7 @@ export default function NotificationsPage() {
               <p className="text-base-content/70 mb-4">
                 Configure when and how notifications are sent for different ticket events.
               </p>
-              
+
               <div className="overflow-x-auto">
                 <table className="table table-zebra">
                   <thead>
@@ -206,9 +205,7 @@ export default function NotificationsPage() {
                       <tr key={rule.id}>
                         <td className="font-medium">{rule.name}</td>
                         <td>
-                          <span className="badge badge-outline">
-                            {rule.eventType}
-                          </span>
+                          <span className="badge badge-outline">{rule.eventType}</span>
                         </td>
                         <td>
                           <div className="flex gap-1">
@@ -230,15 +227,13 @@ export default function NotificationsPage() {
                         </td>
                         <td>
                           <div className="flex gap-2">
-                            <Link 
+                            <Link
                               href={`/notifications/rules/${rule.id}`}
                               className="btn btn-ghost btn-sm"
                             >
                               Edit
                             </Link>
-                            <button className="btn btn-ghost btn-sm text-error">
-                              Delete
-                            </button>
+                            <button className="btn btn-ghost btn-sm text-error">Delete</button>
                           </div>
                         </td>
                       </tr>
@@ -258,7 +253,7 @@ export default function NotificationsPage() {
               <p className="text-base-content/70 mb-4">
                 Manage templates used for different types of notifications.
               </p>
-              
+
               <div className="overflow-x-auto">
                 <table className="table table-zebra">
                   <thead>
@@ -275,23 +270,19 @@ export default function NotificationsPage() {
                       <tr key={template.id}>
                         <td className="font-medium">{template.name}</td>
                         <td>
-                          <span className="badge badge-outline">
-                            {template.type}
-                          </span>
+                          <span className="badge badge-outline">{template.type}</span>
                         </td>
                         <td>{template.language}</td>
                         <td className="truncate max-w-xs">{template.subject}</td>
                         <td>
                           <div className="flex gap-2">
-                            <Link 
+                            <Link
                               href={`/notifications/templates/${template.id}`}
                               className="btn btn-ghost btn-sm"
                             >
                               Edit
                             </Link>
-                            <button className="btn btn-ghost btn-sm">
-                              Preview
-                            </button>
+                            <button className="btn btn-ghost btn-sm">Preview</button>
                           </div>
                         </td>
                       </tr>
@@ -311,7 +302,7 @@ export default function NotificationsPage() {
               <p className="text-base-content/70 mb-4">
                 Configure and manage notification delivery channels.
               </p>
-              
+
               <div className="grid gap-4">
                 {channels.map((channel) => (
                   <div key={channel.id} className="card bg-base-200">
@@ -330,9 +321,7 @@ export default function NotificationsPage() {
                             checked={channel.enabled}
                             onChange={(e) => toggleChannel(channel.id, e.target.checked)}
                           />
-                          <button className="btn btn-ghost btn-sm">
-                            Configure
-                          </button>
+                          <button className="btn btn-ghost btn-sm">Configure</button>
                         </div>
                       </div>
                     </div>
@@ -351,7 +340,7 @@ export default function NotificationsPage() {
               <p className="text-base-content/70 mb-4">
                 Global notification settings and preferences.
               </p>
-              
+
               <div className="space-y-6">
                 <div className="form-control">
                   <label className="label cursor-pointer">
@@ -359,14 +348,14 @@ export default function NotificationsPage() {
                     <input type="checkbox" className="toggle toggle-primary" defaultChecked />
                   </label>
                 </div>
-                
+
                 <div className="form-control">
                   <label className="label cursor-pointer">
                     <span className="label-text">Send notifications to admins</span>
                     <input type="checkbox" className="toggle toggle-primary" defaultChecked />
                   </label>
                 </div>
-                
+
                 <div className="form-control">
                   <label className="label cursor-pointer">
                     <span className="label-text">Send notifications to customers</span>
@@ -380,10 +369,10 @@ export default function NotificationsPage() {
                   <label className="label">
                     <span className="label-text">Notification Engine URL</span>
                   </label>
-                  <input 
-                    type="text" 
-                    placeholder="http://localhost:3002" 
-                    className="input input-bordered" 
+                  <input
+                    type="text"
+                    placeholder="http://localhost:3002"
+                    className="input input-bordered"
                     defaultValue={process.env.NOTIFICATION_ENGINE_URL || ''}
                   />
                 </div>
@@ -392,10 +381,10 @@ export default function NotificationsPage() {
                   <label className="label">
                     <span className="label-text">API Key</span>
                   </label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••••••••••" 
-                    className="input input-bordered" 
+                  <input
+                    type="password"
+                    placeholder="••••••••••••••••"
+                    className="input input-bordered"
                   />
                 </div>
 
@@ -407,7 +396,6 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

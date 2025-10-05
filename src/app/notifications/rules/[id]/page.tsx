@@ -47,7 +47,7 @@ export default function NotificationRulePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
-  
+
   const [rule, setRule] = useState<NotificationRule>({
     name: '',
     eventType: 'ticket.created',
@@ -71,23 +71,23 @@ export default function NotificationRulePage() {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Load templates and channels
       const [templatesResponse, channelsResponse] = await Promise.all([
         fetch('/api/notifications/templates'),
-        fetch('/api/notifications/channels')
+        fetch('/api/notifications/channels'),
       ]);
-      
+
       if (templatesResponse.ok) {
         const templatesData = await templatesResponse.json();
         setTemplates(templatesData.data || []);
-        
+
         // Set default template if available and not editing
         if (!isEditing && templatesData.data && templatesData.data.length > 0) {
-          setRule(prev => ({ ...prev, templateId: templatesData.data[0].id }));
+          setRule((prev) => ({ ...prev, templateId: templatesData.data[0].id }));
         }
       }
-      
+
       if (channelsResponse.ok) {
         const channelsData = await channelsResponse.json();
         setChannels(channelsData.data?.filter((c: NotificationChannel) => c.enabled) || []);
@@ -122,13 +122,11 @@ export default function NotificationRulePage() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
-      const url = isEditing 
-        ? `/api/notifications/rules/${params?.id}`
-        : '/api/notifications/rules';
-      
+
+      const url = isEditing ? `/api/notifications/rules/${params?.id}` : '/api/notifications/rules';
+
       const method = isEditing ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -151,46 +149,46 @@ export default function NotificationRulePage() {
   };
 
   const handleChannelToggle = (channelId: string) => {
-    setRule(prev => ({
+    setRule((prev) => ({
       ...prev,
       channels: prev.channels.includes(channelId)
-        ? prev.channels.filter(id => id !== channelId)
-        : [...prev.channels, channelId]
+        ? prev.channels.filter((id) => id !== channelId)
+        : [...prev.channels, channelId],
     }));
   };
 
   const handleConditionToggle = (type: 'ticketType' | 'priority' | 'status', value: string) => {
-    setRule(prev => ({
+    setRule((prev) => ({
       ...prev,
       conditions: {
         ...prev.conditions,
         [type]: prev.conditions?.[type]?.includes(value)
-          ? prev.conditions[type]?.filter(v => v !== value) || []
-          : [...(prev.conditions?.[type] || []), value]
-      }
+          ? prev.conditions[type]?.filter((v) => v !== value) || []
+          : [...(prev.conditions?.[type] || []), value],
+      },
     }));
   };
 
   const addCustomEmail = () => {
     if (customEmail.trim() && !rule.recipients?.customEmails.includes(customEmail.trim())) {
-      setRule(prev => ({
+      setRule((prev) => ({
         ...prev,
         recipients: {
           ...prev.recipients!,
-          customEmails: [...prev.recipients!.customEmails, customEmail.trim()]
-        }
+          customEmails: [...prev.recipients!.customEmails, customEmail.trim()],
+        },
       }));
       setCustomEmail('');
     }
   };
 
   const removeCustomEmail = (email: string) => {
-    setRule(prev => ({
+    setRule((prev) => ({
       ...prev,
       recipients: {
         ...prev.recipients!,
-        customEmails: prev.recipients!.customEmails.filter(e => e !== email)
-      }
+        customEmails: prev.recipients!.customEmails.filter((e) => e !== email),
+      },
     }));
   };
 
@@ -206,7 +204,6 @@ export default function NotificationRulePage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      
       <div className="container mx-auto p-4">
         <div className="flex items-center gap-4 mb-6">
           <Link href="/notifications" className="btn btn-ghost">
@@ -231,7 +228,7 @@ export default function NotificationRulePage() {
                     placeholder="Enter rule name"
                     className="input input-bordered"
                     value={rule.name}
-                    onChange={(e) => setRule(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setRule((prev) => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
 
@@ -242,10 +239,12 @@ export default function NotificationRulePage() {
                   <select
                     className="select select-bordered"
                     value={rule.eventType}
-                    onChange={(e) => setRule(prev => ({ 
-                      ...prev, 
-                      eventType: e.target.value as NotificationRule['eventType']
-                    }))}
+                    onChange={(e) =>
+                      setRule((prev) => ({
+                        ...prev,
+                        eventType: e.target.value as NotificationRule['eventType'],
+                      }))
+                    }
                   >
                     <option value="ticket.created">Ticket Created</option>
                     <option value="ticket.status_updated">Ticket Status Updated</option>
@@ -262,7 +261,7 @@ export default function NotificationRulePage() {
                 <select
                   className="select select-bordered"
                   value={rule.templateId}
-                  onChange={(e) => setRule(prev => ({ ...prev, templateId: e.target.value }))}
+                  onChange={(e) => setRule((prev) => ({ ...prev, templateId: e.target.value }))}
                 >
                   <option value="">Select a template</option>
                   {templates.map((template) => (
@@ -297,7 +296,8 @@ export default function NotificationRulePage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Conditions (Optional)</h3>
                 <p className="text-sm text-base-content/70">
-                  Only send notifications when these conditions are met. Leave empty to send for all events.
+                  Only send notifications when these conditions are met. Leave empty to send for all
+                  events.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -315,7 +315,9 @@ export default function NotificationRulePage() {
                             checked={rule.conditions?.ticketType?.includes(type) || false}
                             onChange={() => handleConditionToggle('ticketType', type)}
                           />
-                          <span className="label-text ml-2 capitalize">{type.replace('_', ' ')}</span>
+                          <span className="label-text ml-2 capitalize">
+                            {type.replace('_', ' ')}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -355,7 +357,9 @@ export default function NotificationRulePage() {
                             checked={rule.conditions?.status?.includes(status) || false}
                             onChange={() => handleConditionToggle('status', status)}
                           />
-                          <span className="label-text ml-2 capitalize">{status.replace('_', ' ')}</span>
+                          <span className="label-text ml-2 capitalize">
+                            {status.replace('_', ' ')}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -366,20 +370,22 @@ export default function NotificationRulePage() {
               {/* Recipients */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Recipients</h3>
-                
+
                 <div className="space-y-2">
                   <label className="cursor-pointer label justify-start">
                     <input
                       type="checkbox"
                       className="checkbox checkbox-primary"
                       checked={rule.recipients?.includeAdmins || false}
-                      onChange={(e) => setRule(prev => ({
-                        ...prev,
-                        recipients: {
-                          ...prev.recipients!,
-                          includeAdmins: e.target.checked
-                        }
-                      }))}
+                      onChange={(e) =>
+                        setRule((prev) => ({
+                          ...prev,
+                          recipients: {
+                            ...prev.recipients!,
+                            includeAdmins: e.target.checked,
+                          },
+                        }))
+                      }
                     />
                     <span className="label-text ml-2">Include Admins</span>
                   </label>
@@ -389,13 +395,15 @@ export default function NotificationRulePage() {
                       type="checkbox"
                       className="checkbox checkbox-primary"
                       checked={rule.recipients?.includeCustomers || false}
-                      onChange={(e) => setRule(prev => ({
-                        ...prev,
-                        recipients: {
-                          ...prev.recipients!,
-                          includeCustomers: e.target.checked
-                        }
-                      }))}
+                      onChange={(e) =>
+                        setRule((prev) => ({
+                          ...prev,
+                          recipients: {
+                            ...prev.recipients!,
+                            includeCustomers: e.target.checked,
+                          },
+                        }))
+                      }
                     />
                     <span className="label-text ml-2">Include Customers</span>
                   </label>
@@ -415,15 +423,11 @@ export default function NotificationRulePage() {
                       onChange={(e) => setCustomEmail(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCustomEmail()}
                     />
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={addCustomEmail}
-                    >
+                    <button type="button" className="btn btn-primary" onClick={addCustomEmail}>
                       Add
                     </button>
                   </div>
-                  
+
                   {rule.recipients?.customEmails && rule.recipients.customEmails.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {rule.recipients.customEmails.map((email) => (
@@ -450,7 +454,7 @@ export default function NotificationRulePage() {
                     type="checkbox"
                     className="toggle toggle-primary"
                     checked={rule.enabled}
-                    onChange={(e) => setRule(prev => ({ ...prev, enabled: e.target.checked }))}
+                    onChange={(e) => setRule((prev) => ({ ...prev, enabled: e.target.checked }))}
                   />
                   <span className="label-text ml-2">Enable this rule</span>
                 </label>
@@ -474,7 +478,6 @@ export default function NotificationRulePage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

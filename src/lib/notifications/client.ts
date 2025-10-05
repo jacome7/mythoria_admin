@@ -30,7 +30,7 @@ class NotificationClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
           'X-API-Key': this.apiKey, // Some implementations use this header
         },
         body: JSON.stringify({
@@ -87,21 +87,21 @@ class NotificationClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
           'x-api-key': this.apiKey,
         },
         body: JSON.stringify({
           templateId: args.templateId,
-            recipients: args.recipients.map(r => ({
-              email: r.email,
-              ...(r.name ? { name: r.name } : {}),
-              ...(r.language ? { language: r.language } : {})
-            })),
+          recipients: args.recipients.map((r) => ({
+            email: r.email,
+            ...(r.name ? { name: r.name } : {}),
+            ...(r.language ? { language: r.language } : {}),
+          })),
           ...(args.variables ? { variables: args.variables } : {}),
           ...(args.priority ? { priority: args.priority } : {}),
           ...(args.metadata ? { metadata: args.metadata } : {}),
-          ...(args.authorId ? { authorId: args.authorId } : {})
-        })
+          ...(args.authorId ? { authorId: args.authorId } : {}),
+        }),
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -130,14 +130,14 @@ class NotificationClient {
       recipients: [{ email: params.email, name: params.name, language }],
       variables: {
         name: params.name,
-        credits: params.credits
+        credits: params.credits,
       },
       priority: 'normal',
       metadata: {
         notificationType: 'credit-refund',
-        creditEventType: 'refund'
+        creditEventType: 'refund',
       },
-      authorId: params.authorId
+      authorId: params.authorId,
     });
   }
 
@@ -165,7 +165,7 @@ class NotificationClient {
       description: string;
       createdAt: string;
       metadata?: Record<string, unknown>;
-    }
+    },
   ): Promise<NotificationResponse> {
     return this.sendEmail({
       recipients: [customerEmail],
@@ -204,7 +204,7 @@ class NotificationClient {
       updatedAt: string;
     },
     previousStatus: string,
-    statusMessage?: string
+    statusMessage?: string,
   ): Promise<NotificationResponse> {
     return this.sendEmail({
       recipients: [customerEmail],
@@ -248,7 +248,7 @@ class NotificationClient {
       authorName: string;
       authorType: string;
       createdAt: string;
-    }
+    },
   ): Promise<NotificationResponse> {
     return this.sendEmail({
       recipients: [customerEmail],
@@ -293,7 +293,7 @@ class NotificationClient {
   }
 
   private mapTicketPriorityToNotificationPriority(
-    ticketPriority: string
+    ticketPriority: string,
   ): 'low' | 'normal' | 'high' | 'urgent' {
     switch (ticketPriority) {
       case 'urgent':

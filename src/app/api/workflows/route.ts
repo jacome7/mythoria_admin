@@ -13,9 +13,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const status = searchParams.get('status') as 'queued' | 'running' | 'failed' | 'completed' | 'cancelled' | null;
+    const status = searchParams.get('status') as
+      | 'queued'
+      | 'running'
+      | 'failed'
+      | 'completed'
+      | 'cancelled'
+      | null;
     const search = searchParams.get('search');
-    const sortBy = (searchParams.get('sortBy') || 'createdAt') as 'createdAt' | 'startedAt' | 'endedAt';
+    const sortBy = (searchParams.get('sortBy') || 'createdAt') as
+      | 'createdAt'
+      | 'startedAt'
+      | 'endedAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get workflows
@@ -25,7 +34,7 @@ export async function GET(request: NextRequest) {
       status || undefined,
       search || undefined,
       sortBy,
-      sortOrder
+      sortOrder,
     );
 
     // Get total count for pagination
@@ -42,9 +51,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching workflows:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

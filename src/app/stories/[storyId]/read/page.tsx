@@ -49,11 +49,13 @@ export default function ReadStoryPage() {
         const latestByNumber: Record<number, Chapter> = {};
         for (const ch of data.chapters as Chapter[]) {
           const existing = latestByNumber[ch.chapterNumber];
-            if (!existing || ch.version > existing.version) {
-              latestByNumber[ch.chapterNumber] = ch;
-            }
+          if (!existing || ch.version > existing.version) {
+            latestByNumber[ch.chapterNumber] = ch;
+          }
         }
-        const deduped = Object.values(latestByNumber).sort((a,b)=> a.chapterNumber - b.chapterNumber);
+        const deduped = Object.values(latestByNumber).sort(
+          (a, b) => a.chapterNumber - b.chapterNumber,
+        );
         setChapters(deduped);
       } else if (response.status === 404) {
         setError('Story not found');
@@ -98,10 +100,7 @@ export default function ReadStoryPage() {
             <div className="text-6xl mb-4">📚</div>
             <h1 className="text-3xl font-bold mb-4">Error</h1>
             <p className="text-lg mb-6">{error}</p>
-            <button
-              onClick={() => router.push(`/stories/${storyId}`)}
-              className="btn btn-primary"
-            >
+            <button onClick={() => router.push(`/stories/${storyId}`)} className="btn btn-primary">
               Back to Story Details
             </button>
           </div>
@@ -117,10 +116,7 @@ export default function ReadStoryPage() {
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">No Chapters Found</h1>
             <p className="text-lg mb-6">This story doesn&apos;t have any chapters!</p>
-            <button
-              onClick={() => router.push(`/stories/${storyId}`)}
-              className="btn btn-primary"
-            >
+            <button onClick={() => router.push(`/stories/${storyId}`)} className="btn btn-primary">
               Back to Story Details
             </button>
           </div>
@@ -131,7 +127,6 @@ export default function ReadStoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 text-black">
-      
       {/* Story Reader - First page with cover and table of contents */}
       <AdminStoryReader
         storyId={storyId}
@@ -139,7 +134,6 @@ export default function ReadStoryPage() {
         chapters={chapters}
         currentChapter={0} // 0 = first page
       />
-
     </div>
   );
 }

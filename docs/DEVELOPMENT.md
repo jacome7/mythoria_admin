@@ -7,6 +7,7 @@ This guide covers local development setup, contribution guidelines, and developm
 ## Prerequisites
 
 ### Required Software
+
 - **Node.js 18+** - JavaScript runtime
 - **npm** - Package manager
 - **PostgreSQL 14+** - Database system
@@ -14,6 +15,7 @@ This guide covers local development setup, contribution guidelines, and developm
 - **Docker** (optional) - For containerized development
 
 ### Required Services
+
 - **Google Cloud Platform Account** - For deployment and services
 - **Google OAuth 2.0 Credentials** - For authentication
 - **Database Access** - To mythoria_db, workflows_db, and backoffice_db
@@ -61,6 +63,7 @@ LOG_LEVEL=debug
 ### 3. Database Setup
 
 #### Local PostgreSQL Setup
+
 ```bash
 # Create development databases
 createdb mythoria_dev
@@ -75,6 +78,7 @@ npm run db:seed
 ```
 
 #### Using Cloud SQL Proxy (Alternative)
+
 ```bash
 # Install Cloud SQL Proxy
 curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.0.0/cloud-sql-proxy.linux.amd64
@@ -235,6 +239,7 @@ mythoria_admin/
 ### 1. Code Style
 
 #### TypeScript Guidelines
+
 ```typescript
 // Use strict typing
 interface User {
@@ -249,7 +254,7 @@ const processUser = (user: User): UserSummary => {
   return {
     id: user.id,
     displayName: user.name,
-    memberSince: user.createdAt.getFullYear()
+    memberSince: user.createdAt.getFullYear(),
   };
 };
 
@@ -257,7 +262,7 @@ const processUser = (user: User): UserSummary => {
 const fetchUser = async (id: string): Promise<User | null> => {
   try {
     const user = await db.query.users.findFirst({
-      where: eq(users.id, id)
+      where: eq(users.id, id),
     });
     return user || null;
   } catch (error) {
@@ -268,6 +273,7 @@ const fetchUser = async (id: string): Promise<User | null> => {
 ```
 
 #### React Component Guidelines
+
 ```typescript
 // Use proper component patterns
 interface UserCardProps {
@@ -287,8 +293,8 @@ const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete }) => {
         <h2 className="card-title">{user.name}</h2>
         <p className="text-base-content/70">{user.email}</p>
         <div className="card-actions justify-end">
-          <button 
-            className="btn btn-primary btn-sm" 
+          <button
+            className="btn btn-primary btn-sm"
             onClick={handleEdit}
           >
             Edit
@@ -303,6 +309,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete }) => {
 ### 2. Database Development
 
 #### Schema Management
+
 ```typescript
 // Use Drizzle schema definitions
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
@@ -313,18 +320,19 @@ export const adminUsers = pgTable('admin_users', {
   name: text('name').notNull(),
   role: text('role').notNull().default('admin'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Use type-safe queries
 const getAdminUser = async (email: string) => {
   return await db.query.adminUsers.findFirst({
-    where: eq(adminUsers.email, email)
+    where: eq(adminUsers.email, email),
   });
 };
 ```
 
 #### Migration Best Practices
+
 ```bash
 # Always generate migrations for schema changes
 npm run db:generate
@@ -342,6 +350,7 @@ npm run db:migrate
 ### 3. API Development
 
 #### API Route Structure
+
 ```typescript
 // src/app/api/users/route.ts
 import { getServerSession } from 'next-auth';
@@ -351,7 +360,7 @@ import { z } from 'zod';
 const getUsersSchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
-  search: z.string().optional()
+  search: z.string().optional(),
 });
 
 export async function GET(request: Request) {
@@ -372,10 +381,7 @@ export async function GET(request: Request) {
     return Response.json(users);
   } catch (error) {
     console.error('API Error:', error);
-    return Response.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    );
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 ```
@@ -383,6 +389,7 @@ export async function GET(request: Request) {
 ### 4. Testing
 
 #### Unit Testing
+
 ```typescript
 // __tests__/lib/auth.test.ts
 import { describe, it, expect } from '@jest/globals';
@@ -406,6 +413,7 @@ describe('Auth Utilities', () => {
 ```
 
 #### API Testing
+
 ```typescript
 // __tests__/api/users.test.ts
 import { GET } from '@/app/api/users/route';
@@ -427,6 +435,7 @@ describe('/api/users', () => {
 ### 5. Component Development
 
 #### Component Structure
+
 ```typescript
 // src/components/UserTable.tsx
 interface UserTableProps {
@@ -469,13 +478,13 @@ export const UserTable: React.FC<UserTableProps> = ({
               </td>
               <td>
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     className="btn btn-sm btn-outline"
                     onClick={() => onUserEdit(user)}
                   >
                     Edit
                   </button>
-                  <button 
+                  <button
                     className="btn btn-sm btn-error btn-outline"
                     onClick={() => onUserDelete(user.id)}
                   >
@@ -497,12 +506,14 @@ export const UserTable: React.FC<UserTableProps> = ({
 ### 1. Development Debugging
 
 #### Browser Developer Tools
+
 - Use React Developer Tools extension
 - Monitor network requests in Network tab
 - Check console for errors and warnings
 - Use Application tab for storage inspection
 
 #### Server-Side Debugging
+
 ```typescript
 // Add debug logging
 console.log('Debug info:', { userId, action, timestamp: new Date() });
@@ -516,12 +527,13 @@ if (process.env.NODE_ENV === 'development') {
 ### 2. Database Debugging
 
 #### Query Debugging
+
 ```typescript
 // Enable Drizzle query logging
 import { drizzle } from 'drizzle-orm/node-postgres';
 
-const db = drizzle(pool, { 
-  logger: process.env.NODE_ENV === 'development' 
+const db = drizzle(pool, {
+  logger: process.env.NODE_ENV === 'development',
 });
 
 // Log slow queries
@@ -534,6 +546,7 @@ if (duration > 1000) {
 ```
 
 #### Health Check Debugging
+
 ```bash
 # Test health endpoint
 curl -X GET "http://localhost:3001/api/health?debug=true"
@@ -545,12 +558,14 @@ npm run db:studio
 ### 3. Authentication Debugging
 
 #### NextAuth Debugging
+
 ```bash
 # Enable NextAuth debug mode
 NEXTAUTH_DEBUG=true npm run dev
 ```
 
 #### Session Debugging
+
 ```typescript
 // Debug session in components
 import { useSession } from 'next-auth/react';
@@ -565,6 +580,7 @@ console.log('Session data:', session);
 ### 1. Frontend Performance
 
 #### Component Optimization
+
 ```typescript
 // Use React.memo for expensive components
 const UserCard = React.memo<UserCardProps>(({ user, onEdit }) => {
@@ -588,6 +604,7 @@ const handleUserEdit = useCallback((user: User) => {
 ```
 
 #### Loading States
+
 ```typescript
 // Implement proper loading states
 const [users, setUsers] = useState<User[]>([]);
@@ -615,25 +632,30 @@ useEffect(() => {
 ### 2. Database Performance
 
 #### Query Optimization
+
 ```typescript
 // Use indexes for frequent queries
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey(),
-  email: text('email').notNull().unique(),
-  status: text('status').notNull(),
-  createdAt: timestamp('created_at').notNull()
-}, (table) => ({
-  emailIdx: index('users_email_idx').on(table.email),
-  statusIdx: index('users_status_idx').on(table.status),
-  createdAtIdx: index('users_created_at_idx').on(table.createdAt)
-}));
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').primaryKey(),
+    email: text('email').notNull().unique(),
+    status: text('status').notNull(),
+    createdAt: timestamp('created_at').notNull(),
+  },
+  (table) => ({
+    emailIdx: index('users_email_idx').on(table.email),
+    statusIdx: index('users_status_idx').on(table.status),
+    createdAtIdx: index('users_created_at_idx').on(table.createdAt),
+  }),
+);
 
 // Use pagination for large datasets
 const getUsers = async (page: number, limit: number) => {
   return await db.query.users.findMany({
     limit,
     offset: (page - 1) * limit,
-    orderBy: [desc(users.createdAt)]
+    orderBy: [desc(users.createdAt)],
   });
 };
 ```
@@ -678,6 +700,7 @@ gcloud run logs tail mythoria-admin --region=europe-west9
 ### Common Issues
 
 #### Authentication Issues
+
 ```bash
 # Check Google OAuth configuration
 # Verify redirect URIs in Google Console
@@ -687,6 +710,7 @@ echo $NEXTAUTH_URL
 ```
 
 #### Database Connection Issues
+
 ```bash
 # Test database connectivity
 npm run db:studio
@@ -696,6 +720,7 @@ curl http://localhost:3001/api/health
 ```
 
 #### Build Issues
+
 ```bash
 # Clear Next.js cache
 rm -rf .next

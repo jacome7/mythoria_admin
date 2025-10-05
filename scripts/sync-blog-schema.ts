@@ -10,7 +10,13 @@ const SOURCE_FILE = path.resolve(__dirname, '../../mythoria-webapp/src/db/schema
 const TARGET_DIR = path.resolve(__dirname, '../src/db/schema/blog');
 const TARGET_FILE = path.join(TARGET_DIR, 'blog.ts');
 
-async function ensureDir(p: string) { try { await fs.access(p); } catch { await fs.mkdir(p, { recursive: true }); } }
+async function ensureDir(p: string) {
+  try {
+    await fs.access(p);
+  } catch {
+    await fs.mkdir(p, { recursive: true });
+  }
+}
 
 async function copyBlog() {
   await ensureDir(TARGET_DIR);
@@ -21,4 +27,7 @@ async function copyBlog() {
   console.log('Blog schema synced.');
 }
 
-copyBlog().catch(e => { console.error(e); process.exit(1); });
+copyBlog().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

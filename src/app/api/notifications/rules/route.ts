@@ -76,15 +76,13 @@ const mockRules: NotificationRule[] = [
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -94,36 +92,31 @@ export async function GET() {
     // For now, return mock data
     return NextResponse.json({
       success: true,
-      data: mockRules
+      data: mockRules,
     });
   } catch (error) {
     console.error('Error fetching notification rules:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch notification rules' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch notification rules' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
-    
+
     // TODO: Validate the request body
     const newRule: NotificationRule = {
       id: Date.now().toString(), // In real implementation, use proper ID generation
@@ -146,15 +139,15 @@ export async function POST(request: NextRequest) {
     // For now, just return the created rule
     console.log('Creating notification rule:', newRule);
 
-    return NextResponse.json({
-      success: true,
-      data: newRule
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: newRule,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error creating notification rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to create notification rule' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create notification rule' }, { status: 500 });
   }
 }

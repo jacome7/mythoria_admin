@@ -7,19 +7,22 @@ This document describes the implementation of the ticketing system for handling 
 ## Phase 2: Form Integrations ✅ COMPLETED
 
 ### Overview
+
 Integrated the existing contact, print, and payment forms in mythoria-webapp to automatically create tickets in the admin system when users submit requests.
 
 ### Implementation Details
 
 #### **1. Contact Form Integration**
+
 - **File**: `mythoria-webapp/src/components/ContactForm.tsx`
-- **Changes**: 
+- **Changes**:
   - Added ticket creation before sending notification email
   - Maps contact categories to admin-friendly names
   - Handles both authenticated and anonymous submissions
   - Graceful fallback if ticket creation fails
 
-#### **2. Print Request Integration**  
+#### **2. Print Request Integration**
+
 - **File**: `mythoria-webapp/src/components/print-order/PrintOrderContent.tsx`
 - **Changes**:
   - Added ticket creation when print orders are placed
@@ -27,13 +30,15 @@ Integrated the existing contact, print, and payment forms in mythoria-webapp to 
   - Maintains existing print request workflow
 
 #### **3. Payment Request Integration**
-- **File**: `mythoria-webapp/src/app/[locale]/buy-credits/page.tsx` 
+
+- **File**: `mythoria-webapp/src/app/[locale]/buy-credits/page.tsx`
 - **Changes**:
   - Added ticket creation when payment orders are initiated
   - Includes amount, user ID, and payment method
   - Maintains existing payment workflow (placeholder)
 
 #### **4. Environment Configuration**
+
 - **File**: `mythoria-webapp/config/environment.js`
 - **Changes**: Added `admin.apiUrl` configuration for admin API endpoint
 
@@ -48,14 +53,16 @@ User Action → Form Submission → [Create Ticket] → Original Workflow
 ### Category Mapping
 
 **Contact Form Categories**:
+
 - General Inquiry → General
 - Bug Report → Bug
-- Feature Request → Feature Request  
+- Feature Request → Feature Request
 - Technical Support → Support
 - Payment Issue → Payment
 - Other → Other
 
 **Error Handling**:
+
 - Ticket creation failure doesn't block user workflow
 - Errors logged for monitoring
 - User sees normal success/error messages from original forms
@@ -65,15 +72,18 @@ User Action → Form Submission → [Create Ticket] → Original Workflow
 ## Phase 3: Admin UI for Ticket Management ✅ COMPLETED
 
 ### Overview
+
 Built a complete admin interface for ticket management including list view, detail view, and dashboard widget.
 
 ### Implementation Details
 
 #### **1. Navigation Integration**
+
 - **File**: `mythoria_admin/src/components/AdminHeader.tsx`
 - **Changes**: Added "Customer Tickets" link to the Tasks dropdown menu
 
 #### **2. Tickets List Page**
+
 - **File**: `mythoria_admin/src/app/tickets/page.tsx`
 - **Features**:
   - Complete ticket listing with search and filters
@@ -83,6 +93,7 @@ Built a complete admin interface for ticket management including list view, deta
   - Direct links to individual ticket details
 
 #### **3. Ticket Detail Page**
+
 - **File**: `mythoria_admin/src/app/tickets/[id]/page.tsx`
 - **Features**:
   - Full ticket information display
@@ -93,6 +104,7 @@ Built a complete admin interface for ticket management including list view, deta
   - Real-time status updates
 
 #### **4. Dashboard Widget**
+
 - **File**: `mythoria_admin/src/components/TicketsWidget.tsx`
 - **Features**:
   - Key ticket metrics at a glance
@@ -101,15 +113,17 @@ Built a complete admin interface for ticket management including list view, deta
   - Responsive design matching dashboard theme
 
 #### **5. Dashboard Integration**
+
 - **File**: `mythoria_admin/src/app/page.tsx`
 - **Changes**: Added TicketsWidget to the dashboard layout
 
 ### UI Features
 
 #### **Tickets List View**
+
 - **Metrics Dashboard**: Total, Open, In Progress, Resolved, Urgent counts
 - **Advanced Filters**: Status, Priority, Type with real-time filtering
-- **Responsive Table**: 
+- **Responsive Table**:
   - Ticket ID (truncated with hover)
   - Subject with description preview
   - Type, Status, Priority badges with color coding
@@ -118,7 +132,7 @@ Built a complete admin interface for ticket management including list view, deta
   - Action buttons
 - **Color-coded Status System**:
   - Open: Red (Error)
-  - In Progress: Yellow (Warning)  
+  - In Progress: Yellow (Warning)
   - Resolved: Green (Success)
   - Closed: Gray (Neutral)
 - **Priority System**:
@@ -128,6 +142,7 @@ Built a complete admin interface for ticket management including list view, deta
   - Low: Gray (Ghost)
 
 #### **Ticket Detail View**
+
 - **Header**: Breadcrumb navigation and ticket subject
 - **Main Content**:
   - Ticket details with type/status/priority badges
@@ -145,12 +160,14 @@ Built a complete admin interface for ticket management including list view, deta
   - Real-time comment addition
 
 #### **Dashboard Widget**
+
 - **Quick Metrics**: Total tickets and urgent count
 - **Status Breakdown**: Open, In Progress, Resolved counts
 - **Alert System**: Warnings for urgent tickets needing attention
 - **Quick Access**: Direct link to full tickets interface
 
 ### User Experience Features
+
 - **Loading States**: Spinner animations during data fetching
 - **Error Handling**: Graceful error display and fallback states
 - **Responsive Design**: Mobile-friendly layouts
@@ -163,8 +180,9 @@ Built a complete admin interface for ticket management including list view, deta
 ## Implementation Status
 
 ### ✅ **Completed Phases**
+
 - `feature_ideas` → "Feature request"
-- `bug_report` → "Bug" 
+- `bug_report` → "Bug"
 - `technical_issues` → "Story failure"
 - `delivery` → "Delivery"
 - `credits` → "Credits"
@@ -180,6 +198,7 @@ Built a complete admin interface for ticket management including list view, deta
 ### Technical Implementation
 
 #### Ticket Creation Pattern
+
 ```typescript
 // Standard pattern used across all forms
 try {
@@ -190,9 +209,9 @@ try {
       category: 'contact|print_request|payment_request',
       // category-specific fields...
       userId: user?.id, // null for anonymous
-    })
+    }),
   });
-  
+
   if (ticketResponse.ok) {
     console.log('Ticket created:', await ticketResponse.json());
   }
@@ -203,6 +222,7 @@ try {
 ```
 
 #### User Context
+
 - **Authenticated Users**: User ID from Clerk authentication is included
 - **Anonymous Users**: `userId` is null (handled in API)
 - **Data Consistency**: All user-related data is captured in ticket metadata
@@ -218,12 +238,14 @@ try {
 ### Environment Variables
 
 Add to `.env.local` in mythoria-webapp:
+
 ```bash
 ADMIN_API_URL=http://localhost:3001  # Development
 # ADMIN_API_URL=https://your-admin-domain.com  # Production
 ```
 
 ### Build Status
+
 ✅ **Build successful** - All TypeScript and ESLint errors resolved
 ✅ **Next.js 15 compatibility** - Route parameters updated for async params pattern
 ✅ **Database migrations applied** - Tables and indexes created successfully
@@ -265,7 +287,7 @@ The ticketing system uses the `backoffice_db` database with the following tables
 #### Indexes Created
 
 - `idx_tickets_status` - For filtering by status
-- `idx_tickets_category` - For filtering by category  
+- `idx_tickets_category` - For filtering by category
 - `idx_tickets_created_at` - For date-based ordering
 - `idx_ticket_comments_ticket_id` - For comment lookups
 
@@ -285,6 +307,7 @@ GET    /api/tickets/metrics      # Get ticket metrics for dashboard
 #### Request Body Examples
 
 **Create Contact Ticket:**
+
 ```json
 {
   "category": "contact",
@@ -297,6 +320,7 @@ GET    /api/tickets/metrics      # Get ticket metrics for dashboard
 ```
 
 **Create Print Request Ticket:**
+
 ```json
 {
   "category": "print_request",
@@ -308,6 +332,7 @@ GET    /api/tickets/metrics      # Get ticket metrics for dashboard
 ```
 
 **Create Payment Request Ticket:**
+
 ```json
 {
   "category": "payment_request",
@@ -318,6 +343,7 @@ GET    /api/tickets/metrics      # Get ticket metrics for dashboard
 ```
 
 **Update Ticket Status:**
+
 ```json
 {
   "status": "in_progress"
@@ -325,6 +351,7 @@ GET    /api/tickets/metrics      # Get ticket metrics for dashboard
 ```
 
 **Add Comment:**
+
 ```json
 {
   "body": "Comment text here",
@@ -347,24 +374,25 @@ The `TicketService` class provides all business logic:
 
 ```typescript
 // Create tickets
-TicketService.createContactTicket(data)
-TicketService.createPrintTicket(data) 
-TicketService.createPaymentTicket(data)
+TicketService.createContactTicket(data);
+TicketService.createPrintTicket(data);
+TicketService.createPaymentTicket(data);
 
 // Manage tickets
-TicketService.getTickets(filters)
-TicketService.getTicketById(id)
-TicketService.updateStatus(id, status)
-TicketService.updatePriority(id, priority)
-TicketService.addComment(ticketId, body, authorId, isInternal)
+TicketService.getTickets(filters);
+TicketService.getTicketById(id);
+TicketService.updateStatus(id, status);
+TicketService.updatePriority(id, priority);
+TicketService.addComment(ticketId, body, authorId, isInternal);
 
 // Analytics
-TicketService.getMetrics()
+TicketService.getMetrics();
 ```
 
 ### Authentication & Authorization
 
 All API endpoints require:
+
 1. Valid authentication session
 2. Email domain restriction (@mythoria.pt, @caravanconcierge.com)
 
@@ -379,6 +407,7 @@ Default notification configurations are seeded:
 ## Files Created/Modified
 
 ### New Files
+
 - `src/db/schema/tickets.ts` - Database schema
 - `src/lib/ticketing/service.ts` - Business logic service
 - `src/lib/ticketing/seed.ts` - Seed notification configs
@@ -389,17 +418,20 @@ Default notification configurations are seeded:
 - `src/app/api/tickets/metrics/route.ts` - Metrics API
 
 ### Modified Files
+
 - `src/db/schema/index.ts` - Export tickets schema
 - `drizzle.config.ts` - Include tickets schema in migrations
 - `src/db/seed.ts` - Include ticketing seed data
 
 ### Database Migrations
+
 - `drizzle/0001_stormy_microbe.sql` - Create tables and enums
 - `drizzle/0002_illegal_spacker_dave.sql` - Add indexes
 
 ## Testing
 
 The implementation includes:
+
 - Type safety verification in `test-types.ts`
 - Proper error handling in all API endpoints
 - Input validation for all request types
@@ -412,12 +444,15 @@ This completes **Phase 1** of the ticketing system implementation. The next phas
 - **Phase 2**: Integration with existing forms (contact, print, payment)
 - **Phase 3**: Admin UI for ticket management
 - **Phase 4**: Notification engine integration
+
 ### ✅ **Completed Phases**
+
 - **Phase 1**: Database Schema + Core API ✅
-- **Phase 2**: Form Integrations ✅  
+- **Phase 2**: Form Integrations ✅
 - **Phase 3**: Admin UI for Ticket Management ✅
 
 ### 🚧 **Remaining Phases**
+
 - **Phase 4**: Notification engine integration for ticket events
 - **Phase 5**: Advanced analytics and reporting
 
@@ -426,6 +461,7 @@ This completes **Phase 1** of the ticketing system implementation. The next phas
 ## Architecture Notes
 
 ### Simplified Design
+
 - No role-based routing (all tickets visible to admin)
 - No auto-assignment (manual handling only)
 - No real-time updates (page refresh to see changes)
@@ -434,7 +470,9 @@ This completes **Phase 1** of the ticketing system implementation. The next phas
 - Single admin interface (no customer portal)
 
 ### Extensibility
+
 The system is designed to be easily extensible:
+
 - Metadata field allows category-specific data storage
 - Service layer abstracts business logic from API
 - Notification config table supports flexible notification rules
@@ -450,7 +488,7 @@ curl -X POST /api/tickets \
   -d '{
     "category": "contact",
     "email": "user@example.com",
-    "name": "John Doe", 
+    "name": "John Doe",
     "type": "Bug",
     "description": "Story generation failed"
   }'

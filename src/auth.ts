@@ -1,11 +1,11 @@
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Use JWT strategy instead of database for now to avoid initialization issues
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   providers: [
     GoogleProvider({
@@ -13,30 +13,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          prompt: "select_account",
-          hd: "mythoria.pt", // optimize for mythoria.pt domain
+          prompt: 'select_account',
+          hd: 'mythoria.pt', // optimize for mythoria.pt domain
         },
       },
     }),
   ],
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ account, profile }) {
       // Only allow Google OAuth
-      if (account?.provider !== "google") {
+      if (account?.provider !== 'google') {
         return false;
       }
 
       // Check if email is verified
       if (!profile?.email_verified) {
-        console.log("Sign-in rejected: Email not verified");
+        console.log('Sign-in rejected: Email not verified');
         return false;
       }
 
       // Check if email ends with allowed domains
-      const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-        profile.email?.endsWith(domain)
-      );
+      const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => profile.email?.endsWith(domain));
 
       if (!isAllowedDomain) {
         console.log(`Sign-in rejected: Domain not allowed for ${profile.email}`);
@@ -66,8 +64,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   pages: {
-    error: "/auth/error", // custom error page
-    signIn: "/auth/signin", // custom sign-in page
+    error: '/auth/error', // custom error page
+    signIn: '/auth/signin', // custom sign-in page
   },
   events: {
     async signIn({ user, account }) {

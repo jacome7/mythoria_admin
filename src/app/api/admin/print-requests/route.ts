@@ -12,9 +12,7 @@ export async function GET(request: Request) {
     }
 
     // Check if user has admin access (email domain is already validated in auth.ts)
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -29,7 +27,13 @@ export async function GET(request: Request) {
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get print requests data
-    const printRequests = await adminService.getPrintRequests(page, limit, search, sortBy, sortOrder);
+    const printRequests = await adminService.getPrintRequests(
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+    );
 
     return NextResponse.json({
       data: printRequests,
@@ -39,8 +43,8 @@ export async function GET(request: Request) {
         totalCount: printRequests.length, // Approximated for now
         totalPages: Math.ceil(printRequests.length / limit),
         hasNext: printRequests.length === limit,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     });
   } catch (error) {
     console.error('Error fetching print requests:', error);

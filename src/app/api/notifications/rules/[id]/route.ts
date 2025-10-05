@@ -60,54 +60,47 @@ const mockRules: NotificationRule[] = [
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
-    
+
     // TODO: Implement database query to fetch specific notification rule
-    const rule = mockRules.find(r => r.id === id);
-    
+    const rule = mockRules.find((r) => r.id === id);
+
     if (!rule) {
       return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      data: rule
+      data: rule,
     });
   } catch (error) {
     console.error('Error fetching notification rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch notification rule' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch notification rule' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -115,7 +108,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     const body = await request.json();
-    
+
     // TODO: Implement database update
     const updatedRule: NotificationRule = {
       id,
@@ -138,48 +131,43 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({
       success: true,
-      data: updatedRule
+      data: updatedRule,
     });
   } catch (error) {
     console.error('Error updating notification rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to update notification rule' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update notification rule' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
-    
+
     // TODO: Implement database deletion
     console.log('Deleting notification rule:', id);
 
     return NextResponse.json({
       success: true,
-      message: 'Rule deleted successfully'
+      message: 'Rule deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting notification rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete notification rule' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete notification rule' }, { status: 500 });
   }
 }

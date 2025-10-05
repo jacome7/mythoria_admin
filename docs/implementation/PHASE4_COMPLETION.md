@@ -3,30 +3,36 @@
 ## ✅ Completed Requirements
 
 ### 1. Authentication Provider
+
 - ✅ Implemented NextAuth.js v5 (Auth.js) with Google OAuth 2.0 provider
 - ✅ Configuration located in `src/auth.ts`
 - ✅ API routes set up in `src/app/api/auth/[...nextauth]/route.ts`
 
 ### 2. Authorized Domains
+
 - ✅ Domain restriction implemented in `signIn` callback
 - ✅ Only allows: `@mythoria.pt` and `@caravanconcierge.com`
 - ✅ Server-side validation for security
 
 ### 3. Email Verification
+
 - ✅ Checks `profile.email_verified === true` before granting access
 - ✅ Rejects unverified email accounts
 
 ### 4. Authorization Hint
+
 - ✅ `hd` parameter set to `mythoria.pt` for optimized consent screen
 - ✅ Configured in Google provider authorization params
 
 ### 5. Callback Enforcement
+
 - ✅ `callbacks.signIn` function implemented with checks for:
   - `account.provider === "google"`
   - `profile.email_verified === true`
   - Domain validation for allowed emails
 
 ### 6. Environment Variables
+
 - ✅ Added required environment variables to `.env.local`:
   - `AUTH_SECRET`
   - `NEXTAUTH_URL`
@@ -34,35 +40,41 @@
   - `GOOGLE_CLIENT_SECRET`
 
 ### 7. Error Handling
+
 - ✅ Custom error page at `/auth/error`
 - ✅ Explanatory messages for different error types
 - ✅ Domain restriction warnings
 
 ### 8. Security Considerations
+
 - ✅ Server-side domain validation in `signIn` callback
 - ✅ Does not rely solely on client-side `hd` parameter
 - ✅ Middleware for route protection
 
 ### 9. Session Management
+
 - ✅ JWT strategy implemented for secure session management
 - ✅ User information persisted in JWT tokens
 - ✅ Session data properly exposed to client components
 
 ### 10. Automated Testing
+
 - ✅ Jest configuration set up
 - ✅ Authentication logic tests in `__tests__/auth.test.ts`
 - ✅ UI component tests in `__tests__/signin.test.tsx`
 - ✅ Domain validation test coverage
 
 ### 11. Production Deployment
+
 - ✅ Cloud Build configuration updated for production
-- ✅ Environment variables configured as substitutions  
+- ✅ Environment variables configured as substitutions
 - ✅ Port configuration (3000 for production, 3001 for dev)
 - ✅ Production URL: `https://mythoria-admin-oceanic-beach-460916-n5-europe-west9.a.run.app`
 
 ## 📁 Files Created/Modified
 
 ### New Files
+
 - `src/auth.ts` - Auth.js configuration
 - `src/app/api/auth/[...nextauth]/route.ts` - API route handler
 - `src/app/auth/signin/page.tsx` - Custom sign-in page
@@ -76,6 +88,7 @@
 - `__tests__/signin.test.tsx` - Sign-in page tests
 
 ### Modified Files
+
 - `src/app/layout.tsx` - Added AuthProvider wrapper
 - `src/app/page.tsx` - Added authentication status and user info
 - `src/db/index.ts` - Added database getter functions
@@ -84,6 +97,7 @@
 - `.env.local` - Added authentication environment variables
 
 ## 🔧 Dependencies Added
+
 - `next-auth@beta` (Auth.js v5)
 - `@auth/drizzle-adapter`
 - `jest`, `@types/jest`, `jest-environment-jsdom`
@@ -92,6 +106,7 @@
 ## 🚀 Usage Instructions
 
 ### 1. Environment Setup
+
 1. Set up Google OAuth credentials in Google Cloud Console
 2. Add redirect URI: `http://localhost:3000/api/auth/callback/google`
 3. Update `.env.local` with actual credentials:
@@ -102,12 +117,14 @@
    ```
 
 ### 2. Database Migration
+
 ```bash
 npm run db:generate  # Generate migration
 npm run db:migrate   # Apply migration to backoffice_db
 ```
 
 ### 3. Development
+
 ```bash
 npm run dev          # Start development server
 npm test             # Run tests
@@ -115,6 +132,7 @@ npm run test:watch   # Run tests in watch mode
 ```
 
 ### 4. Testing Authentication
+
 1. Visit `http://localhost:3000`
 2. Should redirect to `/auth/signin`
 3. Click "Sign in with Google"
@@ -122,6 +140,7 @@ npm run test:watch   # Run tests in watch mode
 5. Successful authentication redirects to dashboard
 
 ## 🎯 Next Steps (Phase 5)
+
 - Admin pages migration from mythoria-webapp
 - User management interface
 - Story management interface
@@ -129,6 +148,7 @@ npm run test:watch   # Run tests in watch mode
 - Advanced role-based permissions
 
 ## 🧪 Test Coverage
+
 - Domain validation logic
 - Email verification requirements
 - Authentication flow

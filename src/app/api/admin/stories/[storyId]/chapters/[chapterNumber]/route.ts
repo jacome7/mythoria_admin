@@ -4,8 +4,8 @@ import { adminService } from '@/db/services';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
 export async function GET(
-  request: Request, 
-  { params }: { params: Promise<{ storyId: string; chapterNumber: string }> }
+  request: Request,
+  { params }: { params: Promise<{ storyId: string; chapterNumber: string }> },
 ) {
   try {
     // Check if user is authenticated and authorized
@@ -15,16 +15,14 @@ export async function GET(
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { storyId, chapterNumber } = await params;
-    
+
     const chapterNum = parseInt(chapterNumber);
     if (isNaN(chapterNum) || chapterNum < 1) {
       return NextResponse.json({ error: 'Invalid chapter number' }, { status: 400 });
@@ -51,15 +49,15 @@ export async function GET(
       authorName: story.author.displayName,
       targetAudience: story.targetAudience,
       graphicalStyle: story.graphicalStyle,
-  coverUri: story.coverUri,
-  backcoverUri: story.backcoverUri,
+      coverUri: story.coverUri,
+      backcoverUri: story.backcoverUri,
       // Add other fields as needed
     };
 
     return NextResponse.json({
       story: transformedStory,
       chapters: allChapters,
-      currentChapter: chapter
+      currentChapter: chapter,
     });
   } catch (error) {
     console.error('Error fetching story chapter:', error);

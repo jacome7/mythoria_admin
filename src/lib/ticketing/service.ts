@@ -1,14 +1,14 @@
 import { getBackofficeDb } from '@/db';
-import { 
-  tickets, 
-  ticketComments, 
+import {
+  tickets,
+  ticketComments,
   ticketNotificationConfig,
-  type Ticket, 
-  type NewTicket, 
-  type TicketComment, 
+  type Ticket,
+  type NewTicket,
+  type TicketComment,
   type NewTicketComment,
   type TicketStatus,
-  type TicketPriority 
+  type TicketPriority,
 } from '@/db/schema/tickets';
 import { eq, desc, sql, and, or, ilike } from 'drizzle-orm';
 import { notificationClient } from '@/lib/notifications/client';
@@ -110,13 +110,13 @@ export class TicketService {
       const amount = metadata.amount;
       const credits = metadata.credits;
       const phone = metadata.phone;
-      
+
       if (amount && credits && phone) {
         const ticketNumber = this.getTicketNumber(ticket.id);
         return `MB Way Payment request (${ticketNumber}) - ${amount}€ = ${credits} credits - requested by ${phone}`;
       }
     }
-    
+
     // For other tickets, return the original subject
     return ticket.subject;
   }
@@ -126,7 +126,7 @@ export class TicketService {
    */
   static async createTicket(data: CreateTicketData): Promise<Ticket> {
     const db = getBackofficeDb();
-    
+
     const newTicket: NewTicket = {
       userId: data.userId || null,
       category: data.category,
@@ -140,10 +140,10 @@ export class TicketService {
     };
 
     const [ticket] = await db.insert(tickets).values(newTicket).returning();
-    
+
     // Trigger notification
     await this.triggerNotification(ticket.id, 'created');
-    
+
     return ticket;
   }
 
@@ -206,7 +206,7 @@ export class TicketService {
    */
   static async getTickets(filters: TicketFilters = {}): Promise<Ticket[]> {
     const db = getBackofficeDb();
-    
+
     const {
       status = ['open', 'in_progress'],
       category,
@@ -218,35 +218,30 @@ export class TicketService {
 
     // Build where conditions
     const conditions = [];
-    
+
     if (status.length > 0) {
-      conditions.push(
-        or(...status.map(s => eq(tickets.status, s)))
-      );
+      conditions.push(or(...status.map((s) => eq(tickets.status, s))));
     }
-    
+
     if (category) {
       conditions.push(eq(tickets.category, category));
     }
-    
+
     if (priority) {
       conditions.push(eq(tickets.priority, priority));
     }
-    
+
     if (search) {
       conditions.push(
-        or(
-          ilike(tickets.subject, `%${search}%`),
-          ilike(tickets.description, `%${search}%`)
-        )
+        or(ilike(tickets.subject, `%${search}%`), ilike(tickets.description, `%${search}%`)),
       );
     }
 
     // Build the query
     const offset = (page - 1) * limit;
-    
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     return await db
       .select()
       .from(tickets)
@@ -261,10 +256,10 @@ export class TicketService {
    */
   static async getTicketById(id: string): Promise<TicketWithComments | null> {
     const db = getBackofficeDb();
-    
+
     // Get ticket from backoffice database
     const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
-    
+
     if (!ticket) {
       return null;
     }
@@ -278,12 +273,14 @@ export class TicketService {
 
     // Extract author information from metadata if available
     const metadata = (ticket.metadata as TicketMetadata) || {};
-    const author = metadata.author ? {
-      id: metadata.author.id || ticket.userId || '',
-      name: metadata.author.name || '',
-      email: metadata.author.email || '',
-      phone: metadata.author.phone || undefined,
-    } : null;
+    const author = metadata.author
+      ? {
+          id: metadata.author.id || ticket.userId || '',
+          name: metadata.author.name || '',
+          email: metadata.author.email || '',
+          phone: metadata.author.phone || undefined,
+        }
+      : null;
 
     return {
       ...ticket,
@@ -295,9 +292,12 @@ export class TicketService {
   /**
    * Update ticket status
    */
-  static async updateStatus(ticketId: string, status: TicketStatus): Promise<TicketWithComments | null> {
+  static async updateStatus(
+    ticketId: string,
+    status: TicketStatus,
+  ): Promise<TicketWithComments | null> {
     const db = getBackofficeDb();
-    
+
     const updateData: Partial<NewTicket> = {
       status,
       updatedAt: new Date(),
@@ -316,7 +316,7 @@ export class TicketService {
     if (updatedTicket) {
       // Trigger notification for status change
       await this.triggerNotification(ticketId, status);
-      
+
       // Return the full ticket with author information
       return await this.getTicketById(ticketId);
     }
@@ -327,9 +327,12 @@ export class TicketService {
   /**
    * Update ticket priority
    */
-  static async updatePriority(ticketId: string, priority: TicketPriority): Promise<TicketWithComments | null> {
+  static async updatePriority(
+    ticketId: string,
+    priority: TicketPriority,
+  ): Promise<TicketWithComments | null> {
     const db = getBackofficeDb();
-    
+
     const [updatedTicket] = await db
       .update(tickets)
       .set({
@@ -351,13 +354,13 @@ export class TicketService {
    * Add comment to ticket
    */
   static async addComment(
-    ticketId: string, 
-    body: string, 
-    authorId: string | null, 
-    isInternal: boolean = false
+    ticketId: string,
+    body: string,
+    authorId: string | null,
+    isInternal: boolean = false,
   ): Promise<TicketComment> {
     const db = getBackofficeDb();
-    
+
     const newComment: NewTicketComment = {
       ticketId,
       authorId,
@@ -367,12 +370,9 @@ export class TicketService {
     };
 
     const [comment] = await db.insert(ticketComments).values(newComment).returning();
-    
+
     // Update ticket updated_at timestamp
-    await db
-      .update(tickets)
-      .set({ updatedAt: new Date() })
-      .where(eq(tickets.id, ticketId));
+    await db.update(tickets).set({ updatedAt: new Date() }).where(eq(tickets.id, ticketId));
 
     return comment;
   }
@@ -388,7 +388,7 @@ export class TicketService {
     urgentTickets: number;
   }> {
     const db = getBackofficeDb();
-    
+
     // Get total counts by status
     const statusCounts = await db
       .select({
@@ -407,10 +407,13 @@ export class TicketService {
       .where(eq(tickets.priority, 'high'));
 
     // Process results
-    const statusMap = statusCounts.reduce((acc, { status, count }) => {
-      acc[status] = count;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusMap = statusCounts.reduce(
+      (acc, { status, count }) => {
+        acc[status] = count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     const totalTickets = Object.values(statusMap).reduce((sum, count) => sum + count, 0);
 
@@ -428,7 +431,7 @@ export class TicketService {
    */
   static async seedNotificationConfig(): Promise<void> {
     const db = getBackofficeDb();
-    
+
     const configs = [
       {
         category: 'contact',
@@ -508,7 +511,7 @@ export class TicketService {
               description: ticket.description,
               createdAt: ticket.createdAt.toISOString(),
               metadata: metadata,
-            }
+            },
           );
           break;
 
@@ -527,7 +530,7 @@ export class TicketService {
               status: ticket.status,
               updatedAt: ticket.updatedAt.toISOString(),
             },
-            'open' // We don't track previous status, so assume it was open
+            'open', // We don't track previous status, so assume it was open
           );
           break;
 
@@ -546,7 +549,7 @@ export class TicketService {
   static async sendCommentNotification(
     ticketId: string,
     comment: TicketComment,
-    authorName: string
+    authorName: string,
   ): Promise<void> {
     try {
       const ticket = await this.getTicketById(ticketId);
@@ -585,7 +588,7 @@ export class TicketService {
           authorName: authorName,
           authorType: 'admin', // Comments from the admin interface are from admins
           createdAt: comment.createdAt.toISOString(),
-        }
+        },
       );
     } catch (error) {
       console.error(`Failed to send comment notification for ticket ${ticketId}:`, error);

@@ -49,10 +49,12 @@ export default function UserDetailPage() {
   const [isAssigningCredits, setIsAssigningCredits] = useState(false);
   const [stories, setStories] = useState<UserStoryRow[]>([]);
   const [isStoriesLoading, setIsStoriesLoading] = useState(false);
-  
+
   // Form state for assigning credits
   const [assignAmount, setAssignAmount] = useState<number>(1);
-  const [assignEventType, setAssignEventType] = useState<'refund' | 'voucher' | 'promotion'>('voucher');
+  const [assignEventType, setAssignEventType] = useState<'refund' | 'voucher' | 'promotion'>(
+    'voucher',
+  );
 
   const fetchStories = useCallback(async () => {
     try {
@@ -170,16 +172,16 @@ export default function UserDetailPage() {
 
   const formatEventType = (eventType: string) => {
     const eventTypes: { [key: string]: string } = {
-      'initialCredit': 'Initial Credit',
-      'creditPurchase': 'Credit Purchase',
-      'eBookGeneration': 'eBook Generation',
-      'audioBookGeneration': 'Audiobook Generation',
-      'printOrder': 'Print Order',
-      'refund': 'Refund',
-      'voucher': 'Voucher',
-      'promotion': 'Promotion',
-      'textEdit': 'Text Edit',
-      'imageEdit': 'Image Edit'
+      initialCredit: 'Initial Credit',
+      creditPurchase: 'Credit Purchase',
+      eBookGeneration: 'eBook Generation',
+      audioBookGeneration: 'Audiobook Generation',
+      printOrder: 'Print Order',
+      refund: 'Refund',
+      voucher: 'Voucher',
+      promotion: 'Promotion',
+      textEdit: 'Text Edit',
+      imageEdit: 'Image Edit',
     };
     return eventTypes[eventType] || eventType;
   };
@@ -227,7 +229,9 @@ export default function UserDetailPage() {
           <div>
             <div className="breadcrumbs text-sm">
               <ul>
-                <li><Link href="/users">Users</Link></li>
+                <li>
+                  <Link href="/users">Users</Link>
+                </li>
                 <li>{user.displayName}</li>
               </ul>
             </div>
@@ -270,7 +274,13 @@ export default function UserDetailPage() {
                 </div>
                 <div>
                   <label className="font-semibold">Last Login:</label>
-                  <p>{user.lastLoginAt ? formatDate(user.lastLoginAt) : <span className="text-gray-400">Never</span>}</p>
+                  <p>
+                    {user.lastLoginAt ? (
+                      formatDate(user.lastLoginAt)
+                    ) : (
+                      <span className="text-gray-400">Never</span>
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
@@ -291,9 +301,9 @@ export default function UserDetailPage() {
                     {user.creditBalance} Credits
                   </button>
                 </div>
-                
+
                 <div className="card-actions justify-end">
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={() => setIsAssignCreditsModalOpen(true)}
                   >
@@ -327,7 +337,7 @@ export default function UserDetailPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {stories.map(s => (
+                      {stories.map((s) => (
                         <tr key={s.storyId}>
                           <td className="text-sm">{formatDate(s.createdAt)}</td>
                           <td>
@@ -336,7 +346,9 @@ export default function UserDetailPage() {
                             </Link>
                           </td>
                           <td>
-                            <span className="badge badge-outline capitalize">{s.status || 'unknown'}</span>
+                            <span className="badge badge-outline capitalize">
+                              {s.status || 'unknown'}
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -374,12 +386,11 @@ export default function UserDetailPage() {
                     <tbody>
                       {creditHistory.map((entry) => (
                         <tr key={entry.id}>
-                          <td className="text-sm">
-                            {formatDate(entry.createdAt)}
-                          </td>
+                          <td className="text-sm">{formatDate(entry.createdAt)}</td>
                           <td>{formatEventType(entry.creditEventType)}</td>
                           <td className={`text-right font-mono ${getAmountColor(entry.amount)}`}>
-                            {entry.amount > 0 ? '+' : ''}{entry.amount}
+                            {entry.amount > 0 ? '+' : ''}
+                            {entry.amount}
                           </td>
                           <td className="text-right font-mono font-semibold">
                             {entry.balanceAfter}
@@ -392,16 +403,15 @@ export default function UserDetailPage() {
                 <div className="mt-6 p-4 bg-base-200 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold">Available Credits</span>
-                    <span className="text-xl font-bold text-primary">{user.creditBalance} Credits</span>
+                    <span className="text-xl font-bold text-primary">
+                      {user.creditBalance} Credits
+                    </span>
                   </div>
                 </div>
               </>
             )}
             <div className="modal-action">
-              <button
-                className="btn btn-ghost"
-                onClick={() => setIsCreditsModalOpen(false)}
-              >
+              <button className="btn btn-ghost" onClick={() => setIsCreditsModalOpen(false)}>
                 Close
               </button>
             </div>
@@ -414,7 +424,7 @@ export default function UserDetailPage() {
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Assign Credits</h3>
-            
+
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Amount (1-200 credits)</span>
@@ -436,7 +446,9 @@ export default function UserDetailPage() {
               </label>
               <select
                 value={assignEventType}
-                onChange={(e) => setAssignEventType(e.target.value as 'refund' | 'voucher' | 'promotion')}
+                onChange={(e) =>
+                  setAssignEventType(e.target.value as 'refund' | 'voucher' | 'promotion')
+                }
                 className="select select-bordered w-full"
               >
                 <option value="voucher">Voucher</option>
@@ -468,7 +480,6 @@ export default function UserDetailPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

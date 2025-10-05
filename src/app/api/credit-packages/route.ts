@@ -6,15 +6,13 @@ import { ALLOWED_DOMAINS } from '@/config/auth';
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user is from allowed domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -26,37 +24,31 @@ export async function GET(request: NextRequest) {
 
     // Always sort by price ascending
     const creditPackages = await adminService.getCreditPackages(page, limit, 'price', 'asc');
-    
+
     return NextResponse.json({
       creditPackages,
       pagination: {
         page,
         limit,
-        hasMore: creditPackages.length === limit
-      }
+        hasMore: creditPackages.length === limit,
+      },
     });
-    
   } catch (error) {
     console.error('Error fetching credit packages:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user is from allowed domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -64,14 +56,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const newPackage = await adminService.createCreditPackage(body);
-    
+
     return NextResponse.json(newPackage, { status: 201 });
-    
   } catch (error) {
     console.error('Error creating credit package:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

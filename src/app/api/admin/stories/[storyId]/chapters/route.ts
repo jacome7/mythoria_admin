@@ -17,10 +17,7 @@ type ChapterResult = {
   updatedAt?: string;
 } & Record<string, unknown>;
 
-export async function GET(
-  request: Request, 
-  { params }: { params: Promise<{ storyId: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ storyId: string }> }) {
   try {
     // Check if user is authenticated and authorized
     const session = await auth();
@@ -29,19 +26,17 @@ export async function GET(
     }
 
     // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
-      session.user?.email?.endsWith(domain)
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { storyId } = await params;
-    
+
     // Get story data with chapters
     const storyWithChapters = await adminService.getStoryWithChapters(storyId);
-    
+
     if (!storyWithChapters) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
@@ -52,14 +47,14 @@ export async function GET(
       authorName: storyWithChapters.author.displayName,
       targetAudience: storyWithChapters.targetAudience,
       graphicalStyle: storyWithChapters.graphicalStyle,
-  coverUri: storyWithChapters.coverUri,
-  backcoverUri: storyWithChapters.backcoverUri,
+      coverUri: storyWithChapters.coverUri,
+      backcoverUri: storyWithChapters.backcoverUri,
       // Add other fields as needed
     };
 
     // Requirement: only return the most recent version of each chapter
-  const latestChaptersByNumber: Map<number, ChapterResult> = new Map();
-  for (const ch of storyWithChapters.chapters as ChapterResult[]) {
+    const latestChaptersByNumber: Map<number, ChapterResult> = new Map();
+    for (const ch of storyWithChapters.chapters as ChapterResult[]) {
       const num = ch.chapterNumber as number;
       const existing = latestChaptersByNumber.get(num);
       if (!existing || (typeof ch.version === 'number' && ch.version > existing.version)) {
@@ -67,12 +62,13 @@ export async function GET(
       }
     }
     // Convert map to sorted array
-    const latestChapters = Array.from(latestChaptersByNumber.values())
-      .sort((a, b) => (a.chapterNumber as number) - (b.chapterNumber as number));
+    const latestChapters = Array.from(latestChaptersByNumber.values()).sort(
+      (a, b) => (a.chapterNumber as number) - (b.chapterNumber as number),
+    );
 
     return NextResponse.json({
       story: transformedStory,
-      chapters: latestChapters
+      chapters: latestChapters,
     });
   } catch (error) {
     console.error('Error fetching story chapters:', error);

@@ -1,9 +1,10 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import { getMultiDatabaseConfig, getPoolConfig, isVpcDirectEgress } from "@/lib/database-config";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+import { getMultiDatabaseConfig, getPoolConfig, isVpcDirectEgress } from '@/lib/database-config';
 
 // Check if we're in build time
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'test';
+const isBuildTime =
+  process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'test';
 
 // Connection pools for each database
 let mythoriaPool: Pool | null = null;
@@ -17,17 +18,17 @@ let backofficeDbInstance: ReturnType<typeof drizzle> | null = null;
 
 function createPool(poolConfig: ReturnType<typeof getPoolConfig>, poolName: string): Pool {
   const pool = new Pool(poolConfig);
-  
+
   pool.on('error', (err) => {
     console.error(`Unexpected error on idle client (${poolName}):`, err);
   });
-  
+
   pool.on('connect', () => {
     if (isVpcDirectEgress()) {
       console.log(`Using VPC Direct Egress connection to Cloud SQL (${poolName})`);
     }
   });
-  
+
   return pool;
 }
 
@@ -56,7 +57,7 @@ function initializeDatabases(): {
     mythoriaPool = createPool(getPoolConfig(config.mythoria), 'mythoria');
     mythoriaDbInstance = drizzle(mythoriaPool);
 
-    // Initialize workflows database  
+    // Initialize workflows database
     workflowsPool = createPool(getPoolConfig(config.workflows), 'workflows');
     workflowsDbInstance = drizzle(workflowsPool);
 
@@ -65,7 +66,7 @@ function initializeDatabases(): {
     backofficeDbInstance = drizzle(backofficePool);
 
     console.log('All database connections initialized successfully');
-    
+
     return {
       mythoria: mythoriaDbInstance,
       workflows: workflowsDbInstance,
@@ -113,7 +114,7 @@ export function getBackofficeDb() {
 // Export all databases as an object
 export const db = {
   mythoria: mythoriaDb,
-  workflows: workflowsDb,  
+  workflows: workflowsDb,
   backoffice: backofficeDb,
 };
 
@@ -121,7 +122,7 @@ export const db = {
 async function closeConnections() {
   const pools = [mythoriaPool, workflowsPool, backofficePool];
   const poolNames = ['mythoria', 'workflows', 'backoffice'];
-  
+
   await Promise.all(
     pools.map(async (pool, index) => {
       if (pool) {
@@ -132,7 +133,7 @@ async function closeConnections() {
           console.error(`Error closing ${poolNames[index]} pool:`, error);
         }
       }
-    })
+    }),
   );
 }
 

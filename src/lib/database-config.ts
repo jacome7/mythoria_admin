@@ -22,7 +22,7 @@ export interface MultiDatabaseConfig {
  * Determines if we're using VPC Direct Egress (private IP connection)
  */
 export function isVpcDirectEgress(): boolean {
-  return process.env.DB_HOST === "10.19.192.3" || (process.env.DB_HOST?.startsWith("10.") ?? false);
+  return process.env.DB_HOST === '10.19.192.3' || (process.env.DB_HOST?.startsWith('10.') ?? false);
 }
 
 /**
@@ -31,7 +31,7 @@ export function isVpcDirectEgress(): boolean {
 function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
   const isVpcConnection = isVpcDirectEgress();
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
-  
+
   // During build time, provide default values to prevent build failures
   if (isBuildTime) {
     return {
@@ -43,7 +43,7 @@ function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
     };
   }
-  
+
   // Validate required environment variables for runtime
   if (!process.env.DB_PASSWORD) {
     //throw new Error('Database password is required');
@@ -64,7 +64,7 @@ function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
  */
 export function getMultiDatabaseConfig(): MultiDatabaseConfig {
   const baseConfig = getBaseDatabaseConfig();
-  
+
   return {
     mythoria: {
       ...baseConfig,
@@ -86,7 +86,7 @@ export function getMultiDatabaseConfig(): MultiDatabaseConfig {
  */
 export function getPoolConfig(dbConfig: DatabaseConfig) {
   const isVpcConnection = isVpcDirectEgress();
-  
+
   return {
     host: dbConfig.host,
     port: dbConfig.port,

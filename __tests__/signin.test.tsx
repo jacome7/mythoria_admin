@@ -17,7 +17,7 @@ describe('SignIn Page', () => {
 
   it('renders sign-in page correctly', () => {
     render(<SignInPage />);
-    
+
     expect(screen.getByText('Mythoria Admin')).toBeInTheDocument();
     expect(screen.getByText('Administration Portal')).toBeInTheDocument();
     expect(screen.getByText('Sign in with Google')).toBeInTheDocument();
@@ -27,12 +27,12 @@ describe('SignIn Page', () => {
 
   it('calls signIn when Google sign-in button is clicked', async () => {
     mockSignIn.mockResolvedValue({} as any);
-    
+
     render(<SignInPage />);
-    
+
     const signInButton = screen.getByRole('button', { name: /Sign in with Google/i });
     fireEvent.click(signInButton);
-    
+
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith('google', {
         callbackUrl: '/',
@@ -43,12 +43,12 @@ describe('SignIn Page', () => {
 
   it('shows loading state when signing in', async () => {
     mockSignIn.mockImplementation(() => new Promise(() => {})); // Never resolves
-    
+
     render(<SignInPage />);
-    
+
     const signInButton = screen.getByRole('button', { name: /Sign in with Google/i });
     fireEvent.click(signInButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Signing in...')).toBeInTheDocument();
       expect(screen.getByRole('button')).toBeDisabled();
@@ -57,7 +57,7 @@ describe('SignIn Page', () => {
 
   it('displays domain restriction warning', () => {
     render(<SignInPage />);
-    
+
     const domainText = ALLOWED_DOMAINS.join(' and ');
     const warning = screen.getByText(`Access restricted to ${domainText}`);
     expect(warning).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('SignIn Page', () => {
 
   it('displays port information in development', () => {
     render(<SignInPage />);
-    
+
     const portInfo = screen.getByText(/Dev Environment: Port 3001/);
     expect(portInfo).toBeInTheDocument();
   });

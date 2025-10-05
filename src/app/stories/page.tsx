@@ -57,33 +57,36 @@ export default function StoriesPage() {
     return () => clearTimeout(timer);
   }, [inputValue]);
 
-  const fetchStories = useCallback(async (page: number) => {
-    try {
-      setIsLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '100',
-        ...(searchTerm && { search: searchTerm }),
-        ...(filterStatus !== 'all' && { status: filterStatus }),
-        ...(filterFeatured !== 'all' && { featured: filterFeatured }),
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      });
-      
-      const response = await fetch(`/api/admin/stories?${params.toString()}`);
-      if (response.ok) {
-        const data: StoriesResponse = await response.json();
-        setStories(data.data);
-        setPagination(data.pagination);
-      } else {
-        console.error('Failed to fetch stories');
+  const fetchStories = useCallback(
+    async (page: number) => {
+      try {
+        setIsLoading(true);
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '100',
+          ...(searchTerm && { search: searchTerm }),
+          ...(filterStatus !== 'all' && { status: filterStatus }),
+          ...(filterFeatured !== 'all' && { featured: filterFeatured }),
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+
+        const response = await fetch(`/api/admin/stories?${params.toString()}`);
+        if (response.ok) {
+          const data: StoriesResponse = await response.json();
+          setStories(data.data);
+          setPagination(data.pagination);
+        } else {
+          console.error('Failed to fetch stories');
+        }
+      } catch (error) {
+        console.error('Error fetching stories:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchTerm, filterStatus, filterFeatured]);
+    },
+    [searchTerm, filterStatus, filterFeatured],
+  );
 
   useEffect(() => {
     if (!loading && session?.user) {
@@ -115,13 +118,16 @@ export default function StoriesPage() {
     setCurrentPage(1);
   };
 
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'badge-neutral';
-      case 'writing': return 'badge-warning';
-      case 'published': return 'badge-success';
-      default: return 'badge-neutral';
+      case 'draft':
+        return 'badge-neutral';
+      case 'writing':
+        return 'badge-warning';
+      case 'published':
+        return 'badge-success';
+      default:
+        return 'badge-neutral';
     }
   };
 
@@ -145,8 +151,12 @@ export default function StoriesPage() {
     <div className="min-h-screen bg-base-200">
       <main className="container mx-auto p-4 md:p-6">
         <div className="mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">Stories Management</h1>
-          <p className="text-base-content/70 text-sm md:text-base">View, moderate, and manage user-generated stories</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">
+            Stories Management
+          </h1>
+          <p className="text-base-content/70 text-sm md:text-base">
+            View, moderate, and manage user-generated stories
+          </p>
         </div>
 
         {/* Filters and Search */}
@@ -157,9 +167,9 @@ export default function StoriesPage() {
                 <label className="label">
                   <span className="label-text">Search</span>
                 </label>
-                <input 
-                  type="text" 
-                  placeholder="Search stories, authors..." 
+                <input
+                  type="text"
+                  placeholder="Search stories, authors..."
                   className="input input-bordered w-full max-w-xs"
                   value={inputValue}
                   onChange={(e) => handleSearch(e.target.value)}
@@ -170,8 +180,8 @@ export default function StoriesPage() {
                 <label className="label">
                   <span className="label-text">Status</span>
                 </label>
-                <select 
-                  className="select select-bordered w-full max-w-xs" 
+                <select
+                  className="select select-bordered w-full max-w-xs"
                   value={filterStatus}
                   onChange={(e) => handleStatusFilter(e.target.value)}
                 >
@@ -186,7 +196,7 @@ export default function StoriesPage() {
                 <label className="label">
                   <span className="label-text">Featured</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered w-full max-w-xs"
                   value={filterFeatured}
                   onChange={(e) => handleFeaturedFilter(e.target.value)}
@@ -201,7 +211,7 @@ export default function StoriesPage() {
         </div>
 
         {/* Stories Statistics */}
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm">Total Stories</h3>
@@ -211,19 +221,23 @@ export default function StoriesPage() {
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm">Published</h3>
-              <p className="text-2xl font-bold">{stories.filter(s => s.status === 'published').length}</p>
+              <p className="text-2xl font-bold">
+                {stories.filter((s) => s.status === 'published').length}
+              </p>
             </div>
           </div>
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm">Featured</h3>
-              <p className="text-2xl font-bold text-info">{stories.filter(s => s.isFeatured).length}</p>
+              <p className="text-2xl font-bold text-info">
+                {stories.filter((s) => s.isFeatured).length}
+              </p>
             </div>
           </div>
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h3 className="card-title text-sm">Public</h3>
-              <p className="text-2xl font-bold">{stories.filter(s => s.isPublic).length}</p>
+              <p className="text-2xl font-bold">{stories.filter((s) => s.isPublic).length}</p>
             </div>
           </div>
         </div>
@@ -276,9 +290,7 @@ export default function StoriesPage() {
                         </div>
                       </td>
                       <td>
-                        <div className="text-sm">
-                          {formatAdminDate(story.createdAt)}
-                        </div>
+                        <div className="text-sm">{formatAdminDate(story.createdAt)}</div>
                       </td>
                       <td>
                         <div className="flex gap-1">
@@ -292,10 +304,7 @@ export default function StoriesPage() {
                       </td>
                       <td>
                         <div className="flex gap-2">
-                          <Link 
-                            href={`/stories/${story.storyId}`}
-                            className="btn btn-ghost btn-xs"
-                          >
+                          <Link href={`/stories/${story.storyId}`} className="btn btn-ghost btn-xs">
                             View
                           </Link>
                         </div>
@@ -304,7 +313,7 @@ export default function StoriesPage() {
                   ))}
                 </tbody>
               </table>
-              
+
               {stories.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-base-content/70">No stories found matching your filters.</p>
@@ -325,12 +334,12 @@ export default function StoriesPage() {
               >
                 Previous
               </button>
-              
+
               {/* Page numbers */}
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 const pageNum = Math.max(1, currentPage - 2) + i;
                 if (pageNum > pagination.totalPages) return null;
-                
+
                 return (
                   <button
                     key={pageNum}
@@ -341,7 +350,7 @@ export default function StoriesPage() {
                   </button>
                 );
               })}
-              
+
               <button
                 className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
                 onClick={() => handlePageChange(currentPage + 1)}

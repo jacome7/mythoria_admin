@@ -6,7 +6,7 @@ import { ALLOWED_DOMAINS } from '@/config/auth';
 
 function ensureAdminEmail(email?: string | null) {
   if (!email) return false;
-  return ALLOWED_DOMAINS.some(d => email.endsWith(d));
+  return ALLOWED_DOMAINS.some((d) => email.endsWith(d));
 }
 
 export async function GET(req: Request) {

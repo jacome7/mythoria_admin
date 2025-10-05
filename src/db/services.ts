@@ -1,8 +1,16 @@
-import { getMythoriaDb, getWorkflowsDb } from "./index";
-import { count, desc, eq, like, asc, sql, or, inArray, and } from "drizzle-orm";
-import { authors, stories, printRequests, creditLedger, authorCreditBalances, creditPackages, pricing } from "./schema";
+import { getMythoriaDb, getWorkflowsDb } from './index';
+import { count, desc, eq, like, asc, sql, or, inArray, and } from 'drizzle-orm';
+import {
+  authors,
+  stories,
+  printRequests,
+  creditLedger,
+  authorCreditBalances,
+  creditPackages,
+  pricing,
+} from './schema';
 import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
-import { storyGenerationRuns, storyGenerationSteps } from "./schema/workflows";
+import { storyGenerationRuns, storyGenerationSteps } from './schema/workflows';
 export { adminBlogService } from './services/blog';
 
 export const adminService = {
@@ -20,8 +28,8 @@ export const adminService = {
     const offset = (page - 1) * limit;
 
     // Build where conditions dynamically
-  type Condition = ReturnType<typeof like> | ReturnType<typeof eq>;
-  const conditions: Condition[] = [];
+    type Condition = ReturnType<typeof like> | ReturnType<typeof eq>;
+    const conditions: Condition[] = [];
     if (searchTerm && searchTerm.trim()) {
       const pattern = `%${searchTerm.trim().toUpperCase()}%`;
       conditions.push(like(sql`UPPER(${promotionCodes.code})`, pattern));
@@ -36,7 +44,9 @@ export const adminService = {
     }
 
     const whereClause: Condition | undefined = conditions.length
-      ? conditions.slice(1).reduce<Condition>((acc, cur) => and(acc, cur) as Condition, conditions[0])
+      ? conditions
+          .slice(1)
+          .reduce<Condition>((acc, cur) => and(acc, cur) as Condition, conditions[0])
       : undefined;
 
     // Total count (separate query for accurate pagination)
@@ -54,21 +64,27 @@ export const adminService = {
       .offset(offset);
 
     if (rows.length === 0) {
-      return { data: [], pagination: { page, limit, totalCount, totalPages: 0, hasNext: false, hasPrev: page > 1 } };
+      return {
+        data: [],
+        pagination: { page, limit, totalCount, totalPages: 0, hasNext: false, hasPrev: page > 1 },
+      };
     }
 
     // Get redemption counts in batch
-    const codeIds = rows.map(r => r.promotionCodeId);
+    const codeIds = rows.map((r) => r.promotionCodeId);
     const redemptionCounts = await db
       .select({ promotionCodeId: promotionCodeRedemptions.promotionCodeId, value: count() })
       .from(promotionCodeRedemptions)
       .where(inArray(promotionCodeRedemptions.promotionCodeId, codeIds))
       .groupBy(promotionCodeRedemptions.promotionCodeId);
-    const redemptionMap = new Map(redemptionCounts.map(rc => [rc.promotionCodeId, rc.value]));
+    const redemptionMap = new Map(redemptionCounts.map((rc) => [rc.promotionCodeId, rc.value]));
 
-    const data = rows.map(r => {
+    const data = rows.map((r) => {
       const totalRedemptions = redemptionMap.get(r.promotionCodeId) || 0;
-      const remainingGlobal = r.maxGlobalRedemptions != null ? Math.max(r.maxGlobalRedemptions - totalRedemptions, 0) : null;
+      const remainingGlobal =
+        r.maxGlobalRedemptions != null
+          ? Math.max(r.maxGlobalRedemptions - totalRedemptions, 0)
+          : null;
       return {
         ...r,
         totalRedemptions,
@@ -83,15 +99,18 @@ export const adminService = {
         limit,
         totalCount,
         totalPages: Math.ceil(totalCount / limit),
-        hasNext: (offset + rows.length) < totalCount,
+        hasNext: offset + rows.length < totalCount,
         hasPrev: page > 1,
-      }
+      },
     };
   },
 
   async getPromotionCodeById(promotionCodeId: string) {
     const db = getMythoriaDb();
-    const [row] = await db.select().from(promotionCodes).where(eq(promotionCodes.promotionCodeId, promotionCodeId));
+    const [row] = await db
+      .select()
+      .from(promotionCodes)
+      .where(eq(promotionCodes.promotionCodeId, promotionCodeId));
     if (!row) return null;
 
     const [aggregate] = await db
@@ -108,7 +127,10 @@ export const adminService = {
 
     const totalRedemptions = aggregate?.totalRedemptions || 0;
     const uniqueUsers = uniqueUsersResult?.value || 0;
-    const remainingGlobal = row.maxGlobalRedemptions != null ? Math.max(row.maxGlobalRedemptions - totalRedemptions, 0) : null;
+    const remainingGlobal =
+      row.maxGlobalRedemptions != null
+        ? Math.max(row.maxGlobalRedemptions - totalRedemptions, 0)
+        : null;
 
     return {
       ...row,
@@ -118,11 +140,7 @@ export const adminService = {
     };
   },
 
-  async getPromotionCodeRedemptions(
-    promotionCodeId: string,
-    page: number = 1,
-    limit: number = 50,
-  ) {
+  async getPromotionCodeRedemptions(promotionCodeId: string, page: number = 1, limit: number = 50) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
 
@@ -133,7 +151,17 @@ export const adminService = {
     const totalCount = totalCountResult[0]?.value || 0;
 
     if (totalCount === 0) {
-      return { data: [], pagination: { page, limit, totalCount: 0, totalPages: 0, hasNext: false, hasPrev: page > 1 } };
+      return {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          totalCount: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: page > 1,
+        },
+      };
     }
 
     const rows = await db
@@ -160,9 +188,9 @@ export const adminService = {
         limit,
         totalCount,
         totalPages: Math.ceil(totalCount / limit),
-        hasNext: (offset + rows.length) < totalCount,
+        hasNext: offset + rows.length < totalCount,
         hasPrev: page > 1,
-      }
+      },
     };
   },
 
@@ -187,23 +215,29 @@ export const adminService = {
       throw Object.assign(new Error('invalid_credit_amount'), { code: 'invalid_credit_amount' });
     }
     if (input.validFrom && input.validUntil) {
-      const from = new Date(input.validFrom); const until = new Date(input.validUntil);
+      const from = new Date(input.validFrom);
+      const until = new Date(input.validUntil);
       if (from >= until) {
-        throw Object.assign(new Error('invalid_validity_window'), { code: 'invalid_validity_window' });
+        throw Object.assign(new Error('invalid_validity_window'), {
+          code: 'invalid_validity_window',
+        });
       }
     }
 
     try {
-      const [created] = await db.insert(promotionCodes).values({
-        code,
-        type: input.type || 'partner',
-        creditAmount: input.creditAmount,
-        maxGlobalRedemptions: input.maxGlobalRedemptions ?? null,
-        maxRedemptionsPerUser: input.maxRedemptionsPerUser ?? 1,
-        validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
-        validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
-        active: input.active ?? true,
-      }).returning();
+      const [created] = await db
+        .insert(promotionCodes)
+        .values({
+          code,
+          type: input.type || 'partner',
+          creditAmount: input.creditAmount,
+          maxGlobalRedemptions: input.maxGlobalRedemptions ?? null,
+          maxRedemptionsPerUser: input.maxRedemptionsPerUser ?? 1,
+          validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
+          validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+          active: input.active ?? true,
+        })
+        .returning();
       return created;
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'message' in e) {
@@ -218,9 +252,13 @@ export const adminService = {
 
   async togglePromotionCodeActive(promotionCodeId: string) {
     const db = getMythoriaDb();
-    const [existing] = await db.select({ active: promotionCodes.active }).from(promotionCodes).where(eq(promotionCodes.promotionCodeId, promotionCodeId));
+    const [existing] = await db
+      .select({ active: promotionCodes.active })
+      .from(promotionCodes)
+      .where(eq(promotionCodes.promotionCodeId, promotionCodeId));
     if (!existing) return null;
-    const [updated] = await db.update(promotionCodes)
+    const [updated] = await db
+      .update(promotionCodes)
       .set({ active: !existing.active, updatedAt: new Date() })
       .where(eq(promotionCodes.promotionCodeId, promotionCodeId))
       .returning();
@@ -253,35 +291,36 @@ export const adminService = {
     limit: number = 100,
     searchTerm?: string,
     sortBy: 'displayName' | 'email' | 'createdAt' = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
+
     let whereCondition = undefined;
     if (searchTerm && searchTerm.trim()) {
       const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
       whereCondition = or(
         like(sql`LOWER(${authors.displayName})`, searchPattern),
         like(sql`LOWER(${authors.email})`, searchPattern),
-        like(sql`LOWER(${authors.mobilePhone})`, searchPattern)
+        like(sql`LOWER(${authors.mobilePhone})`, searchPattern),
       );
     }
-    
-    const orderColumn = sortBy === 'displayName' ? authors.displayName :
-                       sortBy === 'email' ? authors.email : authors.createdAt;
+
+    const orderColumn =
+      sortBy === 'displayName'
+        ? authors.displayName
+        : sortBy === 'email'
+          ? authors.email
+          : authors.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
+
     const query = db.select().from(authors);
     if (whereCondition) {
       query.where(whereCondition);
     }
-    
-    const results = await query
-      .orderBy(orderDirection)
-      .limit(limit)
-      .offset(offset);
-      
+
+    const results = await query.orderBy(orderDirection).limit(limit).offset(offset);
+
     return results;
   },
 
@@ -319,7 +358,7 @@ export const adminService = {
     // Calculate balance after each transaction
     const historyWithBalance = [];
     let runningBalance = 0;
-    
+
     // Calculate each entry's balance after
     for (let i = history.length - 1; i >= 0; i--) {
       runningBalance += history[i].amount;
@@ -349,12 +388,12 @@ export const adminService = {
   },
 
   async assignCreditsToUser(
-    authorId: string, 
-    amount: number, 
-    eventType: 'refund' | 'voucher' | 'promotion'
+    authorId: string,
+    amount: number,
+    eventType: 'refund' | 'voucher' | 'promotion',
   ) {
     const db = getMythoriaDb();
-    
+
     try {
       // Insert credit ledger entry
       await db.insert(creditLedger).values({
@@ -393,31 +432,28 @@ export const adminService = {
     limit: number = 100,
     searchTerm?: string,
     sortBy: 'title' | 'createdAt' | 'status' = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
+
     let whereCondition = undefined;
     if (searchTerm && searchTerm.trim()) {
       const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
       whereCondition = like(stories.title, searchPattern);
     }
-    
-    const orderColumn = sortBy === 'title' ? stories.title :
-                       sortBy === 'status' ? stories.status : stories.createdAt;
+
+    const orderColumn =
+      sortBy === 'title' ? stories.title : sortBy === 'status' ? stories.status : stories.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
+
     const query = db.select().from(stories);
     if (whereCondition) {
       query.where(whereCondition);
     }
-    
-    const results = await query
-      .orderBy(orderDirection)
-      .limit(limit)
-      .offset(offset);
-      
+
+    const results = await query.orderBy(orderDirection).limit(limit).offset(offset);
+
     return results;
   },
 
@@ -428,69 +464,41 @@ export const adminService = {
     statusFilter?: string,
     featuredFilter?: string,
     sortBy: 'title' | 'createdAt' | 'status' = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
+
     const whereConditions = [];
-    
+
     // Search filter
     if (searchTerm && searchTerm.trim()) {
       const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
       whereConditions.push(
         sql`(LOWER(${stories.title}) LIKE ${searchPattern} OR 
              LOWER(${authors.displayName}) LIKE ${searchPattern} OR 
-             LOWER(${authors.email}) LIKE ${searchPattern})`
+             LOWER(${authors.email}) LIKE ${searchPattern})`,
       );
     }
-    
+
     // Status filter
     if (statusFilter && statusFilter !== 'all') {
       whereConditions.push(eq(stories.status, statusFilter as 'draft' | 'writing' | 'published'));
     }
-    
+
     // Featured filter
     if (featuredFilter && featuredFilter !== 'all') {
       const isFeatured = featuredFilter === 'featured';
       whereConditions.push(eq(stories.isFeatured, isFeatured));
     }
-    
-    const orderColumn = sortBy === 'title' ? stories.title :
-                       sortBy === 'status' ? stories.status : stories.createdAt;
+
+    const orderColumn =
+      sortBy === 'title' ? stories.title : sortBy === 'status' ? stories.status : stories.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
+
     // Build the query with conditional where clause
-    const baseQuery = db.select({
-      storyId: stories.storyId,
-      title: stories.title,
-      status: stories.status,
-      chapterCount: stories.chapterCount,
-      createdAt: stories.createdAt,
-      updatedAt: stories.updatedAt,
-      isPublic: stories.isPublic,
-      isFeatured: stories.isFeatured,
-      interiorPdfUri: stories.interiorPdfUri,
-      coverPdfUri: stories.coverPdfUri,
-      // htmlUri/pdfUri removed
-      author: {
-        authorId: authors.authorId,
-        displayName: authors.displayName,
-        email: authors.email,
-      }
-    })
-    .from(stories)
-    .innerJoin(authors, eq(stories.authorId, authors.authorId));
-    
-    // Execute query with or without where conditions
-    let results;
-    if (whereConditions.length > 0) {
-      let combinedCondition = whereConditions[0];
-      for (let i = 1; i < whereConditions.length; i++) {
-        combinedCondition = sql`${combinedCondition} AND ${whereConditions[i]}`;
-      }
-      
-      results = await db.select({
+    const baseQuery = db
+      .select({
         storyId: stories.storyId,
         title: stories.title,
         status: stories.status,
@@ -506,21 +514,48 @@ export const adminService = {
           authorId: authors.authorId,
           displayName: authors.displayName,
           email: authors.email,
-        }
+        },
       })
       .from(stories)
-      .innerJoin(authors, eq(stories.authorId, authors.authorId))
-      .where(combinedCondition)
-      .orderBy(orderDirection)
-      .limit(limit)
-      .offset(offset);
-    } else {
-      results = await baseQuery
+      .innerJoin(authors, eq(stories.authorId, authors.authorId));
+
+    // Execute query with or without where conditions
+    let results;
+    if (whereConditions.length > 0) {
+      let combinedCondition = whereConditions[0];
+      for (let i = 1; i < whereConditions.length; i++) {
+        combinedCondition = sql`${combinedCondition} AND ${whereConditions[i]}`;
+      }
+
+      results = await db
+        .select({
+          storyId: stories.storyId,
+          title: stories.title,
+          status: stories.status,
+          chapterCount: stories.chapterCount,
+          createdAt: stories.createdAt,
+          updatedAt: stories.updatedAt,
+          isPublic: stories.isPublic,
+          isFeatured: stories.isFeatured,
+          interiorPdfUri: stories.interiorPdfUri,
+          coverPdfUri: stories.coverPdfUri,
+          // htmlUri/pdfUri removed
+          author: {
+            authorId: authors.authorId,
+            displayName: authors.displayName,
+            email: authors.email,
+          },
+        })
+        .from(stories)
+        .innerJoin(authors, eq(stories.authorId, authors.authorId))
+        .where(combinedCondition)
         .orderBy(orderDirection)
         .limit(limit)
         .offset(offset);
+    } else {
+      results = await baseQuery.orderBy(orderDirection).limit(limit).offset(offset);
     }
-      
+
     return results;
   },
 
@@ -532,86 +567,90 @@ export const adminService = {
 
   async getStoryByIdWithAuthor(storyId: string) {
     const db = getMythoriaDb();
-    const [story] = await db.select({
-      storyId: stories.storyId,
-      title: stories.title,
-      status: stories.status,
-      chapterCount: stories.chapterCount,
-      createdAt: stories.createdAt,
-      updatedAt: stories.updatedAt,
-      isPublic: stories.isPublic,
-      isFeatured: stories.isFeatured,
-      interiorPdfUri: stories.interiorPdfUri,
-      coverPdfUri: stories.coverPdfUri,
-  coverUri: stories.coverUri,
-  backcoverUri: stories.backcoverUri,
-      // htmlUri/pdfUri removed
-      plotDescription: stories.plotDescription,
-      synopsis: stories.synopsis,
-      place: stories.place,
-      additionalRequests: stories.additionalRequests,
-      targetAudience: stories.targetAudience,
-      novelStyle: stories.novelStyle,
-      graphicalStyle: stories.graphicalStyle,
-      featureImageUri: stories.featureImageUri,
-      author: {
-        authorId: authors.authorId,
-        displayName: authors.displayName,
-        email: authors.email,
-      }
-    })
-    .from(stories)
-    .innerJoin(authors, eq(stories.authorId, authors.authorId))
-    .where(eq(stories.storyId, storyId));
-    
+    const [story] = await db
+      .select({
+        storyId: stories.storyId,
+        title: stories.title,
+        status: stories.status,
+        chapterCount: stories.chapterCount,
+        createdAt: stories.createdAt,
+        updatedAt: stories.updatedAt,
+        isPublic: stories.isPublic,
+        isFeatured: stories.isFeatured,
+        interiorPdfUri: stories.interiorPdfUri,
+        coverPdfUri: stories.coverPdfUri,
+        coverUri: stories.coverUri,
+        backcoverUri: stories.backcoverUri,
+        // htmlUri/pdfUri removed
+        plotDescription: stories.plotDescription,
+        synopsis: stories.synopsis,
+        place: stories.place,
+        additionalRequests: stories.additionalRequests,
+        targetAudience: stories.targetAudience,
+        novelStyle: stories.novelStyle,
+        graphicalStyle: stories.graphicalStyle,
+        featureImageUri: stories.featureImageUri,
+        author: {
+          authorId: authors.authorId,
+          displayName: authors.displayName,
+          email: authors.email,
+        },
+      })
+      .from(stories)
+      .innerJoin(authors, eq(stories.authorId, authors.authorId))
+      .where(eq(stories.storyId, storyId));
+
     return story;
   },
 
   async updateStory(storyId: string, updates: Partial<typeof stories.$inferSelect>) {
     const db = getMythoriaDb();
-    const [updatedStory] = await db.update(stories)
+    const [updatedStory] = await db
+      .update(stories)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(stories.storyId, storyId))
       .returning();
-    
+
     return updatedStory;
   },
 
   async featureStory(storyId: string, featureImageUri: string) {
     const db = getMythoriaDb();
-    const [updatedStory] = await db.update(stories)
-      .set({ 
-        isFeatured: true, 
+    const [updatedStory] = await db
+      .update(stories)
+      .set({
+        isFeatured: true,
         featureImageUri: featureImageUri,
-        updatedAt: new Date() 
+        updatedAt: new Date(),
       })
       .where(eq(stories.storyId, storyId))
       .returning();
-    
+
     // Return the story with author information
     if (updatedStory) {
       return await this.getStoryByIdWithAuthor(storyId);
     }
-    
+
     return null;
   },
 
   async unfeatureStory(storyId: string) {
     const db = getMythoriaDb();
-    const [updatedStory] = await db.update(stories)
-      .set({ 
+    const [updatedStory] = await db
+      .update(stories)
+      .set({
         isFeatured: false,
-        updatedAt: new Date() 
+        updatedAt: new Date(),
         // Note: We keep the featureImageUri for future reference
       })
       .where(eq(stories.storyId, storyId))
       .returning();
-    
+
     // Return the story with author information
     if (updatedStory) {
       return await this.getStoryByIdWithAuthor(storyId);
     }
-    
+
     return null;
   },
 
@@ -621,31 +660,28 @@ export const adminService = {
     limit: number = 100,
     searchTerm?: string,
     sortBy: 'requestedAt' | 'status' = 'requestedAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
+
     // Search functionality can be implemented later
     // const whereCondition = undefined;
     // if (searchTerm && searchTerm.trim()) {
     //   const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
     //   // Search in multiple fields as appropriate
     // }
-    
+
     const orderColumn = sortBy === 'status' ? printRequests.status : printRequests.requestedAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
+
     const query = db.select().from(printRequests);
     // if (whereCondition) {
     //   query.where(whereCondition);
     // }
-    
-    const results = await query
-      .orderBy(orderDirection)
-      .limit(limit)
-      .offset(offset);
-      
+
+    const results = await query.orderBy(orderDirection).limit(limit).offset(offset);
+
     return results;
   },
 
@@ -654,36 +690,49 @@ export const adminService = {
     page: number = 1,
     limit: number = 100,
     sortBy: 'credits' | 'price' | 'createdAt' = 'price',
-    sortOrder: 'asc' | 'desc' = 'asc'
+    sortOrder: 'asc' | 'desc' = 'asc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
-    const orderColumn = sortBy === 'credits' ? creditPackages.credits :
-                       sortBy === 'createdAt' ? creditPackages.createdAt : creditPackages.price;
+
+    const orderColumn =
+      sortBy === 'credits'
+        ? creditPackages.credits
+        : sortBy === 'createdAt'
+          ? creditPackages.createdAt
+          : creditPackages.price;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
-    const results = await db.select().from(creditPackages)
+
+    const results = await db
+      .select()
+      .from(creditPackages)
       .orderBy(orderDirection)
       .limit(limit)
       .offset(offset);
-      
+
     return results;
   },
 
   async getCreditPackageById(packageId: string) {
     const db = getMythoriaDb();
-    const [creditPackage] = await db.select().from(creditPackages).where(eq(creditPackages.id, packageId));
+    const [creditPackage] = await db
+      .select()
+      .from(creditPackages)
+      .where(eq(creditPackages.id, packageId));
     return creditPackage;
   },
 
-  async updateCreditPackage(packageId: string, updates: Partial<typeof creditPackages.$inferSelect>) {
+  async updateCreditPackage(
+    packageId: string,
+    updates: Partial<typeof creditPackages.$inferSelect>,
+  ) {
     const db = getMythoriaDb();
-    const [updatedPackage] = await db.update(creditPackages)
+    const [updatedPackage] = await db
+      .update(creditPackages)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(creditPackages.id, packageId))
       .returning();
-    
+
     return updatedPackage;
   },
 
@@ -692,26 +741,28 @@ export const adminService = {
     const currentPackage = await this.getCreditPackageById(packageId);
     if (!currentPackage) return null;
 
-    const [updatedPackage] = await db.update(creditPackages)
-      .set({ 
+    const [updatedPackage] = await db
+      .update(creditPackages)
+      .set({
         isActive: !currentPackage.isActive,
-        updatedAt: new Date() 
+        updatedAt: new Date(),
       })
       .where(eq(creditPackages.id, packageId))
       .returning();
-    
+
     return updatedPackage;
   },
 
   async createCreditPackage(packageData: typeof creditPackages.$inferInsert) {
     const db = getMythoriaDb();
-    const [newPackage] = await db.insert(creditPackages)
+    const [newPackage] = await db
+      .insert(creditPackages)
       .values({
         ...packageData,
         // createdAt and updatedAt are automatically set by defaultNow()
       })
       .returning();
-    
+
     return newPackage;
   },
 
@@ -727,28 +778,35 @@ export const adminService = {
     limit: number = 100,
     searchTerm?: string,
     sortBy: 'serviceCode' | 'credits' | 'isActive' | 'createdAt' = 'serviceCode',
-    sortOrder: 'asc' | 'desc' = 'asc'
+    sortOrder: 'asc' | 'desc' = 'asc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
+
     let whereCondition = undefined;
     if (searchTerm && searchTerm.trim()) {
       const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
       whereCondition = like(sql`LOWER(${pricing.serviceCode})`, searchPattern);
     }
-    
-    const orderColumn = sortBy === 'credits' ? pricing.credits :
-                       sortBy === 'isActive' ? pricing.isActive :
-                       sortBy === 'createdAt' ? pricing.createdAt : pricing.serviceCode;
+
+    const orderColumn =
+      sortBy === 'credits'
+        ? pricing.credits
+        : sortBy === 'isActive'
+          ? pricing.isActive
+          : sortBy === 'createdAt'
+            ? pricing.createdAt
+            : pricing.serviceCode;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
-    const results = await db.select().from(pricing)
+
+    const results = await db
+      .select()
+      .from(pricing)
       .where(whereCondition)
       .orderBy(orderDirection)
       .limit(limit)
       .offset(offset);
-      
+
     return results;
   },
 
@@ -760,11 +818,12 @@ export const adminService = {
 
   async updatePricingService(serviceId: string, updates: Partial<typeof pricing.$inferSelect>) {
     const db = getMythoriaDb();
-    const [updatedService] = await db.update(pricing)
+    const [updatedService] = await db
+      .update(pricing)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(pricing.id, serviceId))
       .returning();
-    
+
     return updatedService;
   },
 
@@ -773,26 +832,28 @@ export const adminService = {
     const currentService = await this.getPricingServiceById(serviceId);
     if (!currentService) return null;
 
-    const [updatedService] = await db.update(pricing)
-      .set({ 
+    const [updatedService] = await db
+      .update(pricing)
+      .set({
         isActive: !currentService.isActive,
-        updatedAt: new Date() 
+        updatedAt: new Date(),
       })
       .where(eq(pricing.id, serviceId))
       .returning();
-    
+
     return updatedService;
   },
 
   async createPricingService(serviceData: typeof pricing.$inferInsert) {
     const db = getMythoriaDb();
-    const [newService] = await db.insert(pricing)
+    const [newService] = await db
+      .insert(pricing)
       .values({
         ...serviceData,
         // createdAt and updatedAt are automatically set by defaultNow()
       })
       .returning();
-    
+
     return newService;
   },
 
@@ -809,17 +870,20 @@ export const adminService = {
     status?: 'queued' | 'running' | 'failed' | 'completed' | 'cancelled',
     searchTerm?: string,
     sortBy: 'createdAt' | 'startedAt' | 'endedAt' = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const workflowsDb = getWorkflowsDb();
     const mythoriaDb = getMythoriaDb();
     const offset = (page - 1) * limit;
-    
-    const orderColumn = sortBy === 'startedAt' ? storyGenerationRuns.startedAt :
-                       sortBy === 'endedAt' ? storyGenerationRuns.endedAt : 
-                       storyGenerationRuns.createdAt;
+
+    const orderColumn =
+      sortBy === 'startedAt'
+        ? storyGenerationRuns.startedAt
+        : sortBy === 'endedAt'
+          ? storyGenerationRuns.endedAt
+          : storyGenerationRuns.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
-    
+
     // First, get workflow runs from workflows database
     let workflowQuery = workflowsDb
       .select({
@@ -839,14 +903,13 @@ export const adminService = {
 
     // Apply status filter
     if (status) {
-      workflowQuery = workflowQuery.where(eq(storyGenerationRuns.status, status)) as typeof workflowQuery;
+      workflowQuery = workflowQuery.where(
+        eq(storyGenerationRuns.status, status),
+      ) as typeof workflowQuery;
     }
 
     // Apply ordering and pagination
-    const workflowRuns = await workflowQuery
-      .orderBy(orderDirection)
-      .limit(limit)
-      .offset(offset);
+    const workflowRuns = await workflowQuery.orderBy(orderDirection).limit(limit).offset(offset);
 
     // If no workflows found, return empty result
     if (workflowRuns.length === 0) {
@@ -854,8 +917,8 @@ export const adminService = {
     }
 
     // Get story IDs to fetch story details from mythoria database
-    const storyIds = workflowRuns.map(run => run.storyId);
-    
+    const storyIds = workflowRuns.map((run) => run.storyId);
+
     // Fetch story and author details from mythoria database
     const storyDetails = await mythoriaDb
       .select({
@@ -869,10 +932,10 @@ export const adminService = {
       .where(inArray(stories.storyId, storyIds));
 
     // Create a map for quick lookup
-    const storyMap = new Map(storyDetails.map(story => [story.storyId, story]));
+    const storyMap = new Map(storyDetails.map((story) => [story.storyId, story]));
 
     // Combine workflow runs with story details
-    const results = workflowRuns.map(run => {
+    const results = workflowRuns.map((run) => {
       const story = storyMap.get(run.storyId);
       return {
         run_id: run.runId,
@@ -898,9 +961,10 @@ export const adminService = {
 
     // Apply search filter in application code (since we need to search across databases)
     if (searchTerm) {
-      return results.filter(run => 
-        run.story_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        run.authorName?.toLowerCase().includes(searchTerm.toLowerCase())
+      return results.filter(
+        (run) =>
+          run.story_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          run.authorName?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -910,7 +974,7 @@ export const adminService = {
   async getWorkflowRunById(runId: string) {
     const workflowsDb = getWorkflowsDb();
     const mythoriaDb = getMythoriaDb();
-    
+
     // Get workflow run from workflows database
     const [workflowRun] = await workflowsDb
       .select({
@@ -928,11 +992,11 @@ export const adminService = {
       })
       .from(storyGenerationRuns)
       .where(eq(storyGenerationRuns.runId, runId));
-      
+
     if (!workflowRun) {
       return null;
     }
-    
+
     // Get story details from mythoria database
     const [storyDetails] = await mythoriaDb
       .select({
@@ -944,7 +1008,7 @@ export const adminService = {
       .from(stories)
       .innerJoin(authors, eq(stories.authorId, authors.authorId))
       .where(eq(stories.storyId, workflowRun.storyId));
-    
+
     // Combine the results
     return {
       runId: workflowRun.runId,
@@ -971,13 +1035,13 @@ export const adminService = {
       .from(storyGenerationSteps)
       .where(eq(storyGenerationSteps.runId, runId))
       .orderBy(asc(storyGenerationSteps.createdAt));
-    
+
     return steps;
   },
 
   async getWorkflowRunsCount(status?: 'queued' | 'running' | 'failed' | 'completed' | 'cancelled') {
     const workflowsDb = getWorkflowsDb();
-    
+
     if (status) {
       const result = await workflowsDb
         .select({ value: count() })
@@ -1002,53 +1066,52 @@ export const adminService = {
       insertData.runId = runId;
     }
 
-    const [newRun] = await workflowsDb
-      .insert(storyGenerationRuns)
-      .values(insertData)
-      .returning();
-    
+    const [newRun] = await workflowsDb.insert(storyGenerationRuns).values(insertData).returning();
+
     return newRun;
   },
 
   // Story chapters operations
   async getStoryChapters(storyId: string) {
     const db = getMythoriaDb();
-    const chapters = await db.select({
-      id: sql`chapters.id`,
-      chapterNumber: sql`chapters.chapter_number`,
-      title: sql`chapters.title`,
-      imageUri: sql`chapters.image_uri`,
-      imageThumbnailUri: sql`chapters.image_thumbnail_uri`,
-      htmlContent: sql`chapters.html_content`,
-      audioUri: sql`chapters.audio_uri`,
-      version: sql`chapters.version`,
-      createdAt: sql`chapters.created_at`,
-      updatedAt: sql`chapters.updated_at`,
-    })
-    .from(sql`chapters`)
-    .where(sql`chapters.story_id = ${storyId}`)
-    .orderBy(sql`chapters.chapter_number ASC`);
-    
+    const chapters = await db
+      .select({
+        id: sql`chapters.id`,
+        chapterNumber: sql`chapters.chapter_number`,
+        title: sql`chapters.title`,
+        imageUri: sql`chapters.image_uri`,
+        imageThumbnailUri: sql`chapters.image_thumbnail_uri`,
+        htmlContent: sql`chapters.html_content`,
+        audioUri: sql`chapters.audio_uri`,
+        version: sql`chapters.version`,
+        createdAt: sql`chapters.created_at`,
+        updatedAt: sql`chapters.updated_at`,
+      })
+      .from(sql`chapters`)
+      .where(sql`chapters.story_id = ${storyId}`)
+      .orderBy(sql`chapters.chapter_number ASC`);
+
     return chapters;
   },
 
   async getStoryChapter(storyId: string, chapterNumber: number) {
     const db = getMythoriaDb();
-    const [chapter] = await db.select({
-      id: sql`chapters.id`,
-      chapterNumber: sql`chapters.chapter_number`,
-      title: sql`chapters.title`,
-      imageUri: sql`chapters.image_uri`,
-      imageThumbnailUri: sql`chapters.image_thumbnail_uri`,
-      htmlContent: sql`chapters.html_content`,
-      audioUri: sql`chapters.audio_uri`,
-      version: sql`chapters.version`,
-      createdAt: sql`chapters.created_at`,
-      updatedAt: sql`chapters.updated_at`,
-    })
-    .from(sql`chapters`)
-    .where(sql`chapters.story_id = ${storyId} AND chapters.chapter_number = ${chapterNumber}`);
-    
+    const [chapter] = await db
+      .select({
+        id: sql`chapters.id`,
+        chapterNumber: sql`chapters.chapter_number`,
+        title: sql`chapters.title`,
+        imageUri: sql`chapters.image_uri`,
+        imageThumbnailUri: sql`chapters.image_thumbnail_uri`,
+        htmlContent: sql`chapters.html_content`,
+        audioUri: sql`chapters.audio_uri`,
+        version: sql`chapters.version`,
+        createdAt: sql`chapters.created_at`,
+        updatedAt: sql`chapters.updated_at`,
+      })
+      .from(sql`chapters`)
+      .where(sql`chapters.story_id = ${storyId} AND chapters.chapter_number = ${chapterNumber}`);
+
     return chapter;
   },
 
@@ -1057,13 +1120,10 @@ export const adminService = {
     if (!story) return null;
 
     const chapters = await this.getStoryChapters(storyId);
-    
+
     return {
       ...story,
-      chapters
+      chapters,
     };
   },
-
 };
-
-

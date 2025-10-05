@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   // Allow this endpoint temporarily for debugging production issues
   // Remove or restrict this after debugging
-  
+
   const envVars = {
     NODE_ENV: process.env.NODE_ENV,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
@@ -21,6 +21,6 @@ export async function GET(request: NextRequest) {
       host: request.headers.get('host'),
       'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
       'x-forwarded-host': request.headers.get('x-forwarded-host'),
-    }
+    },
   });
 }

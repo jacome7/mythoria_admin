@@ -61,7 +61,7 @@ export function ChapterTable({ storyId }: ChapterTableProps) {
           </tr>
         </thead>
         <tbody>
-          {chapters.map(ch => (
+          {chapters.map((ch) => (
             <tr key={ch.chapterNumber}>
               <td>{ch.chapterNumber}</td>
               <td>{ch.title || 'Untitled'}</td>
@@ -73,4 +73,3 @@ export function ChapterTable({ storyId }: ChapterTableProps) {
     </div>
   );
 }
-

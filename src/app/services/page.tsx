@@ -22,7 +22,7 @@ export default function ServicesPage() {
   const [newService, setNewService] = useState({
     serviceCode: '',
     credits: 0,
-    isActive: true
+    isActive: true,
   });
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function ServicesPage() {
       if (!response.ok) {
         throw new Error('Failed to fetch services');
       }
-      
+
       const data = await response.json();
       setServices(data.services || []);
       setIsLoading(false);
@@ -152,10 +152,7 @@ export default function ServicesPage() {
       <main className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Services Management</h1>
-          <button
-            className="btn btn-primary"
-            onClick={() => setIsCreating(true)}
-          >
+          <button className="btn btn-primary" onClick={() => setIsCreating(true)}>
             Add New Service
           </button>
         </div>
@@ -165,7 +162,7 @@ export default function ServicesPage() {
           <div className="modal modal-open">
             <div className="modal-box">
               <h3 className="font-bold text-lg mb-4">Create New Service</h3>
-              
+
               <div className="form-control w-full mb-4">
                 <label className="label">
                   <span className="label-text">Service Code</span>
@@ -187,7 +184,9 @@ export default function ServicesPage() {
                   type="number"
                   className="input input-bordered w-full"
                   value={newService.credits}
-                  onChange={(e) => setNewService({ ...newService, credits: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setNewService({ ...newService, credits: parseInt(e.target.value) || 0 })
+                  }
                   placeholder="Enter credits amount"
                   min="0"
                 />
@@ -206,16 +205,10 @@ export default function ServicesPage() {
               </div>
 
               <div className="modal-action">
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setIsCreating(false)}
-                >
+                <button className="btn btn-ghost" onClick={() => setIsCreating(false)}>
                   Cancel
                 </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleCreateService}
-                >
+                <button className="btn btn-primary" onClick={handleCreateService}>
                   Create Service
                 </button>
               </div>
@@ -228,7 +221,7 @@ export default function ServicesPage() {
           <div className="modal modal-open">
             <div className="modal-box">
               <h3 className="font-bold text-lg mb-4">Edit Service</h3>
-              
+
               <div className="form-control w-full mb-4">
                 <label className="label">
                   <span className="label-text">Service Code</span>
@@ -250,7 +243,9 @@ export default function ServicesPage() {
                   type="number"
                   className="input input-bordered w-full"
                   value={editingService.credits}
-                  onChange={(e) => setEditingService({ ...editingService, credits: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setEditingService({ ...editingService, credits: parseInt(e.target.value) || 0 })
+                  }
                   placeholder="Enter credits amount"
                   min="0"
                 />
@@ -263,22 +258,18 @@ export default function ServicesPage() {
                     type="checkbox"
                     className="checkbox"
                     checked={editingService.isActive}
-                    onChange={(e) => setEditingService({ ...editingService, isActive: e.target.checked })}
+                    onChange={(e) =>
+                      setEditingService({ ...editingService, isActive: e.target.checked })
+                    }
                   />
                 </label>
               </div>
 
               <div className="modal-action">
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setEditingService(null)}
-                >
+                <button className="btn btn-ghost" onClick={() => setEditingService(null)}>
                   Cancel
                 </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSaveEdit}
-                >
+                <button className="btn btn-primary" onClick={handleSaveEdit}>
                   Save Changes
                 </button>
               </div>
@@ -308,9 +299,11 @@ export default function ServicesPage() {
                       <td>{service.credits}</td>
                       <td>
                         <div className="badge badge-sm badge-outline">
-                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                            service.isActive ? 'bg-green-500' : 'bg-red-500'
-                          }`}></span>
+                          <span
+                            className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                              service.isActive ? 'bg-green-500' : 'bg-red-500'
+                            }`}
+                          ></span>
                           {service.isActive ? 'Active' : 'Inactive'}
                         </div>
                       </td>

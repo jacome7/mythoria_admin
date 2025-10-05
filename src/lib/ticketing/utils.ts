@@ -40,13 +40,13 @@ export function getDisplaySubject(ticket: TicketLike): string {
     const amount = metadata.amount;
     const credits = metadata.credits;
     const phone = metadata.phone;
-    
+
     if (amount && credits && phone) {
       const ticketNumber = getTicketNumber(ticket.id);
       return `MB Way Payment request (${ticketNumber}) - ${amount}€ = ${credits} credits - requested by ${phone}`;
     }
   }
-  
+
   // For other tickets, return the original subject
   return ticket.subject;
 }

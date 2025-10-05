@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  FaPlay, 
-  FaTimes, 
-  FaCheck, 
-  FaClock, 
-  FaRedo, 
+import {
+  FaPlay,
+  FaTimes,
+  FaCheck,
+  FaClock,
+  FaRedo,
   FaExclamationTriangle,
   FaUser,
   FaCalendarAlt,
-  FaStopwatch
+  FaStopwatch,
 } from 'react-icons/fa';
 
 interface StoryDetails {
@@ -93,7 +93,7 @@ const formatDuration = (startTime: Date, endTime?: Date) => {
 const formatTimeAgo = (date: Date) => {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   if (diffInSeconds < 60) {
     return `${diffInSeconds}s ago`;
   } else if (diffInSeconds < 3600) {
@@ -122,9 +122,7 @@ export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
       <div className="card-body">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="card-title text-lg">
-            {workflow.story_title || 'Untitled Story'}
-          </h3>
+          <h3 className="card-title text-lg">{workflow.story_title || 'Untitled Story'}</h3>
           <div className="flex items-center gap-3">
             <div className={`badge ${getStatusColor(workflow.status)} gap-2`}>
               {getStatusIcon(workflow.status)}
@@ -159,7 +157,7 @@ export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
             <span className="text-gray-600">User:</span>
             <span className="font-medium">{workflow.user_id || 'N/A'}</span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <FaCalendarAlt className="text-gray-500" />
             <span className="text-gray-600">Started:</span>
@@ -167,15 +165,20 @@ export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
               {workflow.started_at ? formatTimeAgo(new Date(workflow.started_at)) : 'N/A'}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <FaStopwatch className="text-gray-500" />
             <span className="text-gray-600">Duration:</span>
             <span className="font-medium">
-              {workflow.started_at ? formatDuration(new Date(workflow.started_at), workflow.ended_at ? new Date(workflow.ended_at) : undefined) : 'N/A'}
+              {workflow.started_at
+                ? formatDuration(
+                    new Date(workflow.started_at),
+                    workflow.ended_at ? new Date(workflow.ended_at) : undefined,
+                  )
+                : 'N/A'}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <span className="text-gray-600">Run ID:</span>
             <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
@@ -221,9 +224,7 @@ export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
               <h4 className="font-medium text-sm text-red-700">Error Details</h4>
             </div>
             <div className="alert alert-error">
-              <code className="text-sm whitespace-pre-wrap">
-                {workflow.error_message}
-              </code>
+              <code className="text-sm whitespace-pre-wrap">{workflow.error_message}</code>
             </div>
           </div>
         )}
@@ -234,9 +235,7 @@ export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
             <div className="divider my-2"></div>
             <h4 className="font-medium text-sm text-gray-700 mb-2">Current Step</h4>
             <div className="flex items-center gap-2">
-              <div className="badge badge-outline badge-sm">
-                {workflow.current_step}
-              </div>
+              <div className="badge badge-outline badge-sm">{workflow.current_step}</div>
               {workflow.step_details && (
                 <span className="text-sm text-gray-600">
                   {workflow.step_details.description || 'Processing...'}

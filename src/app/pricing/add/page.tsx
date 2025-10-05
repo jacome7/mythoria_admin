@@ -86,10 +86,7 @@ export default function AddCreditPackagePage() {
       <main className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
-            <button 
-              onClick={handleCancel}
-              className="btn btn-ghost btn-sm"
-            >
+            <button onClick={handleCancel} className="btn btn-ghost btn-sm">
               ← Back to Credit Packages
             </button>
           </div>
@@ -128,7 +125,9 @@ export default function AddCreditPackagePage() {
                     placeholder="5"
                     min="1"
                     value={formData.credits || ''}
-                    onChange={(e) => setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })
+                    }
                     required
                   />
                 </div>
@@ -152,8 +151,18 @@ export default function AddCreditPackagePage() {
 
               {/* Cost per Credit Display */}
               <div className="alert alert-info">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  className="stroke-current shrink-0 w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
                 </svg>
                 <div>
                   <h3 className="font-bold">Cost per Credit</h3>
@@ -173,7 +182,9 @@ export default function AddCreditPackagePage() {
                     />
                   </label>
                   <label className="label">
-                    <span className="label-text-alt">Mark this package as popular to highlight it</span>
+                    <span className="label-text-alt">
+                      Mark this package as popular to highlight it
+                    </span>
                   </label>
                 </div>
 
@@ -188,7 +199,9 @@ export default function AddCreditPackagePage() {
                     />
                   </label>
                   <label className="label">
-                    <span className="label-text-alt">Mark this package as the best value option</span>
+                    <span className="label-text-alt">
+                      Mark this package as the best value option
+                    </span>
                   </label>
                 </div>
               </div>

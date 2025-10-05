@@ -125,15 +125,15 @@
     margin: 0 1rem;
     padding: 1rem;
   }
-  
+
   .story-container h1 {
     font-size: 2rem;
   }
-  
+
   .story-container h2 {
     font-size: 1.5rem;
   }
-  
+
   .story-container p {
     font-size: 1rem;
     text-indent: 1rem;
@@ -146,25 +146,25 @@
     background: white;
     color: black;
   }
-  
+
   .story-container {
     box-shadow: none;
     border: none;
     margin: 0;
     padding: 0;
   }
-  
+
   .story-container .prose p {
     text-indent: 1.5rem;
     orphans: 3;
     widows: 3;
   }
-  
+
   .story-container img {
     max-width: 100%;
     page-break-inside: avoid;
   }
-  
+
   .story-container h1,
   .story-container h2,
   .story-container h3 {
@@ -209,10 +209,21 @@
 
 /* Force light theme for readability in admin portal */
 @media (prefers-color-scheme: dark) {
-  .story-reader { color: #111; background: #f3f4f6; }
-  .story-container { background: #ffffff; color: #111; }
+  .story-reader {
+    color: #111;
+    background: #f3f4f6;
+  }
+  .story-container {
+    background: #ffffff;
+    color: #111;
+  }
   .story-container h1,
   .story-container h2,
-  .story-container h3 { color: #111; }
-  .story-container .prose blockquote { background: #f3f4f6; border-left-color: #2563eb; }
+  .story-container h3 {
+    color: #111;
+  }
+  .story-container .prose blockquote {
+    background: #f3f4f6;
+    border-left-color: #2563eb;
+  }
 }

@@ -13,14 +13,16 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    
+
     const statusParam = searchParams.get('status');
-    const status = statusParam ? statusParam.split(',') as ('open' | 'in_progress' | 'resolved' | 'closed')[] : undefined;
-    
+    const status = statusParam
+      ? (statusParam.split(',') as ('open' | 'in_progress' | 'resolved' | 'closed')[])
+      : undefined;
+
     const filters: TicketFilters = {
       status: status,
       category: searchParams.get('category') || undefined,
-      priority: searchParams.get('priority') as ('low' | 'medium' | 'high') || undefined,
+      priority: (searchParams.get('priority') as 'low' | 'medium' | 'high') || undefined,
       search: searchParams.get('search') || undefined,
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '50'),
@@ -35,15 +37,12 @@ export async function GET(request: NextRequest) {
         page: filters.page,
         limit: filters.limit,
         hasNext: tickets.length === filters.limit,
-        hasPrev: (filters.page || 1) > 1
-      }
+        hasPrev: (filters.page || 1) > 1,
+      },
     });
   } catch (error) {
     console.error('Error fetching tickets:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -56,24 +55,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    
+
     // Validate required fields based on category
     if (!body.category) {
-      return NextResponse.json(
-        { error: 'Missing required field: category' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required field: category' }, { status: 400 });
     }
 
     // Create ticket based on category
     let ticket;
-    
+
     switch (body.category) {
       case 'contact':
         if (!body.email || !body.name || !body.type || !body.message) {
           return NextResponse.json(
             { error: 'Missing required fields for contact ticket: email, name, type, message' },
-            { status: 400 }
+            { status: 400 },
           );
         }
         ticket = await TicketService.createContactTicket({
@@ -84,12 +80,12 @@ export async function POST(request: NextRequest) {
           userId: body.userId,
         });
         break;
-        
+
       case 'print_request':
         if (!body.storyId) {
           return NextResponse.json(
             { error: 'Missing required field for print request: storyId' },
-            { status: 400 }
+            { status: 400 },
           );
         }
         ticket = await TicketService.createPrintTicket({
@@ -99,33 +95,34 @@ export async function POST(request: NextRequest) {
           printFormat: body.printFormat,
         });
         break;
-        
+
       case 'payment_request':
         if (!body.amount) {
           return NextResponse.json(
             { error: 'Missing required field for payment request: amount' },
-            { status: 400 }
+            { status: 400 },
           );
         }
-        
+
         // For payment requests, use the rich metadata sent by the webapp
         // instead of the simplified createPaymentTicket method
         ticket = await TicketService.createTicket({
           userId: body.userId,
           category: body.category,
           subject: body.subject || `Payment Request - €${body.amount}`,
-          description: body.description || `User requested payment processing for amount: €${body.amount}`,
+          description:
+            body.description || `User requested payment processing for amount: €${body.amount}`,
           priority: body.priority,
           metadata: body.metadata, // Preserve all metadata from webapp
         });
         break;
-        
+
       default:
         // Generic ticket creation - validate required fields
         if (!body.subject || !body.description) {
           return NextResponse.json(
             { error: 'Missing required fields for generic ticket: subject, description' },
-            { status: 400 }
+            { status: 400 },
           );
         }
         ticket = await TicketService.createTicket({
@@ -141,9 +138,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(ticket, { status: 201 });
   } catch (error) {
     console.error('Error creating ticket:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -20,12 +20,12 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", { 
-        callbackUrl: "/",
+      await signIn('google', {
+        callbackUrl: '/',
         redirect: true,
       });
     } catch (error) {
-      console.error("Sign-in error:", error);
+      console.error('Sign-in error:', error);
       setIsLoading(false);
     }
   };
@@ -35,22 +35,26 @@ export default function SignInPage() {
       <div className="card w-full max-w-md bg-base-100 shadow-2xl">
         <div className="card-body">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">
-              Mythoria Admin
-            </h1>
-            <p className="text-base-content/70">
-              Administration Portal
-            </p>
+            <h1 className="text-3xl font-bold text-primary mb-2">Mythoria Admin</h1>
+            <p className="text-base-content/70">Administration Portal</p>
           </div>
 
           <div className="space-y-4">
             <div className="alert alert-info">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
               </svg>
-              <span className="text-sm">
-                Access restricted to {ALLOWED_DOMAINS.join(' and ')}
-              </span>
+              <span className="text-sm">Access restricted to {ALLOWED_DOMAINS.join(' and ')}</span>
             </div>
 
             <button
@@ -63,7 +67,7 @@ export default function SignInPage() {
               ) : (
                 <FcGoogle className="text-xl" />
               )}
-              {isLoading ? "Signing in..." : "Sign in with Google"}
+              {isLoading ? 'Signing in...' : 'Sign in with Google'}
             </button>
           </div>
 
@@ -74,9 +78,7 @@ export default function SignInPage() {
               This portal is restricted to Mythoria team members.
             </p>
             {isNonProd && (
-              <p className="text-xs text-base-content/50 mt-2">
-                Dev Environment: Port {adminPort}
-              </p>
+              <p className="text-xs text-base-content/50 mt-2">Dev Environment: Port {adminPort}</p>
             )}
           </div>
         </div>

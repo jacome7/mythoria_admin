@@ -30,7 +30,7 @@ export default function ManagersPage() {
     name: '',
     email: '',
     mobilePhone: '',
-    role: ''
+    role: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export default function ManagersPage() {
       name: manager.name,
       email: manager.email,
       mobilePhone: manager.mobilePhone || '',
-      role: manager.role || ''
+      role: manager.role || '',
     });
     setShowForm(true);
     setError(null);
@@ -92,10 +92,10 @@ export default function ManagersPage() {
     setError(null);
 
     try {
-      const url = editingManager 
+      const url = editingManager
         ? `/api/admin/managers/${editingManager.managerId}`
         : '/api/admin/managers';
-      
+
       const method = editingManager ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -165,10 +165,7 @@ export default function ManagersPage() {
         <div className="bg-base-100 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Managers</h1>
-            <button 
-              className="btn btn-primary"
-              onClick={handleCreateNew}
-            >
+            <button className="btn btn-primary" onClick={handleCreateNew}>
               + Add New Manager
             </button>
           </div>
@@ -209,13 +206,13 @@ export default function ManagersPage() {
                       <td>{new Date(manager.createdAt).toLocaleDateString()}</td>
                       <td>
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             className="btn btn-sm btn-outline btn-info"
                             onClick={() => handleEdit(manager)}
                           >
                             Edit
                           </button>
-                          <button 
+                          <button
                             className="btn btn-sm btn-outline btn-error"
                             onClick={() => handleDelete(manager)}
                           >
@@ -238,7 +235,7 @@ export default function ManagersPage() {
               <h3 className="font-bold text-lg mb-4">
                 {editingManager ? 'Edit Manager' : 'Add New Manager'}
               </h3>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-control">
                   <label className="label">
@@ -310,18 +307,16 @@ export default function ManagersPage() {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={isSubmitting}
-                  >
+                  <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <span className="loading loading-spinner loading-sm"></span>
                         Saving...
                       </>
+                    ) : editingManager ? (
+                      'Update Manager'
                     ) : (
-                      editingManager ? 'Update Manager' : 'Create Manager'
+                      'Create Manager'
                     )}
                   </button>
                 </div>

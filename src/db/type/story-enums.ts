@@ -3,12 +3,12 @@
 
 export enum TargetAudience {
   CHILDREN_0_2 = 'children_0-2',
-  CHILDREN_3_6 = 'children_3-6', 
+  CHILDREN_3_6 = 'children_3-6',
   CHILDREN_7_10 = 'children_7-10',
   CHILDREN_11_14 = 'children_11-14',
   YOUNG_ADULT_15_17 = 'young_adult_15-17',
   ADULT_18_PLUS = 'adult_18+',
-  ALL_AGES = 'all_ages'
+  ALL_AGES = 'all_ages',
 }
 
 export enum NovelStyle {
@@ -27,7 +27,7 @@ export enum NovelStyle {
   BIOGRAPHY = 'biography',
   EDUCATIONAL = 'educational',
   POETRY = 'poetry',
-  SPORTS_ADVENTURE = 'sports_adventure'
+  SPORTS_ADVENTURE = 'sports_adventure',
 }
 
 export enum GraphicalStyle {
@@ -44,7 +44,7 @@ export enum GraphicalStyle {
   DISNEY_STYLE = 'disney_style',
   SKETCH = 'sketch',
   OIL_PAINTING = 'oil_painting',
-  COLORED_PENCIL = 'colored_pencil'
+  COLORED_PENCIL = 'colored_pencil',
 }
 
 // Human-readable labels for UI display
@@ -55,7 +55,7 @@ export const TargetAudienceLabels: Record<TargetAudience, string> = {
   [TargetAudience.CHILDREN_11_14]: 'Middle Grade (11-14 years)',
   [TargetAudience.YOUNG_ADULT_15_17]: 'Young Adult (15-17 years)',
   [TargetAudience.ADULT_18_PLUS]: 'Adults (18+ years)',
-  [TargetAudience.ALL_AGES]: 'All Ages'
+  [TargetAudience.ALL_AGES]: 'All Ages',
 };
 
 export const NovelStyleLabels: Record<NovelStyle, string> = {
@@ -74,7 +74,7 @@ export const NovelStyleLabels: Record<NovelStyle, string> = {
   [NovelStyle.BIOGRAPHY]: 'Biography',
   [NovelStyle.EDUCATIONAL]: 'Educational',
   [NovelStyle.POETRY]: 'Poetry',
-  [NovelStyle.SPORTS_ADVENTURE]: 'Sports Adventure'
+  [NovelStyle.SPORTS_ADVENTURE]: 'Sports Adventure',
 };
 
 export const GraphicalStyleLabels: Record<GraphicalStyle, string> = {
@@ -91,27 +91,23 @@ export const GraphicalStyleLabels: Record<GraphicalStyle, string> = {
   [GraphicalStyle.DISNEY_STYLE]: 'Disney Style',
   [GraphicalStyle.SKETCH]: 'Sketch',
   [GraphicalStyle.OIL_PAINTING]: 'Oil Painting',
-  [GraphicalStyle.COLORED_PENCIL]: 'Colored Pencil'
+  [GraphicalStyle.COLORED_PENCIL]: 'Colored Pencil',
 };
 
 // Helper functions to get all enum values as arrays
-export const getAllTargetAudiences = (): TargetAudience[] => 
-  Object.values(TargetAudience);
+export const getAllTargetAudiences = (): TargetAudience[] => Object.values(TargetAudience);
 
-export const getAllNovelStyles = (): NovelStyle[] => 
-  Object.values(NovelStyle);
+export const getAllNovelStyles = (): NovelStyle[] => Object.values(NovelStyle);
 
-export const getAllGraphicalStyles = (): GraphicalStyle[] => 
-  Object.values(GraphicalStyle);
+export const getAllGraphicalStyles = (): GraphicalStyle[] => Object.values(GraphicalStyle);
 
-// Helper functions to map between enum values and labels  
-export const getTargetAudienceLabel = (value: TargetAudience): string => 
+// Helper functions to map between enum values and labels
+export const getTargetAudienceLabel = (value: TargetAudience): string =>
   TargetAudienceLabels[value];
 
-export const getNovelStyleLabel = (value: NovelStyle): string => 
-  NovelStyleLabels[value];
+export const getNovelStyleLabel = (value: NovelStyle): string => NovelStyleLabels[value];
 
-export const getGraphicalStyleLabel = (value: GraphicalStyle): string => 
+export const getGraphicalStyleLabel = (value: GraphicalStyle): string =>
   GraphicalStyleLabels[value];
 
 // Helper functions to find enum value from label (useful for backward compatibility)

@@ -13,7 +13,7 @@ export interface ApiChapter {
   updatedAt: string;
 }
 
-export interface Chapter extends Omit<ApiChapter, "createdAt" | "updatedAt"> {
+export interface Chapter extends Omit<ApiChapter, 'createdAt' | 'updatedAt'> {
   createdAt: Date;
   updatedAt: Date;
 }

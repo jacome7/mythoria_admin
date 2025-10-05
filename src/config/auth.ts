@@ -1,1 +1,1 @@
-export const ALLOWED_DOMAINS = ['@mythoria.pt', '@caravanconcierge.com',];
+export const ALLOWED_DOMAINS = ['@mythoria.pt', '@caravanconcierge.com'];
