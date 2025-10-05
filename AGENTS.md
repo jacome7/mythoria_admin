@@ -14,7 +14,7 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
 
 - Lint with ESLint + Next rules: `npm run lint`
 - Type-check with the strict TypeScript configuration: `npm run typecheck`
-- Enforce Prettier formatting: `npm run format` (use `npm run format:fix` to apply fixes)
+- Enforce Prettier formatting: `npm run format` (run this after every code change; use `npm run format:fix` to apply fixes)
 - Run the Jest test suite (React Testing Library + jsdom): `npm run test`
 - Watch mode: `npm run test:watch`
 - Coverage report: `npm run test:coverage`
