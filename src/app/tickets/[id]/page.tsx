@@ -20,6 +20,32 @@ interface TicketMetadata {
     email?: string;
     phone?: string;
   };
+  // Print request fields
+  storyId?: string;
+  shippingAddress?: {
+    addressId?: string;
+  };
+  printFormat?: string;
+  // Enriched data for print requests
+  enrichedUser?: {
+    userId: string;
+    email: string;
+    displayName: string;
+  } | null;
+  enrichedStory?: {
+    storyId: string;
+    title: string;
+  } | null;
+  enrichedAddress?: {
+    addressId: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    stateRegion?: string;
+    postalCode?: string;
+    country: string;
+    phone?: string;
+  } | null;
   [key: string]: unknown; // Allow additional fields
 }
 
@@ -285,6 +311,148 @@ export default function TicketDetailPage() {
     }
   };
 
+  const renderPrintRequestMetadata = (metadata: TicketMetadata) => {
+    return (
+      <div className="card bg-base-100 shadow-sm">
+        <div className="card-body">
+          <h3 className="card-title text-lg">Print Request Details</h3>
+          <div className="space-y-4">
+            {/* User Information */}
+            <div>
+              <h4 className="font-semibold text-base mb-2">User</h4>
+              {metadata.enrichedUser ? (
+                <div className="space-y-1 pl-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">User ID:</span>
+                    <span className="font-mono text-sm text-base-content/80">
+                      {metadata.enrichedUser.userId}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Email:</span>
+                    <Link
+                      href={`/users/${metadata.enrichedUser.userId}`}
+                      className="text-primary hover:text-primary-focus underline"
+                    >
+                      {metadata.enrichedUser.email}
+                    </Link>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Name:</span>
+                    <span className="text-base-content/80">
+                      {metadata.enrichedUser.displayName}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="pl-2 space-y-1">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">User ID:</span>
+                    <span className="font-mono text-sm text-base-content/80">
+                      {metadata.storyId || 'N/A'}
+                    </span>
+                  </div>
+                  <span className="text-error text-sm">User information not found</span>
+                </div>
+              )}
+            </div>
+
+            {/* Story Information */}
+            <div>
+              <h4 className="font-semibold text-base mb-2">Story</h4>
+              {metadata.enrichedStory ? (
+                <div className="space-y-1 pl-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Story ID:</span>
+                    <span className="font-mono text-sm text-base-content/80">
+                      {metadata.enrichedStory.storyId}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Title:</span>
+                    <span className="text-base-content/80 font-medium">
+                      {metadata.enrichedStory.title}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="pl-2 space-y-1">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Story ID:</span>
+                    <span className="font-mono text-sm text-base-content/80">
+                      {metadata.storyId || 'N/A'}
+                    </span>
+                  </div>
+                  <span className="text-error text-sm">Story not found</span>
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Address */}
+            <div>
+              <h4 className="font-semibold text-base mb-2">Shipping Address</h4>
+              {metadata.enrichedAddress ? (
+                <div className="space-y-1 pl-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Address ID:</span>
+                    <span className="font-mono text-sm text-base-content/80">
+                      {metadata.enrichedAddress.addressId}
+                    </span>
+                  </div>
+                  <div className="flex flex-col mt-2">
+                    <span className="text-sm text-base-content/60 mb-1">Full Address:</span>
+                    <div className="bg-base-200 p-3 rounded text-base-content/90 text-sm">
+                      <div>{metadata.enrichedAddress.line1}</div>
+                      {metadata.enrichedAddress.line2 && (
+                        <div>{metadata.enrichedAddress.line2}</div>
+                      )}
+                      <div>
+                        {metadata.enrichedAddress.city}
+                        {metadata.enrichedAddress.stateRegion &&
+                          `, ${metadata.enrichedAddress.stateRegion}`}
+                      </div>
+                      {metadata.enrichedAddress.postalCode && (
+                        <div>{metadata.enrichedAddress.postalCode}</div>
+                      )}
+                      <div>{metadata.enrichedAddress.country}</div>
+                      {metadata.enrichedAddress.phone && (
+                        <div className="mt-2 pt-2 border-t border-base-300">
+                          Phone: {metadata.enrichedAddress.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="pl-2 space-y-1">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-base-content/60">Address ID:</span>
+                    <span className="font-mono text-sm text-base-content/80">
+                      {metadata.shippingAddress?.addressId || 'N/A'}
+                    </span>
+                  </div>
+                  <span className="text-error text-sm">Address not found</span>
+                </div>
+              )}
+            </div>
+
+            {/* Print Format */}
+            {metadata.printFormat && (
+              <div>
+                <h4 className="font-semibold text-base mb-2">Print Format</h4>
+                <div className="pl-2">
+                  <span className="badge badge-primary badge-lg capitalize">
+                    {metadata.printFormat}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderMetadata = (metadata: TicketMetadata) => {
     if (!metadata || Object.keys(metadata).length === 0) return null;
 
@@ -406,7 +574,10 @@ export default function TicketDetailPage() {
             </div>
 
             {/* Metadata */}
-            {ticket.metadata && renderMetadata(ticket.metadata)}
+            {ticket.metadata &&
+              (ticket.category === 'print_request'
+                ? renderPrintRequestMetadata(ticket.metadata)
+                : renderMetadata(ticket.metadata))}
 
             {/* Comments */}
             <div className="card bg-base-100 shadow-xl">

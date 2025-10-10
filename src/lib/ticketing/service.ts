@@ -36,6 +36,34 @@ export interface TicketMetadata extends Record<string, unknown> {
     email?: string;
     phone?: string;
   };
+  // Enriched data for print requests
+  storyId?: string;
+  shippingAddress?: {
+    addressId?: string;
+  };
+  printFormat?: string;
+  // Enriched user details
+  enrichedUser?: {
+    userId: string;
+    email: string;
+    displayName: string;
+  } | null;
+  // Enriched story details
+  enrichedStory?: {
+    storyId: string;
+    title: string;
+  } | null;
+  // Enriched address details
+  enrichedAddress?: {
+    addressId: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    stateRegion?: string;
+    postalCode?: string;
+    country: string;
+    phone?: string;
+  } | null;
 }
 
 export interface CreateTicketData {
@@ -272,7 +300,7 @@ export class TicketService {
       .orderBy(ticketComments.createdAt);
 
     // Extract author information from metadata if available
-    const metadata = (ticket.metadata as TicketMetadata) || {};
+    let metadata = (ticket.metadata as TicketMetadata) || {};
     const author = metadata.author
       ? {
           id: metadata.author.id || ticket.userId || '',
@@ -282,11 +310,135 @@ export class TicketService {
         }
       : null;
 
+    // Enrich print request tickets with data from mythoria database
+    if (ticket.category === 'print_request') {
+      metadata = await this.enrichPrintRequestMetadata(ticket.userId, metadata);
+    }
+
     return {
       ...ticket,
+      metadata,
       comments,
       author,
     };
+  }
+
+  /**
+   * Enrich print request metadata with user, story, and address details
+   */
+  private static async enrichPrintRequestMetadata(
+    userId: string | null,
+    metadata: TicketMetadata,
+  ): Promise<TicketMetadata> {
+    try {
+      const { getMythoriaDb } = await import('@/db');
+      const mythoriaDb = getMythoriaDb();
+      const { authors } = await import('@/db/schema/authors');
+      const { stories } = await import('@/db/schema/stories');
+      const { addresses } = await import('@/db/schema/authors');
+
+      // Enrich user data
+      if (userId) {
+        try {
+          const [user] = await mythoriaDb
+            .select({
+              authorId: authors.authorId,
+              email: authors.email,
+              displayName: authors.displayName,
+            })
+            .from(authors)
+            .where(eq(authors.authorId, userId))
+            .limit(1);
+
+          if (user) {
+            metadata.enrichedUser = {
+              userId: user.authorId,
+              email: user.email,
+              displayName: user.displayName,
+            };
+          } else {
+            metadata.enrichedUser = null;
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+          metadata.enrichedUser = null;
+        }
+      }
+
+      // Enrich story data
+      if (metadata.storyId && typeof metadata.storyId === 'string') {
+        try {
+          const [story] = await mythoriaDb
+            .select({
+              storyId: stories.storyId,
+              title: stories.title,
+            })
+            .from(stories)
+            .where(eq(stories.storyId, metadata.storyId))
+            .limit(1);
+
+          if (story) {
+            metadata.enrichedStory = {
+              storyId: story.storyId,
+              title: story.title,
+            };
+          } else {
+            metadata.enrichedStory = null;
+          }
+        } catch (error) {
+          console.error('Error fetching story details:', error);
+          metadata.enrichedStory = null;
+        }
+      }
+
+      // Enrich address data
+      if (
+        metadata.shippingAddress &&
+        typeof metadata.shippingAddress === 'object' &&
+        'addressId' in metadata.shippingAddress
+      ) {
+        const addressId = (metadata.shippingAddress as { addressId: string }).addressId;
+        try {
+          const [address] = await mythoriaDb
+            .select({
+              addressId: addresses.addressId,
+              line1: addresses.line1,
+              line2: addresses.line2,
+              city: addresses.city,
+              stateRegion: addresses.stateRegion,
+              postalCode: addresses.postalCode,
+              country: addresses.country,
+              phone: addresses.phone,
+            })
+            .from(addresses)
+            .where(eq(addresses.addressId, addressId))
+            .limit(1);
+
+          if (address) {
+            metadata.enrichedAddress = {
+              addressId: address.addressId,
+              line1: address.line1,
+              line2: address.line2 || undefined,
+              city: address.city,
+              stateRegion: address.stateRegion || undefined,
+              postalCode: address.postalCode || undefined,
+              country: address.country,
+              phone: address.phone || undefined,
+            };
+          } else {
+            metadata.enrichedAddress = null;
+          }
+        } catch (error) {
+          console.error('Error fetching address details:', error);
+          metadata.enrichedAddress = null;
+        }
+      }
+
+      return metadata;
+    } catch (error) {
+      console.error('Error enriching print request metadata:', error);
+      return metadata;
+    }
   }
 
   /**
