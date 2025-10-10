@@ -26,7 +26,8 @@ export async function GET(request: Request) {
     const sortBy = (searchParams.get('sortBy') || 'createdAt') as
       | 'displayName'
       | 'email'
-      | 'createdAt';
+      | 'createdAt'
+      | 'lastLoginAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get users data

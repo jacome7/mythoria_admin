@@ -290,7 +290,7 @@ export const adminService = {
     page: number = 1,
     limit: number = 100,
     searchTerm?: string,
-    sortBy: 'displayName' | 'email' | 'createdAt' = 'createdAt',
+    sortBy: 'displayName' | 'email' | 'createdAt' | 'lastLoginAt' = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
@@ -311,7 +311,9 @@ export const adminService = {
         ? authors.displayName
         : sortBy === 'email'
           ? authors.email
-          : authors.createdAt;
+          : sortBy === 'lastLoginAt'
+            ? authors.lastLoginAt
+            : authors.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
     const query = db.select().from(authors);

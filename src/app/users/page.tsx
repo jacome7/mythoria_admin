@@ -29,7 +29,7 @@ interface UsersResponse {
   pagination: PaginationData;
 }
 
-type SortField = 'displayName' | 'email' | 'createdAt';
+type SortField = 'displayName' | 'email' | 'createdAt' | 'lastLoginAt';
 type SortOrder = 'asc' | 'desc';
 
 export default function UsersPage() {
@@ -152,6 +152,7 @@ export default function UsersPage() {
                 <option value="createdAt">Created Date</option>
                 <option value="displayName">Name</option>
                 <option value="email">Email</option>
+                <option value="lastLoginAt">Last Login</option>
               </select>
               <button
                 className="btn btn-outline"
@@ -193,7 +194,12 @@ export default function UsersPage() {
                     >
                       Created {sortField === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th>Last Login</th>
+                    <th
+                      className="cursor-pointer hover:bg-base-200"
+                      onClick={() => handleSort('lastLoginAt')}
+                    >
+                      Last Login {sortField === 'lastLoginAt' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    </th>
                     <th>Actions</th>
                   </tr>
                 </thead>
