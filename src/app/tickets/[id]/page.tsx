@@ -26,6 +26,7 @@ interface TicketMetadata {
     addressId?: string;
   };
   printFormat?: string;
+  numberOfCopies?: number;
   // Enriched data for print requests
   enrichedUser?: {
     userId: string;
@@ -443,6 +444,18 @@ export default function TicketDetailPage() {
                 <div className="pl-2">
                   <span className="badge badge-primary badge-lg capitalize">
                     {metadata.printFormat}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Number of Copies */}
+            {metadata.numberOfCopies && (
+              <div>
+                <h4 className="font-semibold text-base mb-2">Number of Copies</h4>
+                <div className="pl-2">
+                  <span className="badge badge-secondary badge-lg">
+                    {metadata.numberOfCopies} {metadata.numberOfCopies === 1 ? 'copy' : 'copies'}
                   </span>
                 </div>
               </div>
