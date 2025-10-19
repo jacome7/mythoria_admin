@@ -44,6 +44,7 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
 - Node.js **>=22.0.0** (Docker images pin to 22.12-alpine)
 - Package manager: npm (lockfile present)
 - Styling: Tailwind CSS **4.1** + DaisyUI **5.0** (see `tailwind.config.ts` and `postcss.config.mjs`)
+- Charts & Data Visualization: Recharts **latest** (React-based charting library built on D3.js)
 - ORM: Drizzle ORM **0.44.4** with PostgreSQL pools via `pg`
 - Authentication: NextAuth.js **5.0.0-beta.29** with Google OAuth and JWT sessions
 - Cloud integrations: Google Pub/Sub and Workflows SDK clients are available for background orchestration tasks.
@@ -78,6 +79,7 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
 - Tailwind 4 content scanning targets `src/app`, `src/components`, and `src/pages` for compatibility.
 - DaisyUI themes are available globally; follow existing component patterns before introducing new theme tokens.
 - Global fonts, resets, and shared CSS live in `src/styles`.
+- **Recharts** library is available for creating charts and data visualizations. Use it for all dashboard charts, KPI visualizations, analytics displays, and data-driven graphics. Always wrap charts in `ResponsiveContainer` for proper sizing, define TypeScript types for chart data, and use client components (`"use client"`) when rendering charts.
 
 ### Integrations & telemetry
 
