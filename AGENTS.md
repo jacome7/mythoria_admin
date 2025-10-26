@@ -41,7 +41,7 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
 - Next.js **15.4.6** using the App Router under `src/app`
 - React **19.1.1**
 - TypeScript **5.9** (strict mode enabled, `moduleResolution: bundler`)
-- Node.js **>=22.0.0** (Docker images pin to 22.12-alpine)
+- Node.js **>=22.0.0** (Docker images pin to 22.21-alpine)
 - Package manager: npm (lockfile present)
 - Styling: Tailwind CSS **4.1** + DaisyUI **5.0** (see `tailwind.config.ts` and `postcss.config.mjs`)
 - Charts & Data Visualization: Recharts **latest** (React-based charting library built on D3.js)

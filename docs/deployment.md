@@ -69,7 +69,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 
 ```dockerfile
 # Multi-stage build for production optimization
-FROM node:22.12-alpine AS base
+FROM node:22.21-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps

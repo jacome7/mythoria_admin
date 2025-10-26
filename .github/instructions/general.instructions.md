@@ -15,6 +15,7 @@ When creating powershell scripts NEVER use emojies or special characters.
 Use **Recharts** library for all charts and data visualizations in the admin portal.
 
 Best practices when using Recharts:
+
 - Always wrap charts in `ResponsiveContainer` for proper sizing and responsiveness
 - Define explicit TypeScript types for all chart data structures
 - Use client components (`"use client"` directive) when rendering charts

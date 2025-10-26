@@ -287,12 +287,12 @@ const checkDatabaseHealth = async () => {
 
 ```dockerfile
 # Multi-stage build for optimization
-FROM node:22.12-alpine AS builder
+FROM node:22.21-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-FROM node:22.12-alpine AS runner
+FROM node:22.21-alpine AS runner
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .

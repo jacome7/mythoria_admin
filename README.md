@@ -19,7 +19,7 @@ The Mythoria Admin Portal is the governance hub for the Mythoria platform, deliv
 ## High-Level Architecture
 
 - **Frontend** - Next.js App Router delivering hybrid SSR/ISR experiences, React 19 UI components, Tailwind CSS 4 + DaisyUI for consistent theming, and shared UI primitives in `src/components`.
-- **Server Runtime** - Node.js 22.12 runtime with Next.js server actions, request-level middleware in `src/middleware.ts`, and secure API routes under `src/app/api/*` guarded by NextAuth.
+- **Server Runtime** - Node.js 22.21 runtime with Next.js server actions, request-level middleware in `src/middleware.ts`, and secure API routes under `src/app/api/*` guarded by NextAuth.
 - **Data Layer** - Drizzle ORM (v0.44) models split across three PostgreSQL databases: `mythoria_db` (users, stories, notifications), `workflows_db` (generation runs, steps, cost telemetry), and `backoffice_db` (admins, audit logs, system config). Connection pooling and migrations are orchestrated via `src/db` utilities.
 - **Inter-Service Integrations** - Publishes and consumes GCP Pub/Sub topics for asynchronous coordination, surfaces workflow state from Story Generation Workflows, and pushes notifications through the Notification Engine.
 - **Deployment Topology** - Distributed as a standalone Docker image (Node 22 Alpine base) deployed to Cloud Run in `europe-west9`, reaching Cloud SQL via VPC connectors and retrieving secrets from Google Secret Manager.
@@ -56,7 +56,7 @@ mythoria_admin/
 
 ## Environment & Deployment Footprint
 
-- Runs on Node.js 22.12 with npm tooling; scripts cover development, linting, testing, and database lifecycle (`npm run lint`, `npm run test`, `npm run db:migrate`).
+- Runs on Node.js 22.21 with npm tooling; scripts cover development, linting, testing, and database lifecycle (`npm run lint`, `npm run test`, `npm run db:migrate`).
 - Cloud Build pipeline builds and pushes the container image, then deploys to Cloud Run (`oceanic-beach-460916-n5` project) with autoscaling (0-5 instances) and private VPC egress.
 - Secrets (OAuth, database credentials, auth secret) are sourced from Google Secret Manager at runtime.
 
