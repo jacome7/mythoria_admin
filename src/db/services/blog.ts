@@ -2,7 +2,7 @@ import { getMythoriaDb } from '../index';
 import { blogPosts, blogPostTranslations } from '../schema/blog/blog';
 import { and, asc, desc, eq } from 'drizzle-orm';
 
-export const ADMIN_BLOG_LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR'] as const;
+export const ADMIN_BLOG_LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'] as const;
 export type AdminBlogLocale = (typeof ADMIN_BLOG_LOCALES)[number];
 
 export interface AdminCreatePostInput {

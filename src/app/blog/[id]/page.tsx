@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
-const LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR'];
+const LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'];
 
 interface TranslationState {
   locale: string;

@@ -163,6 +163,7 @@ function BlogListContent() {
                       <option value="pt-PT">Portuguese (PT)</option>
                       <option value="es-ES">Spanish (ES)</option>
                       <option value="fr-FR">French (FR)</option>
+                      <option value="de-DE">German (DE)</option>
                     </select>
                   </div>
                   <div>
