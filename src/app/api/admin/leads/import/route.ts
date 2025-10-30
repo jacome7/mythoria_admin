@@ -101,9 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) =>
-      session.user?.email?.endsWith(domain),
-    );
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
     if (!isAllowedDomain) {
       return NextResponse.json(
         { error: 'Access denied. Only authorized domains can import leads.' },
@@ -197,7 +195,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('CSV import error:', error);
     return NextResponse.json(
-      { error: 'Failed to import CSV', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to import CSV',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 },
     );
   }

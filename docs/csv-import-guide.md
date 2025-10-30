@@ -103,25 +103,31 @@ A sample file is available at: `mythoria_admin/docs/leads-import-sample.csv`
 After upload completes, a banner displays:
 
 ### Success Information
+
 - **Leads Imported**: Count of successfully inserted leads
 - **Duplicates Skipped**: Count of emails already in database
 
 ### Error Details
+
 - **Errors List**: First 5 errors shown inline (expandable)
 - **Error Format**: `Row N: Error description`
 
 ### Common Errors
 
 1. **Missing Email**
+
    ```
    Row 5: Missing email
    ```
+
    Solution: Ensure every row has an email value
 
 2. **Invalid Email Format**
+
    ```
    Row 8: Invalid email format: not-an-email
    ```
+
    Solution: Fix email to match `user@domain.com` pattern
 
 3. **Database Errors**
@@ -139,21 +145,21 @@ After upload completes, a banner displays:
 **Content-Type**: `multipart/form-data`
 
 **Request Body**:
+
 - `file`: CSV file (must have `.csv` extension)
 
 **Response** (200 OK):
+
 ```json
 {
   "success": 45,
   "duplicates": 3,
-  "errors": [
-    "Row 2: Missing email",
-    "Row 7: Invalid email format: bad-email"
-  ]
+  "errors": ["Row 2: Missing email", "Row 7: Invalid email format: bad-email"]
 }
 ```
 
 **Response** (400 Bad Request):
+
 ```json
 {
   "error": "File must be a CSV"
@@ -161,6 +167,7 @@ After upload completes, a banner displays:
 ```
 
 **Response** (401 Unauthorized):
+
 ```json
 {
   "error": "Unauthorized"
@@ -168,6 +175,7 @@ After upload completes, a banner displays:
 ```
 
 **Response** (403 Forbidden):
+
 ```json
 {
   "error": "Access denied. Only authorized domains can import leads."
@@ -250,7 +258,8 @@ Leads are inserted into the `leads` table with:
 
 **Cause**: CSV structure is malformed (missing header, inconsistent columns)
 
-**Solution**: 
+**Solution**:
+
 - Ensure first row contains column headers
 - Verify all rows have same number of columns
 - Remove special characters in values (or wrap in quotes)
@@ -265,7 +274,8 @@ Leads are inserted into the `leads` table with:
 
 **Cause**: Emails already exist in database
 
-**Solution**: 
+**Solution**:
+
 - Check Leads table for existing entries
 - Clear test data via admin panel or database
 - Modify emails to be unique
@@ -275,6 +285,7 @@ Leads are inserted into the `leads` table with:
 **Cause**: JavaScript error or network failure
 
 **Solution**:
+
 - Check browser console for errors
 - Verify network tab shows 200 response
 - Refresh page and try again
