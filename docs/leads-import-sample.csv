@@ -1,0 +1,7 @@
+email,name,mobile_phone,language
+john.doe@example.com,"John Doe",+1-555-0100,en-US
+jane.smith@example.com,"Jane Smith",+1-555-0101,en-US
+carlos.silva@example.com,"Carlos Silva",+351-912-345-678,pt-PT
+marie.dupont@example.com,"Marie Dupont",+33-6-12-34-56-78,fr-FR
+maria.garcia@example.com,"María García",+34-612-345-678,es-ES
+pedro.santos@example.com,"Pedro Santos, Jr.",+351-913-456-789,pt-PT

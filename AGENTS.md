@@ -88,6 +88,24 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
 - Notification APIs call external services configured by `NOTIFICATION_ENGINE_URL` and `NOTIFICATION_ENGINE_API_KEY`.
 - Health and diagnostics endpoints (`/api/health`, `/api/server-status`, `/api/debug/*`) report connectivity, environment configuration, and downstream service status.
 
+### Leads & Email Marketing
+
+- **Leads Management** (`/leads`): Manage email marketing campaign leads with full CRUD operations.
+  - View paginated leads list with search, filtering (status, language), and sorting
+  - Add individual leads via modal form
+  - Bulk operations: mark as sent/ready, delete multiple leads
+  - **CSV Import**: Upload CSV files to bulk import leads
+    - Required column: `email` (unique, validated)
+    - Optional columns: `name`, `mobile_phone`, `language`
+    - Sample format: `docs/leads-import-sample.csv`
+    - API endpoint: `POST /api/admin/leads/import`
+    - Features: duplicate detection, email validation, error reporting
+- **Email Marketing Dashboard** (`/email-marketing`): Control campaign configuration and view statistics.
+  - Real-time stats: total leads, ready to send, sent, engagement metrics
+  - Campaign controls: pause/resume, adjust batch size, configure send windows
+  - Timezone-aware scheduling (IANA timezone support)
+  - API proxy routes (`/api/mail-marketing/*`) secure communication with notification-engine
+
 ## Environment configuration
 
 Canonical definitions live in `env.manifest.ts`. Maintain that manifest FIRST when adding, renaming, or deprecating variables; the parity tooling derives expectations from it.

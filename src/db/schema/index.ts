@@ -1,5 +1,5 @@
 // Auto-generated index file for mythoria-db schema
-// Last updated: 2025-09-14T22:16:07.311Z
+// Last updated: 2025-10-30T16:54:36.946Z
 
 export * from './ai-edits';
 export * from './auth';
@@ -9,6 +9,7 @@ export * from './characters';
 export * from './credit-packages';
 export * from './credits';
 export * from './enums';
+export * from './leads';
 export * from './managers';
 export * from './payments';
 export * from './pricing';

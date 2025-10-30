@@ -8,10 +8,14 @@ import {
   authorCreditBalances,
   creditPackages,
   pricing,
+  leads,
+  emailStatusEnum,
 } from './schema';
 import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
 import { storyGenerationRuns, storyGenerationSteps } from './schema/workflows';
 export { adminBlogService } from './services/blog';
+
+type EmailStatus = (typeof emailStatusEnum.enumValues)[number];
 
 export const adminService = {
   // ---------------------------------------------------------------------------
@@ -1127,5 +1131,299 @@ export const adminService = {
       ...story,
       chapters,
     };
+  },
+
+  // ---------------------------------------------------------------------------
+  // Leads Management (Email Marketing)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get paginated list of leads with search, filters, and sorting.
+   *
+   * @param page - Page number (1-indexed)
+   * @param limit - Number of records per page
+   * @param searchTerm - Search string to match against name, email, or mobile phone
+   * @param statusFilter - Filter by email status (or 'all')
+   * @param languageFilter - Filter by language code (or 'all')
+   * @param sortBy - Field to sort by
+   * @param sortOrder - Sort direction (asc or desc)
+   * @returns Paginated leads data
+   */
+  async getLeads(
+    page: number = 1,
+    limit: number = 100,
+    searchTerm?: string,
+    statusFilter?: string,
+    languageFilter?: string,
+    sortBy: 'name' | 'email' | 'language' | 'emailStatus' | 'lastEmailSentAt' = 'lastEmailSentAt',
+    sortOrder: 'asc' | 'desc' = 'desc',
+  ) {
+    const db = getMythoriaDb();
+    const offset = (page - 1) * limit;
+
+    // Build where conditions dynamically
+    type Condition = ReturnType<typeof like> | ReturnType<typeof eq>;
+    const conditions: Condition[] = [];
+
+    // Search filter - matches name, email, or mobile phone
+    if (searchTerm && searchTerm.trim()) {
+      const pattern = `%${searchTerm.trim().toLowerCase()}%`;
+      conditions.push(
+        or(
+          like(sql`LOWER(${leads.name})`, pattern),
+          like(sql`LOWER(${leads.email})`, pattern),
+          like(sql`LOWER(${leads.mobilePhone})`, pattern),
+        ) as Condition,
+      );
+    }
+
+    // Status filter
+    if (statusFilter && statusFilter !== 'all') {
+      conditions.push(eq(leads.emailStatus, statusFilter as EmailStatus));
+    }
+
+    // Language filter
+    if (languageFilter && languageFilter !== 'all') {
+      conditions.push(eq(leads.language, languageFilter));
+    }
+
+    // Combine conditions
+    const whereClause: Condition | undefined = conditions.length
+      ? conditions
+          .slice(1)
+          .reduce<Condition>((acc, cur) => and(acc, cur) as Condition, conditions[0])
+      : undefined;
+
+    // Determine sort column
+    const sortColumn =
+      sortBy === 'name'
+        ? leads.name
+        : sortBy === 'email'
+          ? leads.email
+          : sortBy === 'language'
+            ? leads.language
+            : sortBy === 'emailStatus'
+              ? leads.emailStatus
+              : leads.lastEmailSentAt;
+
+    // Build query
+    const query = db
+      .select()
+      .from(leads)
+      .where(whereClause)
+      .orderBy(sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn))
+      .limit(limit)
+      .offset(offset);
+
+    const results = await query;
+
+    // Get total count for pagination
+    const countQuery = db.select({ value: count() }).from(leads).where(whereClause);
+
+    const countResult = await countQuery;
+    const totalCount = countResult[0]?.value || 0;
+
+    return {
+      data: results,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: offset + results.length < totalCount,
+        hasPrev: page > 1,
+      },
+    };
+  },
+
+  /**
+   * Get a single lead by ID.
+   */
+  async getLeadById(id: string) {
+    const db = getMythoriaDb();
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead || null;
+  },
+
+  /**
+   * Get a single lead by email (normalized).
+   */
+  async getLeadByEmail(email: string) {
+    const db = getMythoriaDb();
+    const [lead] = await db.select().from(leads).where(eq(leads.email, email));
+    return lead || null;
+  },
+
+  /**
+   * Insert or update a lead (UPSERT by email).
+   * Email should already be normalized before calling this method.
+   *
+   * @param leadData - Lead data to insert or update
+   * @returns The inserted or updated lead
+   */
+  async upsertLead(leadData: {
+    name?: string | null;
+    email: string;
+    mobilePhone?: string | null;
+    language: string;
+    emailStatus?: string;
+  }) {
+    const db = getMythoriaDb();
+
+    const [result] = await db
+      .insert(leads)
+      .values({
+        name: leadData.name,
+        email: leadData.email,
+        mobilePhone: leadData.mobilePhone,
+        language: leadData.language,
+        emailStatus: (leadData.emailStatus as EmailStatus) || 'ready',
+      })
+      .onConflictDoUpdate({
+        target: leads.email,
+        set: {
+          name: leadData.name,
+          mobilePhone: leadData.mobilePhone,
+          language: leadData.language,
+          // Don't overwrite emailStatus on update - keep existing tracking state
+        },
+      })
+      .returning();
+
+    return result;
+  },
+
+  /**
+   * Bulk insert or update leads (batch UPSERT).
+   * Emails should already be normalized before calling this method.
+   *
+   * @param leadsData - Array of lead data to insert or update
+   * @returns Array of inserted or updated leads
+   */
+  async bulkUpsertLeads(
+    leadsData: Array<{
+      name?: string | null;
+      email: string;
+      mobilePhone?: string | null;
+      language: string;
+    }>,
+  ) {
+    const db = getMythoriaDb();
+
+    if (leadsData.length === 0) {
+      return [];
+    }
+
+    // Use a transaction for bulk operations
+    const results = await db.transaction(async (tx) => {
+      const upserted = [];
+
+      for (const leadData of leadsData) {
+        const [result] = await tx
+          .insert(leads)
+          .values({
+            name: leadData.name,
+            email: leadData.email,
+            mobilePhone: leadData.mobilePhone,
+            language: leadData.language,
+            emailStatus: 'ready',
+          })
+          .onConflictDoUpdate({
+            target: leads.email,
+            set: {
+              name: leadData.name,
+              mobilePhone: leadData.mobilePhone,
+              language: leadData.language,
+            },
+          })
+          .returning();
+
+        upserted.push(result);
+      }
+
+      return upserted;
+    });
+
+    return results;
+  },
+
+  /**
+   * Update a lead's email status.
+   */
+  async updateLeadStatus(id: string, emailStatus: string) {
+    const db = getMythoriaDb();
+
+    const [result] = await db
+      .update(leads)
+      .set({
+        emailStatus: emailStatus as EmailStatus,
+        ...(emailStatus === 'sent' && { lastEmailSentAt: new Date() }),
+      })
+      .where(eq(leads.id, id))
+      .returning();
+
+    return result || null;
+  },
+
+  /**
+   * Bulk update lead email statuses.
+   */
+  async bulkUpdateLeadStatus(ids: string[], emailStatus: string) {
+    const db = getMythoriaDb();
+
+    const results = await db
+      .update(leads)
+      .set({
+        emailStatus: emailStatus as EmailStatus,
+        ...(emailStatus === 'sent' && { lastEmailSentAt: new Date() }),
+      })
+      .where(inArray(leads.id, ids))
+      .returning();
+
+    return results;
+  },
+
+  /**
+   * Delete a single lead by ID.
+   */
+  async deleteLead(id: string) {
+    const db = getMythoriaDb();
+
+    const [result] = await db.delete(leads).where(eq(leads.id, id)).returning();
+
+    return result || null;
+  },
+
+  /**
+   * Bulk delete leads.
+   */
+  async bulkDeleteLeads(ids: string[]) {
+    const db = getMythoriaDb();
+
+    const results = await db.delete(leads).where(inArray(leads.id, ids)).returning();
+
+    return results;
+  },
+
+  /**
+   * Get lead statistics for dashboard/overview.
+   */
+  async getLeadStats() {
+    const db = getMythoriaDb();
+
+    const [stats] = await db
+      .select({
+        totalLeads: count(),
+        readyCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'ready' THEN 1 ELSE 0 END)`,
+        sentCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'sent' THEN 1 ELSE 0 END)`,
+        openCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'open' THEN 1 ELSE 0 END)`,
+        clickCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'click' THEN 1 ELSE 0 END)`,
+        softBounceCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'soft_bounce' THEN 1 ELSE 0 END)`,
+        hardBounceCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'hard_bounce' THEN 1 ELSE 0 END)`,
+        unsubCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'unsub' THEN 1 ELSE 0 END)`,
+      })
+      .from(leads);
+
+    return stats || null;
   },
 };

@@ -160,6 +160,16 @@ export default function AdminHeader() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/leads" onClick={closeDropdown}>
+                    Leads
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/email-marketing" onClick={closeDropdown}>
+                    Email Marketing
+                  </Link>
+                </li>
+                <li>
                   <Link href="/stories" onClick={closeDropdown}>
                     Stories
                   </Link>
@@ -339,6 +349,16 @@ export default function AdminHeader() {
                     <li>
                       <Link href="/users" onClick={closeDrawer}>
                         Users
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/leads" onClick={closeDrawer}>
+                        Leads
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/email-marketing" onClick={closeDrawer}>
+                        Email Marketing
                       </Link>
                     </li>
                     <li>
