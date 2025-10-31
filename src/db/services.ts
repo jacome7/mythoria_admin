@@ -1416,7 +1416,7 @@ export const adminService = {
         totalLeads: count(),
         readyCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'ready' THEN 1 ELSE 0 END)`,
         sentCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'sent' THEN 1 ELSE 0 END)`,
-        openCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'open' THEN 1 ELSE 0 END)`,
+        openCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} IN ('open', 'click') THEN 1 ELSE 0 END)`,
         clickCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'click' THEN 1 ELSE 0 END)`,
         softBounceCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'soft_bounce' THEN 1 ELSE 0 END)`,
         hardBounceCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'hard_bounce' THEN 1 ELSE 0 END)`,

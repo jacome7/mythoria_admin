@@ -7,6 +7,7 @@ import {
   updateMailMarketingConfig,
   type MailMarketingConfig,
 } from '@/lib/notificationEngineClient';
+import EmailDeliverabilityHealth from '@/components/email-marketing/EmailDeliverabilityHealth';
 
 interface LeadStats {
   totalLeads: number;
@@ -535,6 +536,9 @@ export default function EmailMarketingPage() {
           </div>
         </div>
       </div>
+
+      {/* Email Deliverability Health (Google Postmaster) */}
+      <EmailDeliverabilityHealth className="mt-6" />
     </div>
   );
 }

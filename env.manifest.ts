@@ -239,6 +239,40 @@ export const envManifest: EnvVarDescriptor[] = [
     note: 'Optional print/PDF generation topic (generate-pdfs route).',
   },
 
+  // Google Postmaster Tools API (for email deliverability monitoring)
+  {
+    name: 'POSTMASTER_DOMAIN',
+    required: false,
+    scopes: ['prod', 'runtime', 'dev'],
+    default: 'mythoria.pt',
+    source: 'substitution',
+    note: 'Domain to monitor via Postmaster Tools API.',
+  },
+  {
+    name: 'POSTMASTER_SERVICE_ACCOUNT_EMAIL',
+    required: false,
+    scopes: ['prod', 'runtime', 'dev'],
+    secret: true,
+    source: 'secret-manager',
+    note: 'Service account email for Postmaster API (same as Gmail service account).',
+  },
+  {
+    name: 'POSTMASTER_SERVICE_ACCOUNT_KEY',
+    required: false,
+    scopes: ['prod', 'runtime'],
+    secret: true,
+    source: 'secret-manager',
+    note: 'Service account private key JSON for Postmaster API authentication.',
+  },
+  {
+    name: 'POSTMASTER_IMPERSONATE_EMAIL',
+    required: false,
+    scopes: ['prod', 'runtime', 'dev'],
+    default: 'rodrigo.jacome@mythoria.pt',
+    source: 'substitution',
+    note: 'Email to impersonate for domain-wide delegation (must have Postmaster Tools access).',
+  },
+
   // Deployment-only / deprecated
   {
     name: 'GOOGLE_CLOUD_REGION',

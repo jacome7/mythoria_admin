@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { formatAdminDate } from '@/lib/date-utils';
+import { formatLeadsDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import LeadModal from '@/components/LeadModal';
 
@@ -13,6 +13,7 @@ interface Lead {
   language: string;
   emailStatus: 'ready' | 'sent' | 'open' | 'click' | 'soft_bounce' | 'hard_bounce' | 'unsub';
   lastEmailSentAt: string | null;
+  lastUpdatedAt: string;
 }
 
 interface PaginationData {
@@ -29,7 +30,7 @@ interface LeadsResponse {
   pagination: PaginationData;
 }
 
-type SortField = 'name' | 'email' | 'language' | 'emailStatus' | 'lastEmailSentAt';
+type SortField = 'name' | 'email' | 'language' | 'emailStatus' | 'lastEmailSentAt' | 'lastUpdatedAt';
 type SortOrder = 'asc' | 'desc';
 
 const EMAIL_STATUS_LABELS: Record<Lead['emailStatus'], string> = {
@@ -460,6 +461,7 @@ export default function LeadsPage() {
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value as SortField)}
               >
+                <option value="lastUpdatedAt">Last Updated</option>
                 <option value="lastEmailSentAt">Last Email Sent</option>
                 <option value="name">Name</option>
                 <option value="email">Email</option>
@@ -572,6 +574,13 @@ export default function LeadsPage() {
                       Last Email Sent{' '}
                       {sortField === 'lastEmailSentAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
+                    <th
+                      className="cursor-pointer hover:bg-base-200"
+                      onClick={() => handleSort('lastUpdatedAt')}
+                    >
+                      Last Updated{' '}
+                      {sortField === 'lastUpdatedAt' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    </th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -610,9 +619,18 @@ export default function LeadsPage() {
                       <td>
                         <div className="text-sm">
                           {lead.lastEmailSentAt ? (
-                            formatAdminDate(lead.lastEmailSentAt)
+                            formatLeadsDate(lead.lastEmailSentAt)
                           ) : (
                             <span className="text-gray-400">Never</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-sm">
+                          {lead.lastUpdatedAt ? (
+                            formatLeadsDate(lead.lastUpdatedAt)
+                          ) : (
+                            <span className="text-gray-400">—</span>
                           )}
                         </div>
                       </td>

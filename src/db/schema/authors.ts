@@ -44,6 +44,8 @@ export const authors = pgTable(
     notificationPreference: notificationPreferenceEnum('notification_preference')
       .notNull()
       .default('inspiration'),
+    // Timestamp when the welcome email was sent (for idempotency and audit)
+    welcomeEmailSentAt: timestamp('welcome_email_sent_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({

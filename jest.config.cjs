@@ -15,6 +15,7 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   testMatch: ['**/__tests__/**/*.(js|jsx|ts|tsx)', '**/*.(test|spec).(js|jsx|ts|tsx)'],
   collectCoverageFrom: ['src/**/*.{js,jsx,ts,tsx}', '!src/**/*.d.ts', '!src/db/migrations/**'],
+  modulePathIgnorePatterns: ['<rootDir>/.next/'],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

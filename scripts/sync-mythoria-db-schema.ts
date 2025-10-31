@@ -14,6 +14,10 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SOURCE_SCHEMA_DIR = path.resolve(__dirname, '../../mythoria-webapp/src/db/schema');
 const TARGET_SCHEMA_DIR = path.resolve(__dirname, '../src/db/schema/');
@@ -245,8 +249,7 @@ async function main(): Promise<void> {
 }
 
 // Run the script
-if (require.main === module) {
-  main().catch(console.error);
-}
+// ESM doesn't have require.main, so we just run it directly
+main().catch(console.error);
 
 export { syncSchemaFiles, updateIndexFile };

@@ -105,6 +105,16 @@ This document follows the [AGENTS.md best practices](https://agents.md) by keepi
   - Campaign controls: pause/resume, adjust batch size, configure send windows
   - Timezone-aware scheduling (IANA timezone support)
   - API proxy routes (`/api/mail-marketing/*`) secure communication with notification-engine
+  - **Email Deliverability Health** (Google Postmaster Tools):
+    - Domain reputation monitoring (HIGH/MEDIUM/LOW/BAD)
+    - User-reported spam rates with confidence intervals
+    - Authentication success rates (SPF, DKIM, DMARC)
+    - TLS encryption rates (inbound/outbound)
+    - Delivery errors breakdown (permanent/temporary)
+    - IP reputation distribution
+    - Manual refresh and 6-hour caching
+    - API endpoint: `GET /api/postmaster/traffic-stats`
+    - Setup: See `docs/postmaster-setup.md`
 
 ## Environment configuration
 
@@ -182,6 +192,11 @@ Secrets (`*_SECRET`, credentials, API keys) are never committed with values in `
 - **Missing env vars in production**: `/api/health` and `/api/server-status` report which credentials are configured at runtime—use them to debug secret injection issues.
 - **Pub/Sub publishing issues**: Check `GOOGLE_CLOUD_PROJECT_ID`, topic names, and service account permissions. The publisher logs topic names and payloads for easier tracing.
 - **Notification API errors**: Verify `NOTIFICATION_ENGINE_URL` and `NOTIFICATION_ENGINE_API_KEY`; use `/api/server-status` to confirm downstream connectivity.
+- **Postmaster API issues**: 
+  - "Insufficient data" → Domain not verified or email volume too low (see `docs/postmaster-setup.md`)
+  - "Access denied" → Domain-wide delegation scope `https://www.googleapis.com/auth/postmaster.readonly` not configured
+  - "Domain not found" → Verify domain at https://postmaster.google.com
+  - Check service account key path is accessible and valid
 
 ## Metadata
 

@@ -77,3 +77,30 @@ export function formatCustomDate(
     return '';
   }
 }
+
+/**
+ * Formats a date to dd-MMM hh:mm format for leads table display
+ * @param date - Date string, Date object, or null/undefined
+ * @returns Formatted date string (e.g., "30-Oct 14:35") or empty string if invalid
+ */
+export function formatLeadsDate(date: string | Date | null | undefined): string {
+  if (!date) return '';
+
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+    if (isNaN(dateObj.getTime())) {
+      return '';
+    }
+
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+    return `${day}-${month} ${hours}:${minutes}`;
+  } catch (error) {
+    console.error('Error formatting leads date:', error);
+    return '';
+  }
+}
