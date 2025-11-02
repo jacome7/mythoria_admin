@@ -91,7 +91,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       name !== undefined ? (name ? normalizeName(name) : null) : existingLead.name;
 
     // Update lead
-    const updatedLead = await adminService.upsertLead({
+    const upsertedLead = await adminService.upsertLead({
       name: normalizedName,
       email: normalizedEmail,
       mobilePhone: mobilePhone !== undefined ? mobilePhone : existingLead.mobilePhone,
@@ -99,7 +99,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       emailStatus: emailStatus || existingLead.emailStatus,
     });
 
-    return NextResponse.json(updatedLead);
+    let finalLead = upsertedLead;
+
+    if (typeof emailStatus === 'string' && emailStatus !== existingLead.emailStatus) {
+      // Apply email status changes explicitly because the upsert keeps existing tracking state
+      const statusUpdatedLead = await adminService.updateLeadStatus(
+        upsertedLead?.id || existingLead.id,
+        emailStatus,
+      );
+
+      if (statusUpdatedLead) {
+        finalLead = { ...upsertedLead, ...statusUpdatedLead };
+      }
+    }
+
+    return NextResponse.json(finalLead);
   } catch (error) {
     console.error('Error updating lead:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
