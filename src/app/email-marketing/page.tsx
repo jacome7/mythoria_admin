@@ -5,6 +5,7 @@ import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import {
   getMailMarketingConfig,
   updateMailMarketingConfig,
+  triggerBatchSend,
   type MailMarketingConfig,
 } from '@/lib/notificationEngineClient';
 import EmailDeliverabilityHealth from '@/components/email-marketing/EmailDeliverabilityHealth';
@@ -26,6 +27,7 @@ export default function EmailMarketingPage() {
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSendingBatch, setIsSendingBatch] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -139,6 +141,34 @@ export default function EmailMarketingPage() {
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchSize]);
+
+  // Handle force batch send
+  const handleForceBatchSend = async () => {
+    if (!session?.user?.email) return;
+
+    try {
+      setIsSendingBatch(true);
+      setError(null);
+      setSuccessMessage(null);
+
+      const result = await triggerBatchSend();
+
+      // Refresh stats after batch send
+      await fetchStats();
+
+      setSuccessMessage(
+        `Batch sent successfully! ${result.emailsDispatched} emails dispatched to ${result.leadsSent} leads.`,
+      );
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err) {
+      console.error('Error sending batch:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send batch');
+    } finally {
+      setIsSendingBatch(false);
+    }
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -323,6 +353,45 @@ export default function EmailMarketingPage() {
               </button>
             </div>
 
+            {/* Force Batch Send Button */}
+            <div className="divider">Manual Override</div>
+            <div>
+              <button
+                className="btn btn-primary btn-lg"
+                onClick={handleForceBatchSend}
+                disabled={isSendingBatch || isUpdating || config?.paused}
+                title={config?.paused ? 'Campaign must be running to send batch' : 'Send batch now'}
+              >
+                {isSendingBatch ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Sending Batch...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      className="inline-block w-5 h-5 stroke-current"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      ></path>
+                    </svg>
+                    Force Batch Send Now
+                  </>
+                )}
+              </button>
+              <p className="text-sm text-base-content/60 mt-2">
+                Manually trigger a batch send immediately, bypassing the scheduler. This will send
+                emails to the next {batchSize} ready leads.
+              </p>
+            </div>
+
             {/* Batch Size Slider */}
             <div>
               <label className="label">
@@ -379,7 +448,7 @@ export default function EmailMarketingPage() {
             </svg>
           </div>
           <div className="stat-title">To Send</div>
-          <div className="stat-value text-primary">{stats?.readyCount.toLocaleString() || 0}</div>
+          <div className="stat-value text-primary">{(stats?.readyCount ?? 0).toLocaleString()}</div>
           <div className="stat-desc">Leads ready for sending</div>
         </div>
 
@@ -401,7 +470,7 @@ export default function EmailMarketingPage() {
             </svg>
           </div>
           <div className="stat-title">Sent</div>
-          <div className="stat-value text-secondary">{stats?.sentCount.toLocaleString() || 0}</div>
+          <div className="stat-value text-secondary">{(stats?.sentCount ?? 0).toLocaleString()}</div>
           <div className="stat-desc">{sentPercentage}% of total leads</div>
         </div>
 
@@ -429,7 +498,7 @@ export default function EmailMarketingPage() {
             </svg>
           </div>
           <div className="stat-title">Opens</div>
-          <div className="stat-value text-success">{stats?.openCount.toLocaleString() || 0}</div>
+          <div className="stat-value text-success">{(stats?.openCount ?? 0).toLocaleString()}</div>
           <div className="stat-desc">{openPercentage}% open rate</div>
         </div>
 
@@ -451,7 +520,7 @@ export default function EmailMarketingPage() {
             </svg>
           </div>
           <div className="stat-title">Clicks</div>
-          <div className="stat-value text-accent">{stats?.clickCount.toLocaleString() || 0}</div>
+          <div className="stat-value text-accent">{(stats?.clickCount ?? 0).toLocaleString()}</div>
           <div className="stat-desc">{clickPercentage}% click rate</div>
         </div>
       </div>
@@ -473,12 +542,12 @@ export default function EmailMarketingPage() {
               <tbody>
                 <tr>
                   <td>Total Leads</td>
-                  <td>{stats?.totalLeads.toLocaleString() || 0}</td>
+                  <td>{(stats?.totalLeads ?? 0).toLocaleString()}</td>
                   <td>100%</td>
                 </tr>
                 <tr>
                   <td>Ready to Send</td>
-                  <td>{stats?.readyCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.readyCount ?? 0).toLocaleString()}</td>
                   <td>
                     {stats?.totalLeads
                       ? ((stats.readyCount / stats.totalLeads) * 100).toFixed(1)
@@ -488,22 +557,22 @@ export default function EmailMarketingPage() {
                 </tr>
                 <tr>
                   <td>Sent</td>
-                  <td>{stats?.sentCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.sentCount ?? 0).toLocaleString()}</td>
                   <td>{sentPercentage}%</td>
                 </tr>
                 <tr>
                   <td>Opened</td>
-                  <td>{stats?.openCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.openCount ?? 0).toLocaleString()}</td>
                   <td>{openPercentage}%</td>
                 </tr>
                 <tr>
                   <td>Clicked</td>
-                  <td>{stats?.clickCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.clickCount ?? 0).toLocaleString()}</td>
                   <td>{clickPercentage}%</td>
                 </tr>
                 <tr>
                   <td>Soft Bounces</td>
-                  <td>{stats?.softBounceCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.softBounceCount ?? 0).toLocaleString()}</td>
                   <td>
                     {stats?.sentCount
                       ? ((stats.softBounceCount / stats.sentCount) * 100).toFixed(1)
@@ -513,7 +582,7 @@ export default function EmailMarketingPage() {
                 </tr>
                 <tr>
                   <td>Hard Bounces</td>
-                  <td>{stats?.hardBounceCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.hardBounceCount ?? 0).toLocaleString()}</td>
                   <td>
                     {stats?.sentCount
                       ? ((stats.hardBounceCount / stats.sentCount) * 100).toFixed(1)
@@ -523,7 +592,7 @@ export default function EmailMarketingPage() {
                 </tr>
                 <tr>
                   <td>Unsubscribed</td>
-                  <td>{stats?.unsubCount.toLocaleString() || 0}</td>
+                  <td>{(stats?.unsubCount ?? 0).toLocaleString()}</td>
                   <td>
                     {stats?.sentCount
                       ? ((stats.unsubCount / stats.sentCount) * 100).toFixed(1)

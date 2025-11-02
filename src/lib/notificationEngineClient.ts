@@ -199,3 +199,39 @@ export async function removeSendWindow(updatedBy: string): Promise<MailMarketing
     updatedBy,
   });
 }
+
+// Zod schema for batch send result
+const batchSendResultSchema = z.object({
+  leadsSent: z.number().int(),
+  emailsDispatched: z.number().int(),
+  dispatchErrors: z.number().int(),
+  campaignPaused: z.boolean(),
+  batchSize: z.number().int(),
+});
+
+export type BatchSendResult = z.infer<typeof batchSendResultSchema>;
+
+export interface BatchSendResponse {
+  success: boolean;
+  data?: BatchSendResult;
+  durationMs?: number;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Force trigger a batch send immediately (manual override)
+ * This bypasses the scheduled batch processing
+ */
+export async function triggerBatchSend(): Promise<BatchSendResult> {
+  const response = await makeRequest<BatchSendResult>('/send-batch', {
+    method: 'POST',
+  });
+
+  if (!response.success || !response.data) {
+    throw new Error(response.message || 'Failed to trigger batch send');
+  }
+
+  // Validate response data
+  return batchSendResultSchema.parse(response.data);
+}
