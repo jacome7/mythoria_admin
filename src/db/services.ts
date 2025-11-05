@@ -1415,7 +1415,9 @@ export const adminService = {
       .select({
         totalLeads: count(),
         readyCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'ready' THEN 1 ELSE 0 END)`,
-        sentCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'sent' THEN 1 ELSE 0 END)`,
+        // sentCount includes all emails that have been sent, regardless of their current state
+        // (sent, open, click, bounced, unsubscribed) since you must send first before any other action
+        sentCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} IN ('sent', 'open', 'click', 'soft_bounce', 'hard_bounce', 'unsub') THEN 1 ELSE 0 END)`,
         openCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} IN ('open', 'click') THEN 1 ELSE 0 END)`,
         clickCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'click' THEN 1 ELSE 0 END)`,
         softBounceCount: sql<number>`SUM(CASE WHEN ${leads.emailStatus} = 'soft_bounce' THEN 1 ELSE 0 END)`,
