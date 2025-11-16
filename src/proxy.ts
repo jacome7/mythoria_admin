@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isApiRoute = request.nextUrl.pathname.startsWith('/api');
   const isStaticFile =
@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   }
 
   // For protected pages, let the page components handle auth checks
-  // This avoids database connections in middleware
+  // This avoids database connections in proxy logic
   return NextResponse.next();
 }
 
