@@ -1,9 +1,9 @@
 /**
  * Google Postmaster Tools API Client
- * 
+ *
  * This client authenticates using a service account with domain-wide delegation
  * to access Google Postmaster Tools data for monitoring email deliverability.
- * 
+ *
  * Prerequisites:
  * 1. Service account with domain-wide delegation enabled
  * 2. Postmaster Tools API scope added to workspace admin console:
@@ -44,17 +44,10 @@ export class PostmasterClient {
     this.config = {
       domain: config?.domain || process.env.POSTMASTER_DOMAIN || 'mythoria.pt',
       serviceAccountEmail:
-        config?.serviceAccountEmail ||
-        process.env.POSTMASTER_SERVICE_ACCOUNT_EMAIL ||
-        '',
+        config?.serviceAccountEmail || process.env.POSTMASTER_SERVICE_ACCOUNT_EMAIL || '',
       serviceAccountKeyPath:
-        config?.serviceAccountKeyPath ||
-        process.env.POSTMASTER_SERVICE_ACCOUNT_KEY ||
-        '',
-      impersonateEmail:
-        config?.impersonateEmail ||
-        process.env.POSTMASTER_IMPERSONATE_EMAIL ||
-        '',
+        config?.serviceAccountKeyPath || process.env.POSTMASTER_SERVICE_ACCOUNT_KEY || '',
+      impersonateEmail: config?.impersonateEmail || process.env.POSTMASTER_IMPERSONATE_EMAIL || '',
     };
 
     this.validateConfig();
@@ -145,13 +138,15 @@ export class PostmasterClient {
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'code' in error) {
         const gaxiosError = error as { code: number; message: string };
-        
+
         if (gaxiosError.code === 404) {
           console.warn('[PostmasterClient] Domain not found or not verified in Postmaster Tools');
           return null;
         }
         if (gaxiosError.code === 403) {
-          console.error('[PostmasterClient] Access denied - check domain-wide delegation and scopes');
+          console.error(
+            '[PostmasterClient] Access denied - check domain-wide delegation and scopes',
+          );
           throw new Error('Access denied to Postmaster Tools API. Check domain-wide delegation.');
         }
       }
@@ -261,12 +256,8 @@ export class PostmasterClient {
             }
           : null,
       authenticationRates: {
-        spf: stats.spfSuccessRatio
-          ? parseFloat((stats.spfSuccessRatio * 100).toFixed(1))
-          : null,
-        dkim: stats.dkimSuccessRatio
-          ? parseFloat((stats.dkimSuccessRatio * 100).toFixed(1))
-          : null,
+        spf: stats.spfSuccessRatio ? parseFloat((stats.spfSuccessRatio * 100).toFixed(1)) : null,
+        dkim: stats.dkimSuccessRatio ? parseFloat((stats.dkimSuccessRatio * 100).toFixed(1)) : null,
         dmarc: stats.dmarcSuccessRatio
           ? parseFloat((stats.dmarcSuccessRatio * 100).toFixed(1))
           : null,

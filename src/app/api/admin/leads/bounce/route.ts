@@ -5,7 +5,7 @@ import { adminService } from '@/db/services';
 /**
  * POST /api/admin/leads/bounce
  * Convenience endpoint to mark a lead as bounced by email address
- * 
+ *
  * This is a service-to-service endpoint for external systems (e.g., notification engine)
  * to report email bounces without needing to know the lead UUID.
  */
@@ -73,20 +73,14 @@ export async function POST(request: NextRequest) {
     const lead = await adminService.getLeadByEmail(email);
 
     if (!lead) {
-      return NextResponse.json(
-        { error: `Lead not found with email: ${email}` },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: `Lead not found with email: ${email}` }, { status: 404 });
     }
 
     // Update the lead status using adminService
     const updatedLead = await adminService.updateLeadStatus(lead.id, emailStatus);
 
     if (!updatedLead) {
-      return NextResponse.json(
-        { error: 'Failed to update lead status' },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: 'Failed to update lead status' }, { status: 500 });
     }
 
     return NextResponse.json({

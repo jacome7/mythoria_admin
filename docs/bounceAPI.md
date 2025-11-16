@@ -7,6 +7,7 @@ The system tracks email campaign performance through the **leads** table with an
 ---
 
 ## **API Key Authentication (Service-to-Service)**
+
 For external services (e.g., notification engine, email providers) to report bounces:
 
 - **Method**: Bearer token or X-API-Key header
@@ -18,6 +19,7 @@ For external services (e.g., notification engine, email providers) to report bou
 - **Permissions**: `tickets:read`, `tickets:create`, `tickets:update` (extendable for leads)
 
 **Example API Key Request:**
+
 ```bash
 curl -X PATCH https://admin.mythoria.pt/api/admin/leads/{id} \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -41,12 +43,14 @@ Mark a specific lead email as bounced (soft or hard bounce).
 | `id` | string (UUID) | Yes | Lead ID |
 
 **Request Headers:**
+
 ```
 Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "emailStatus": "hard_bounce"
@@ -54,6 +58,7 @@ Content-Type: application/json
 ```
 
 **Available Email Statuses:**
+
 - `ready` - Ready to send
 - `sent` - Email sent
 - `open` - Email opened
@@ -63,6 +68,7 @@ Content-Type: application/json
 - `unsub` - Unsubscribed
 
 **Success Response (200 OK):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -78,15 +84,16 @@ Content-Type: application/json
 
 **Error Responses:**
 
-| Code | Description | Response Body |
-|------|-------------|---------------|
-| 400 | Invalid request | `{"error": "Invalid email status"}` |
-| 401 | Unauthorized | `{"error": "Unauthorized"}` |
-| 403 | Forbidden | `{"error": "Forbidden"}` |
-| 404 | Lead not found | `{"error": "Lead not found"}` |
-| 500 | Server error | `{"error": "Internal server error"}` |
+| Code | Description     | Response Body                        |
+| ---- | --------------- | ------------------------------------ |
+| 400  | Invalid request | `{"error": "Invalid email status"}`  |
+| 401  | Unauthorized    | `{"error": "Unauthorized"}`          |
+| 403  | Forbidden       | `{"error": "Forbidden"}`             |
+| 404  | Lead not found  | `{"error": "Lead not found"}`        |
+| 500  | Server error    | `{"error": "Internal server error"}` |
 
 **Example:**
+
 ```bash
 curl -X PATCH https://admin.mythoria.pt/api/admin/leads/550e8400-e29b-41d4-a716-446655440000 \
   -H "Authorization: Bearer abc123xyz456" \
@@ -105,19 +112,18 @@ curl -X PATCH https://admin.mythoria.pt/api/admin/leads/550e8400-e29b-41d4-a716-
 Mark multiple leads as bounced in a single request.
 
 **Request Headers:**
+
 ```
 Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "action": "changeStatus",
-  "ids": [
-    "550e8400-e29b-41d4-a716-446655440000",
-    "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-  ],
+  "ids": ["550e8400-e29b-41d4-a716-446655440000", "6ba7b810-9dad-11d1-80b4-00c04fd430c8"],
   "emailStatus": "soft_bounce"
 }
 ```
@@ -130,6 +136,7 @@ Content-Type: application/json
 | `emailStatus` | string | Yes | Target email status (see list above) |
 
 **Success Response (200 OK):**
+
 ```json
 {
   "message": "Successfully updated 2 lead(s) to status: soft_bounce",
@@ -153,16 +160,17 @@ Content-Type: application/json
 
 **Error Responses:**
 
-| Code | Description | Response Body |
-|------|-------------|---------------|
-| 400 | Invalid request | `{"error": "Invalid request. Required: action (string), ids (array)"}` |
-| 400 | Invalid IDs | `{"error": "All IDs must be strings"}` |
-| 400 | Invalid status | `{"error": "Invalid email status. Must be one of: ready, sent, open, click, soft_bounce, hard_bounce, unsub"}` |
-| 401 | Unauthorized | `{"error": "Unauthorized"}` |
-| 403 | Forbidden | `{"error": "Forbidden"}` |
-| 500 | Server error | `{"error": "Internal server error"}` |
+| Code | Description     | Response Body                                                                                                  |
+| ---- | --------------- | -------------------------------------------------------------------------------------------------------------- |
+| 400  | Invalid request | `{"error": "Invalid request. Required: action (string), ids (array)"}`                                         |
+| 400  | Invalid IDs     | `{"error": "All IDs must be strings"}`                                                                         |
+| 400  | Invalid status  | `{"error": "Invalid email status. Must be one of: ready, sent, open, click, soft_bounce, hard_bounce, unsub"}` |
+| 401  | Unauthorized    | `{"error": "Unauthorized"}`                                                                                    |
+| 403  | Forbidden       | `{"error": "Forbidden"}`                                                                                       |
+| 500  | Server error    | `{"error": "Internal server error"}`                                                                           |
 
 **Example:**
+
 ```bash
 curl -X POST https://admin.mythoria.pt/api/admin/leads/bulk \
   -H "Authorization: Bearer abc123xyz456" \
@@ -193,11 +201,13 @@ Find a lead by email address before marking as bounced.
 | `limit` | integer | No | Results per page (default: 50) |
 
 **Request Headers:**
+
 ```
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Success Response (200 OK):**
+
 ```json
 {
   "data": [
@@ -224,6 +234,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **Example:**
+
 ```bash
 curl -X GET "https://admin.mythoria.pt/api/admin/leads?search=john.doe%40example.com" \
   -H "Authorization: Bearer abc123xyz456"
@@ -248,42 +259,39 @@ When your email service provider (e.g., SendGrid, Mailgun, AWS SES) detects a bo
 // Webhook handler for email bounce notifications
 async function handleEmailBounce(bouncePayload) {
   const { email, bounceType } = bouncePayload;
-  
+
   // Determine status based on bounce type
   const emailStatus = bounceType === 'hard' ? 'hard_bounce' : 'soft_bounce';
-  
+
   // Step 1: Find lead by email
   const searchResponse = await fetch(
     `https://admin.mythoria.pt/api/admin/leads?search=${encodeURIComponent(email)}`,
     {
       headers: {
-        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
-      }
-    }
+        Authorization: `Bearer ${process.env.ADMIN_API_KEY}`,
+      },
+    },
   );
-  
+
   const searchData = await searchResponse.json();
-  
+
   if (searchData.data.length === 0) {
     console.log(`Lead not found for email: ${email}`);
     return;
   }
-  
+
   const leadId = searchData.data[0].id;
-  
+
   // Step 2: Update lead status
-  const updateResponse = await fetch(
-    `https://admin.mythoria.pt/api/admin/leads/${leadId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ emailStatus })
-    }
-  );
-  
+  const updateResponse = await fetch(`https://admin.mythoria.pt/api/admin/leads/${leadId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${process.env.ADMIN_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ emailStatus }),
+  });
+
   if (updateResponse.ok) {
     console.log(`Successfully marked ${email} as ${emailStatus}`);
   } else {
@@ -301,18 +309,19 @@ The leads are stored in the **mythoria** database:
 ```typescript
 // Table: leads
 interface Lead {
-  id: string;              // UUID v4 primary key
-  name: string | null;     // Contact name (optional)
-  email: string;           // Normalized email (unique, lowercase)
+  id: string; // UUID v4 primary key
+  name: string | null; // Contact name (optional)
+  email: string; // Normalized email (unique, lowercase)
   mobilePhone: string | null;
-  language: string;        // Format: 'en-US', 'pt-PT'
+  language: string; // Format: 'en-US', 'pt-PT'
   lastEmailSentAt: Date | null;
   emailStatus: 'ready' | 'sent' | 'open' | 'click' | 'soft_bounce' | 'hard_bounce' | 'unsub';
-  lastUpdatedAt: Date;     // Auto-updated on status change
+  lastUpdatedAt: Date; // Auto-updated on status change
 }
 ```
 
 **Indexes:**
+
 - `leads_email_idx` (unique)
 - `leads_email_status_idx`
 - `leads_last_email_sent_at_idx`
@@ -340,6 +349,7 @@ curl -X GET https://admin.mythoria.pt/api/ping \
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,

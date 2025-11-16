@@ -1,5 +1,5 @@
 import { getMythoriaDb, getWorkflowsDb } from './index';
-import { count, desc, eq, like, asc, sql, or, inArray, and } from 'drizzle-orm';
+import { count, desc, eq, like, asc, sql, or, inArray, and, gte, lt } from 'drizzle-orm';
 import {
   authors,
   stories,
@@ -10,12 +10,37 @@ import {
   pricing,
   leads,
   emailStatusEnum,
+  paymentOrders,
 } from './schema';
 import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
 import { storyGenerationRuns, storyGenerationSteps } from './schema/workflows';
+import type { RegistrationAggregation, RegistrationRange } from '@/lib/analytics/registrations';
+import type { RevenueAggregation } from '@/lib/analytics/revenue';
+import type { ServiceUsageAggregation, ServiceUsageEventType } from '@/lib/analytics/service-usage';
+import { SERVICE_USAGE_EVENT_TYPES } from '@/lib/analytics/service-usage';
 export { adminBlogService } from './services/blog';
 
 type EmailStatus = (typeof emailStatusEnum.enumValues)[number];
+
+const REGISTRATION_RANGE_TO_DAYS: Record<Exclude<RegistrationRange, 'forever'>, number> = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+};
+
+const toIsoString = (value: string | Date) => new Date(value).toISOString();
+
+const startOfUtcDay = (date: Date) => {
+  const copy = new Date(date);
+  copy.setUTCHours(0, 0, 0, 0);
+  return copy;
+};
+
+const startOfUtcMonth = (date: Date) => {
+  const copy = startOfUtcDay(date);
+  copy.setUTCDate(1);
+  return copy;
+};
 
 export const adminService = {
   // ---------------------------------------------------------------------------
@@ -287,6 +312,217 @@ export const adminService = {
     const db = getMythoriaDb();
     const result = await db.select({ value: count() }).from(printRequests);
     return result[0]?.value || 0;
+  },
+
+  async getAuthorRegistrations(range: RegistrationRange): Promise<RegistrationAggregation> {
+    const db = getMythoriaDb();
+    const today = startOfUtcDay(new Date());
+
+    if (range === 'forever') {
+      const rows = await db
+        .select({
+          bucketStart: sql<string>`date_trunc('month', ${authors.createdAt})`,
+          registrations: count(authors.authorId),
+        })
+        .from(authors)
+        .groupBy(sql`date_trunc('month', ${authors.createdAt})`)
+        .orderBy(sql`date_trunc('month', ${authors.createdAt})`);
+
+      const normalizedBuckets = rows.map((row) => ({
+        bucketStart: toIsoString(row.bucketStart),
+        registrations: Number(row.registrations) || 0,
+      }));
+
+      const defaultMonth = startOfUtcMonth(today).toISOString();
+      const startDate = normalizedBuckets.length ? normalizedBuckets[0].bucketStart : defaultMonth;
+      const endDate = normalizedBuckets.length
+        ? normalizedBuckets[normalizedBuckets.length - 1].bucketStart
+        : defaultMonth;
+
+      return {
+        range,
+        granularity: 'month',
+        startDate,
+        endDate,
+        buckets: normalizedBuckets,
+      };
+    }
+
+    const days = REGISTRATION_RANGE_TO_DAYS[range];
+    const startDate = startOfUtcDay(new Date(today));
+    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+
+    const rows = await db
+      .select({
+        bucketStart: sql<string>`date_trunc('day', ${authors.createdAt})`,
+        registrations: count(authors.authorId),
+      })
+      .from(authors)
+      .where(gte(authors.createdAt, startDate))
+      .groupBy(sql`date_trunc('day', ${authors.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${authors.createdAt})`);
+
+    const normalizedBuckets = rows.map((row) => ({
+      bucketStart: toIsoString(row.bucketStart),
+      registrations: Number(row.registrations) || 0,
+    }));
+
+    return {
+      range,
+      granularity: 'day',
+      startDate: startDate.toISOString(),
+      endDate: today.toISOString(),
+      buckets: normalizedBuckets,
+    };
+  },
+
+  async getServiceUsage(range: RegistrationRange): Promise<ServiceUsageAggregation> {
+    const db = getMythoriaDb();
+    const today = startOfUtcDay(new Date());
+
+    if (range === 'forever') {
+      const rows = await db
+        .select({
+          bucketStart: sql<string>`date_trunc('month', ${creditLedger.createdAt})`,
+          eventType: creditLedger.creditEventType,
+          actionCount: count(creditLedger.id),
+          creditsSpent: sql<number>`SUM(${creditLedger.amount})`,
+        })
+        .from(creditLedger)
+        .where(
+          and(
+            lt(creditLedger.amount, 0),
+            inArray(creditLedger.creditEventType, SERVICE_USAGE_EVENT_TYPES),
+          ),
+        )
+        .groupBy(sql`date_trunc('month', ${creditLedger.createdAt})`, creditLedger.creditEventType)
+        .orderBy(sql`date_trunc('month', ${creditLedger.createdAt})`);
+
+      const normalizedRows = rows.map((row) => ({
+        bucketStart: toIsoString(row.bucketStart),
+        eventType: row.eventType as ServiceUsageEventType,
+        actionCount: Number(row.actionCount) || 0,
+        creditsSpent: Math.abs(Number(row.creditsSpent) || 0),
+      }));
+
+      const defaultMonth = startOfUtcMonth(today).toISOString();
+      const startDate = normalizedRows.length ? normalizedRows[0].bucketStart : defaultMonth;
+      const endDate = normalizedRows.length
+        ? normalizedRows[normalizedRows.length - 1].bucketStart
+        : defaultMonth;
+
+      return {
+        range,
+        granularity: 'month',
+        startDate,
+        endDate,
+        rows: normalizedRows,
+      };
+    }
+
+    const days = REGISTRATION_RANGE_TO_DAYS[range];
+    const startDate = startOfUtcDay(new Date(today));
+    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+
+    const rows = await db
+      .select({
+        bucketStart: sql<string>`date_trunc('day', ${creditLedger.createdAt})`,
+        eventType: creditLedger.creditEventType,
+        actionCount: count(creditLedger.id),
+        creditsSpent: sql<number>`SUM(${creditLedger.amount})`,
+      })
+      .from(creditLedger)
+      .where(
+        and(
+          gte(creditLedger.createdAt, startDate),
+          lt(creditLedger.amount, 0),
+          inArray(creditLedger.creditEventType, SERVICE_USAGE_EVENT_TYPES),
+        ),
+      )
+      .groupBy(sql`date_trunc('day', ${creditLedger.createdAt})`, creditLedger.creditEventType)
+      .orderBy(sql`date_trunc('day', ${creditLedger.createdAt})`);
+
+    const normalizedRows = rows.map((row) => ({
+      bucketStart: toIsoString(row.bucketStart),
+      eventType: row.eventType as ServiceUsageEventType,
+      actionCount: Number(row.actionCount) || 0,
+      creditsSpent: Math.abs(Number(row.creditsSpent) || 0),
+    }));
+
+    return {
+      range,
+      granularity: 'day',
+      startDate: startDate.toISOString(),
+      endDate: today.toISOString(),
+      rows: normalizedRows,
+    };
+  },
+
+  async getRevenueSnapshot(range: RegistrationRange): Promise<RevenueAggregation> {
+    const db = getMythoriaDb();
+    const today = startOfUtcDay(new Date());
+
+    if (range === 'forever') {
+      const rows = await db
+        .select({
+          bucketStart: sql<string>`date_trunc('month', ${paymentOrders.createdAt})`,
+          revenueCents: sql<number>`COALESCE(SUM(${paymentOrders.amount}), 0)`,
+          transactions: count(paymentOrders.orderId),
+        })
+        .from(paymentOrders)
+        .where(eq(paymentOrders.status, 'completed'))
+        .groupBy(sql`date_trunc('month', ${paymentOrders.createdAt})`)
+        .orderBy(sql`date_trunc('month', ${paymentOrders.createdAt})`);
+
+      const normalizedRows = rows.map((row) => ({
+        bucketStart: toIsoString(row.bucketStart),
+        revenueCents: Number(row.revenueCents) || 0,
+        transactions: Number(row.transactions) || 0,
+      }));
+
+      const defaultMonth = startOfUtcMonth(today).toISOString();
+      const startDate = normalizedRows.length ? normalizedRows[0].bucketStart : defaultMonth;
+      const endDate = normalizedRows.length
+        ? normalizedRows[normalizedRows.length - 1].bucketStart
+        : defaultMonth;
+
+      return {
+        range,
+        granularity: 'month',
+        startDate,
+        endDate,
+        buckets: normalizedRows,
+      };
+    }
+
+    const days = REGISTRATION_RANGE_TO_DAYS[range];
+    const startDate = startOfUtcDay(new Date(today));
+    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+
+    const rows = await db
+      .select({
+        bucketStart: sql<string>`date_trunc('day', ${paymentOrders.createdAt})`,
+        revenueCents: sql<number>`COALESCE(SUM(${paymentOrders.amount}), 0)`,
+        transactions: count(paymentOrders.orderId),
+      })
+      .from(paymentOrders)
+      .where(and(gte(paymentOrders.createdAt, startDate), eq(paymentOrders.status, 'completed')))
+      .groupBy(sql`date_trunc('day', ${paymentOrders.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${paymentOrders.createdAt})`);
+
+    const normalizedRows = rows.map((row) => ({
+      bucketStart: toIsoString(row.bucketStart),
+      revenueCents: Number(row.revenueCents) || 0,
+      transactions: Number(row.transactions) || 0,
+    }));
+
+    return {
+      range,
+      granularity: 'day',
+      startDate: startDate.toISOString(),
+      endDate: today.toISOString(),
+      buckets: normalizedRows,
+    };
   },
 
   // User operations

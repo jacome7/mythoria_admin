@@ -71,26 +71,26 @@ export interface DeliveryError {
  */
 export interface TrafficStats {
   name: string; // Resource name (e.g., domains/mythoria.pt/trafficStats/20250131)
-  
+
   // User spam reports
   userReportedSpamRatio?: number; // Ratio of user-reported spam vs inbox
   userReportedSpamRatioLowerBound?: number; // 95% confidence interval lower bound
   userReportedSpamRatioUpperBound?: number; // 95% confidence interval upper bound
-  
+
   // Reputation
   ipReputations?: IpReputation[]; // IP reputation by category
   domainReputation?: ReputationCategory; // Overall domain reputation
   spammyFeedbackLoops?: FeedbackLoop[]; // Feedback loop spam rates
-  
+
   // Authentication success rates
   spfSuccessRatio?: number; // SPF authentication success
   dkimSuccessRatio?: number; // DKIM authentication success
   dmarcSuccessRatio?: number; // DMARC alignment success
-  
+
   // Encryption
   outboundEncryptionRatio?: number; // Outgoing TLS ratio (from Gmail)
   inboundEncryptionRatio?: number; // Incoming TLS ratio (to Gmail)
-  
+
   // Delivery errors
   deliveryErrors?: DeliveryError[]; // Errors by type
 }

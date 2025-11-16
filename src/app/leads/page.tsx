@@ -30,7 +30,13 @@ interface LeadsResponse {
   pagination: PaginationData;
 }
 
-type SortField = 'name' | 'email' | 'language' | 'emailStatus' | 'lastEmailSentAt' | 'lastUpdatedAt';
+type SortField =
+  | 'name'
+  | 'email'
+  | 'language'
+  | 'emailStatus'
+  | 'lastEmailSentAt'
+  | 'lastUpdatedAt';
 type SortOrder = 'asc' | 'desc';
 
 const EMAIL_STATUS_LABELS: Record<Lead['emailStatus'], string> = {

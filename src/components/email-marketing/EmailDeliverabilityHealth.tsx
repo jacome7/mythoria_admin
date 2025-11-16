@@ -1,6 +1,6 @@
 /**
  * Email Deliverability Health Component
- * 
+ *
  * Displays Google Postmaster Tools metrics including:
  * - Domain reputation badge
  * - User-reported spam rate
@@ -228,9 +228,7 @@ export default function EmailDeliverabilityHealth({ className }: EmailDeliverabi
               {/* User Spam Rate */}
               <div className="stat bg-base-200 rounded-lg p-4">
                 <div className="stat-title text-xs">User-Reported Spam</div>
-                <div className="stat-value text-2xl">
-                  {formatPercentage(data.userSpamRate)}
-                </div>
+                <div className="stat-value text-2xl">{formatPercentage(data.userSpamRate)}</div>
                 {data.userSpamRateRange && (
                   <div className="stat-desc text-xs">
                     Range: {data.userSpamRateRange.lower}% - {data.userSpamRateRange.upper}%
@@ -285,8 +283,8 @@ export default function EmailDeliverabilityHealth({ className }: EmailDeliverabi
                   {formatPercentage(data.deliveryErrors.totalErrorRate)}
                 </div>
                 <div className="stat-desc text-xs">
-                  {data.deliveryErrors.permanent.length + data.deliveryErrors.temporary.length} error
-                  types
+                  {data.deliveryErrors.permanent.length + data.deliveryErrors.temporary.length}{' '}
+                  error types
                 </div>
               </div>
             </div>
@@ -300,9 +298,7 @@ export default function EmailDeliverabilityHealth({ className }: EmailDeliverabi
                 <h3 className="font-semibold mb-2">IP Reputation Distribution</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {data.ipReputation.high > 0 && (
-                    <div className="badge badge-success gap-2">
-                      High: {data.ipReputation.high}
-                    </div>
+                    <div className="badge badge-success gap-2">High: {data.ipReputation.high}</div>
                   )}
                   {data.ipReputation.medium > 0 && (
                     <div className="badge badge-warning gap-2">
@@ -375,7 +371,7 @@ export default function EmailDeliverabilityHealth({ className }: EmailDeliverabi
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               ></path>
             </svg>
-            <p>Click "Load Data" to view email deliverability metrics</p>
+            <p>Click &ldquo;Load Data&rdquo; to view email deliverability metrics</p>
           </div>
         )}
       </div>

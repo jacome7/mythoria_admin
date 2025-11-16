@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import KPICard from '../components/KPICard';
+import NewUsersChart from '@/components/charts/NewUsersChart';
+import ServiceUsageChart from '@/components/charts/ServiceUsageChart';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface KPIData {
@@ -14,29 +16,56 @@ export default function AdminPortal() {
   const { session, loading } = useAdminAuth();
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
+  const [kpiError, setKpiError] = useState<string | null>(null);
+  const [chartVisibility, setChartVisibility] = useState({ newUsers: false, serviceUsage: false });
 
-  useEffect(() => {
-    if (!loading && session?.user) {
-      fetchKPIs();
-    }
-  }, [loading, session]);
-
-  const fetchKPIs = async () => {
+  const fetchKPIs = useCallback(async (signal?: AbortSignal) => {
     try {
       setIsLoadingKpis(true);
-      const response = await fetch('/api/admin/kpis');
-      if (response.ok) {
-        const data = await response.json();
-        setKpis(data);
-      } else {
-        console.error('Failed to fetch KPIs');
+      setKpiError(null);
+      const response = await fetch('/api/admin/kpis', {
+        signal,
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch KPIs (${response.status})`);
       }
+      const data = await response.json();
+      if (signal?.aborted) {
+        return;
+      }
+      setKpis(data);
     } catch (error) {
+      if (signal?.aborted) {
+        return;
+      }
       console.error('Error fetching KPIs:', error);
+      setKpiError('Unable to load KPIs. Please retry in a few seconds.');
     } finally {
-      setIsLoadingKpis(false);
+      if (!signal?.aborted) {
+        setIsLoadingKpis(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (loading || !session?.user) {
+      return;
+    }
+    const controller = new AbortController();
+    void fetchKPIs(controller.signal);
+    return () => controller.abort();
+  }, [fetchKPIs, loading, session]);
+
+  useEffect(() => {
+    if (!isLoadingKpis && !chartVisibility.newUsers) {
+      setChartVisibility((prev) => ({ ...prev, newUsers: true }));
+    }
+  }, [chartVisibility.newUsers, isLoadingKpis]);
+
+  const handleNewUsersReady = useCallback(() => {
+    setChartVisibility((prev) => (prev.serviceUsage ? prev : { ...prev, serviceUsage: true }));
+  }, []);
 
   // Show loading state while checking authentication
   if (loading) {
@@ -54,7 +83,7 @@ export default function AdminPortal() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-4 lg:px-6 py-4 sm:py-8">
         <h1 className="text-2xl md:text-4xl font-bold text-center mb-6 md:mb-8">Dashboard</h1>
         <p className="text-center text-gray-600 text-sm md:text-base mb-6 md:mb-8">
           Project main indicators and KPIs
@@ -64,7 +93,7 @@ export default function AdminPortal() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto mb-8">
           <KPICard
             title="Users"
-            value={kpis?.users || 0}
+            value={kpis?.users ?? 0}
             icon={
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -82,7 +111,7 @@ export default function AdminPortal() {
 
           <KPICard
             title="Stories"
-            value={kpis?.stories || 0}
+            value={kpis?.stories ?? 0}
             icon={
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -100,7 +129,7 @@ export default function AdminPortal() {
 
           <KPICard
             title="Tickets"
-            value={kpis?.openTickets || 0}
+            value={kpis?.openTickets ?? 0}
             icon={
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -116,7 +145,86 @@ export default function AdminPortal() {
             isLoading={isLoadingKpis}
           />
         </div>
+
+        {kpiError ? (
+          <div className="mb-8 text-center text-sm text-error" role="alert">
+            <p>{kpiError}</p>
+            <button
+              type="button"
+              className="btn btn-link btn-xs text-primary"
+              onClick={() => {
+                void fetchKPIs();
+              }}
+            >
+              Retry now
+            </button>
+          </div>
+        ) : null}
+
+        <div className="space-y-8">
+          {chartVisibility.newUsers ? (
+            <NewUsersChart onReady={handleNewUsersReady} />
+          ) : (
+            <ChartPanelSkeleton
+              title="New users"
+              description="Track fresh author registrations over the selected window."
+            />
+          )}
+          {chartVisibility.serviceUsage ? (
+            <ServiceUsageChart />
+          ) : (
+            <ChartPanelSkeleton
+              title="Service usage"
+              description="Monitor credit-consuming activities like story creation, narration, and print orders."
+            />
+          )}
+        </div>
       </main>
     </div>
+  );
+}
+
+interface ChartPanelSkeletonProps {
+  title: string;
+  description?: string;
+}
+
+function ChartPanelSkeleton({ title, description }: ChartPanelSkeletonProps) {
+  return (
+    <section
+      className="w-full rounded-2xl border border-dashed border-primary/30 bg-base-100/30 p-4 sm:p-6 shadow-inner"
+      aria-label={`${title} loading placeholder`}
+    >
+      <div className="space-y-2">
+        <div className="text-base font-semibold text-base-content/70">{title}</div>
+        {description ? (
+          <p className="text-sm text-base-content/60">{description}</p>
+        ) : null}
+      </div>
+      <div className="mt-6 grid gap-4 text-sm md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="rounded-xl border border-dashed border-base-300/80 bg-base-100/60 p-4"
+          >
+            <div className="h-3 w-24 rounded bg-base-200/80 animate-pulse" />
+            <div className="mt-2 h-5 w-20 rounded bg-base-200/60 animate-pulse" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 h-80">
+        <div className="h-full rounded-2xl border border-dashed border-base-300 bg-base-200/30 p-4 shadow-inner">
+          <div className="flex h-full items-end gap-2 opacity-60">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex-1 rounded bg-base-100/80 animate-pulse"
+                style={{ height: `${25 + index * 8}%` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

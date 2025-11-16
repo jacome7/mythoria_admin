@@ -1138,6 +1138,32 @@ ef: '#/components/responses/InternalError'
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/admin/users/registrations:
+    get:
+      tags: [Admin Users]
+      summary: Registration timeline
+      description: Returns aggregated author registrations grouped by day (7/30/90-day windows) or by month for the full history.
+      parameters:
+        - name: range
+          in: query
+          schema:
+            type: string
+            enum: ['7d', '30d', '90d', 'forever']
+            default: '30d'
+          description: Lookback window for the timeline.
+      responses:
+        '200':
+          description: Aggregated registration buckets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTimelineResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/admin/users/{id}:
     parameters:
       - name: id
@@ -3012,6 +3038,58 @@ components:
         pagination:
           $ref: '#/components/schemas/StandardPagination'
       required: [data, pagination]
+    RegistrationTimelineResponse:
+      type: object
+      properties:
+        range:
+          type: string
+          enum: ['7d', '30d', '90d', 'forever']
+        granularity:
+          type: string
+          enum: [day, month]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        generatedAt:
+          type: string
+          format: date-time
+        totalRegistrations:
+          type: integer
+        buckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationBucket'
+      required: [range, granularity, startDate, endDate, generatedAt, totalRegistrations, buckets]
+    RegistrationBucket:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        label:
+          type: string
+        count:
+          type: integer
+        cumulativeCount:
+          type: integer
+        weekday:
+          type: integer
+          nullable: true
+        isWeekend:
+          type: boolean
+        isSaturday:
+          type: boolean
+        isSunday:
+          type: boolean
+        isMonday:
+          type: boolean
+        granularity:
+          type: string
+          enum: [day, month]
+      required: [date, label, count, cumulativeCount, granularity]
     UserDetail:
       allOf:
         - $ref: '#/components/schemas/AuthorSummary'

@@ -470,7 +470,9 @@ export default function EmailMarketingPage() {
             </svg>
           </div>
           <div className="stat-title">Sent</div>
-          <div className="stat-value text-secondary">{(stats?.sentCount ?? 0).toLocaleString()}</div>
+          <div className="stat-value text-secondary">
+            {(stats?.sentCount ?? 0).toLocaleString()}
+          </div>
           <div className="stat-desc">{sentPercentage}% of total leads</div>
         </div>
 

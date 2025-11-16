@@ -1,71 +1,60 @@
 # Mythoria Admin Portal
 
-The Mythoria Admin Portal is the governance hub for the Mythoria platform, delivering secure administrative control over users, stories, workflows, notifications, and platform configuration. It is built on Next.js 15 with TypeScript and operates as a containerized service on Google Cloud Run.
+The governance hub for Mythoria: a Next.js 15.4.6 / React 19.1.1 admin surface that secures workflows, leads, tickets, and platform health while running on Google Cloud Run.
 
-## Platform Role
+## Stack and hosting
 
-- Anchors platform governance alongside Mythoria Web App (front-office), Story Generation Workflows (GenAI services), and Notification Engine (messaging).
-- Provides domain-restricted Google OAuth entry point for all staff and partner administrators.
-- Acts as the single-pane interface for real-time health, operational metrics, and workflow oversight across the Mythoria ecosystem.
+| Layer        | Details                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| Runtime      | Next.js App Router (Node 20) deployed to Cloud Run via Cloud Build                       |
+| UI kit       | Tailwind CSS + DaisyUI components scoped to `src/app` and `src/components`               |
+| Auth         | NextAuth v5 with Google OAuth + domain allowlisting (`src/auth.ts`, `src/middleware.ts`) |
+| Data         | Three PostgreSQL databases wired through Drizzle ORM (`src/db/**`, `drizzle/`)           |
+| Integrations | Pub/Sub story jobs, Notification Engine proxies, Google Postmaster telemetry             |
 
-## Key Capabilities
+## Quick start
 
-- **Authentication & Access Control** - Google OAuth via NextAuth v5, domain allowlisting, JWT sessions, email verification, and admin role controls.
-- **User & Account Operations** - Directory search, status changes, profile editing, activity analytics, and bulk operations across the mythoria_db user catalog.
-- **Content Governance** - Story lifecycle management with moderation workflows, publication state control, media asset visibility, and content analytics.
-- **AI Workflow Oversight** - Monitoring of generation runs, step-level diagnostics, token and cost tracking, and workflow recovery tooling linked to Story Generation Workflows.
-- **Observability & Alerts** - Health dashboard backed by `/api/health`, performance and error telemetry, audit logs, and integration with Notification Engine for escalations.
-
-## High-Level Architecture
-
-- **Frontend** - Next.js App Router delivering hybrid SSR/ISR experiences, React 19 UI components, Tailwind CSS 4 + DaisyUI for consistent theming, and shared UI primitives in `src/components`.
-- **Server Runtime** - Node.js 22.21 runtime with Next.js server actions, request-level middleware in `src/middleware.ts`, and secure API routes under `src/app/api/*` guarded by NextAuth.
-- **Data Layer** - Drizzle ORM (v0.44) models split across three PostgreSQL databases: `mythoria_db` (users, stories, notifications), `workflows_db` (generation runs, steps, cost telemetry), and `backoffice_db` (admins, audit logs, system config). Connection pooling and migrations are orchestrated via `src/db` utilities.
-- **Inter-Service Integrations** - Publishes and consumes GCP Pub/Sub topics for asynchronous coordination, surfaces workflow state from Story Generation Workflows, and pushes notifications through the Notification Engine.
-- **Deployment Topology** - Distributed as a standalone Docker image (Node 22 Alpine base) deployed to Cloud Run in `europe-west9`, reaching Cloud SQL via VPC connectors and retrieving secrets from Google Secret Manager.
-
-## Service Contracts
-
-- `/api/health` - Composite health probe returning database, network, and external service status with optional diagnostics.
-- `/api/users` - CRUD surface for user administration with pagination, search, status, and role filters.
-- `/api/stories` - Content moderation and publication management endpoints with bulk operations.
-- `/api/workflows` - Workflow listing and control plane integration for AI generation runs, token usage, and cost analytics.
-
-## Observability & Compliance
-
-- Structured JSON logging streamed to Google Cloud Logging with configurable log levels.
-- Health, authentication, performance, and resource alerts wired into Mythoria monitoring channels.
-- Audit logging stored in `backoffice_db` for compliance and reconciliation.
-
-## Project Layout
-
-```
-mythoria_admin/
-|-- docs/                # Architecture, feature, deployment references
-|-- scripts/             # Deployment, logging, schema sync utilities
-|-- src/
-|   |-- app/             # Next.js App Router routes, API handlers, middleware
-|   |-- components/      # Shared UI primitives and feature components
-|   |-- db/              # Drizzle schema, migrations, connection helpers
-|   |-- lib/             # Domain services, auth helpers, observability utils
-|   `-- services/        # Integration clients and domain orchestrators
-|-- __tests__/           # Jest test suites for UI, API, and integration flows
-|-- public/              # Static assets served by Next.js
-`-- package.json         # Scripts and dependency manifest
+```pwsh
+npm install
+npm run dev -- --port 3001 # Turbopack dev server
 ```
 
-## Environment & Deployment Footprint
+## Everyday commands
 
-- Runs on Node.js 22.21 with npm tooling; scripts cover development, linting, testing, and database lifecycle (`npm run lint`, `npm run test`, `npm run db:migrate`).
-- Cloud Build pipeline builds and pushes the container image, then deploys to Cloud Run (`oceanic-beach-460916-n5` project) with autoscaling (0-5 instances) and private VPC egress.
-- Secrets (OAuth, database credentials, auth secret) are sourced from Google Secret Manager at runtime.
+| Task                      | Command                                             |
+| ------------------------- | --------------------------------------------------- |
+| Production build          | `npm run build`                                     |
+| Start prod server locally | `npm run start -- --port 3001`                      |
+| Lint + typecheck + test   | `npm run lint && npm run typecheck && npm run test` |
+| Format sources            | `npm run format:fix`                                |
+| Seed/reset databases      | `npm run db:setup`                                  |
 
-## Developer Workflow
+## Development workflow
 
-- Use Prettier for source formatting with the same configuration as `mythoria-webapp` (`.prettierrc.json`).
-- Check formatting via `npm run format`; apply fixes with `npm run format:fix` before committing changes.
+1. Route all feature work through authenticated layouts; rely on helpers from `src/services`/`src/lib` so route handlers stay thin and testable.
+2. Model data with the Drizzle schema modules in `src/db/schema/**` plus the generated helpers in `src/db/services.ts`; avoid ad-hoc SQL in components or API handlers.
+3. Update `env.manifest.ts` before touching `.env.*` files so `npm run check:env` and CI keep configuration in sync.
+4. Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run format:fix` before opening a PR—these mirror Cloud Build gates.
+
+## Architecture snapshot
+
+- **UI** – App Router pages and widgets in `src/app` feed re-usable components from `src/components`.
+- **APIs** – Route handlers under `src/app/api/**` reuse middleware from `src/middleware.ts` and session helpers in `src/auth.ts`.
+- **Data** – `src/db/index.ts` fans out to `mythoria_db`, `workflows_db`, and `backoffice_db`; migrations live in `drizzle/`.
+- **Integrations** – Google OAuth, Pub/Sub (story + audiobook), Notification Engine proxies, Google Postmaster traffic stats.
+
+See `docs/ARCHITECTURE.md` for the detailed runtime slices, data layout, and extension checklist.
+
+## Documentation & AI context
+
+We organize documentation with the Diátaxis taxonomy so humans and agents can jump straight to tutorials, how-tos, references, or explanations.[^1] When you add features:
+
+- Update the relevant doc listed in `docs/README.md` so Copilot Spaces and other knowledge bases can ingest accurate snippets.[^2]
+- Prefer short sections, tables, and typed code samples to keep retrieval deterministic.
+- Note new env vars in `env.manifest.ts` and mention command updates inside `docs/deployment.md` if they affect release workflows.
 
 ---
 
-**Version**: 0.2.0  
-**Last Updated**: September 20, 2025
+[^1]: https://diataxis.fr/
+
+[^2]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot

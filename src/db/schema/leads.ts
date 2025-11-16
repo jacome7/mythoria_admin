@@ -43,7 +43,7 @@ export const leads = pgTable(
     // Email campaign tracking
     lastEmailSentAt: timestamp('last_email_sent_at', { withTimezone: true }),
     emailStatus: emailStatusEnum('email_status').notNull().default('ready'),
-    
+
     // Audit timestamp - updated whenever email_status changes
     lastUpdatedAt: timestamp('last_updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

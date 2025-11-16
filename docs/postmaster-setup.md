@@ -5,6 +5,7 @@ This document explains how to configure the Google Postmaster Tools API for emai
 ## Overview
 
 The Postmaster Tools API integration displays email deliverability metrics including:
+
 - Domain reputation (HIGH, MEDIUM, LOW, BAD)
 - User-reported spam rates
 - Authentication success rates (SPF, DKIM, DMARC)
@@ -66,6 +67,7 @@ The domain must be verified in Google Postmaster Tools before the API can return
 8. Click **Authorize**
 
 **Note**: If you can't find the service account, you may need to add it:
+
 - Client ID: Find in [Service Account Details](https://console.cloud.google.com/iam-admin/serviceaccounts) (looks like: `123456789012345678901`)
 - OAuth Scopes: All three scopes listed above
 
@@ -100,6 +102,7 @@ For production (Cloud Run), add to `cloudbuild.yaml` or set via Cloud Build subs
 ### Local Testing
 
 1. Start the admin portal:
+
    ```bash
    npm run dev
    ```
@@ -135,6 +138,7 @@ Or use the browser dev tools Network tab when clicking "Load Data".
 **Cause**: Google requires minimum email volume to protect user privacy.
 
 **Solution**:
+
 - Wait 24-48 hours after domain verification
 - Ensure you're sending significant volume to Gmail users
 - Check volume thresholds aren't met yet
@@ -144,6 +148,7 @@ Or use the browser dev tools Network tab when clicking "Load Data".
 **Cause**: Domain-wide delegation scope not configured correctly.
 
 **Solution**:
+
 1. Verify scope is added: `https://www.googleapis.com/auth/postmaster.readonly`
 2. Check service account email matches exactly
 3. Wait 5-10 minutes for changes to propagate
@@ -154,6 +159,7 @@ Or use the browser dev tools Network tab when clicking "Load Data".
 **Cause**: Domain not verified in Postmaster Tools.
 
 **Solution**:
+
 1. Visit [Google Postmaster Tools](https://postmaster.google.com)
 2. Verify domain is listed and marked as "Verified"
 3. Add domain if not present
@@ -164,6 +170,7 @@ Or use the browser dev tools Network tab when clicking "Load Data".
 **Cause**: Insufficient email volume or waiting period.
 
 **Solution**:
+
 - Google requires minimum daily volume (exact threshold not published)
 - Data appears 24-48 hours after verification
 - Ensure emails are authenticated with SPF/DKIM
@@ -174,6 +181,7 @@ Or use the browser dev tools Network tab when clicking "Load Data".
 **Cause**: Relative path to key file is incorrect.
 
 **Solution**:
+
 1. Verify file exists: `../notification-engine/scripts/oceanic-beach-460916-n5-ca6af2727c51.json`
 2. Use absolute path if needed in production
 3. Check file permissions (must be readable)
@@ -205,9 +213,11 @@ Add to `--set-secrets` section:
 Fetch latest email deliverability metrics.
 
 **Query Parameters:**
+
 - `refresh=true` - Bypass cache and fetch fresh data
 
 **Response (200 Success):**
+
 ```json
 {
   "success": true,
@@ -241,6 +251,7 @@ Fetch latest email deliverability metrics.
 ```
 
 **Response (204 No Data):**
+
 ```json
 {
   "success": false,
@@ -267,6 +278,7 @@ Fetch latest email deliverability metrics.
 ## Changelog
 
 ### 2025-01-31
+
 - Initial setup documentation
 - Domain-wide delegation scope configuration
 - API integration with caching

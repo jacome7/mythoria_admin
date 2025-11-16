@@ -1,6 +1,6 @@
 /**
  * Simple in-memory cache with TTL (Time To Live)
- * 
+ *
  * Used to cache Google Postmaster API responses to respect rate limits
  * and improve performance. Default TTL is 6 hours since Postmaster data
  * is updated once per day.
@@ -114,7 +114,10 @@ export const postmasterCache = new MemoryCache(6 * 60 * 60 * 1000);
 
 // Cleanup expired entries every hour
 if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    postmasterCache.cleanup();
-  }, 60 * 60 * 1000);
+  setInterval(
+    () => {
+      postmasterCache.cleanup();
+    },
+    60 * 60 * 1000,
+  );
 }

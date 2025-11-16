@@ -1,5 +1,9 @@
 import type { NextConfig } from 'next';
 
+if (!process.env.NEXT_PRIVATE_SKIP_TURBOPACK) {
+  process.env.NEXT_PRIVATE_SKIP_TURBOPACK = '1';
+}
+
 const nextConfig: NextConfig = {
   // Enable standalone output for better Docker performance
   output: 'standalone',

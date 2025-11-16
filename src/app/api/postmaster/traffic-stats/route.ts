@@ -1,14 +1,14 @@
 /**
  * Google Postmaster Tools API Route
- * 
+ *
  * GET /api/postmaster/traffic-stats
- * 
+ *
  * Fetches the latest email deliverability metrics from Google Postmaster Tools.
  * Results are cached for 6 hours to respect API rate limits.
- * 
+ *
  * Query parameters:
  * - refresh: Set to 'true' to bypass cache and fetch fresh data
- * 
+ *
  * Returns:
  * - 200: Traffic stats data
  * - 204: No data available (domain not verified or insufficient volume)

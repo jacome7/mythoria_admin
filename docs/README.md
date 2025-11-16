@@ -1,59 +1,58 @@
-# Documentation Structure
+# Documentation Index
 
-This directory contains comprehensive documentation for the Mythoria Admin Portal - the administrative interface for the Mythoria platform.
+We apply the Diátaxis model so that each document answers a single type of question (tutorial, how-to, reference, or explanation) and stays readable for both people and Copilot-powered tooling.[^1][^2] Use this index whenever you update or add docs.
 
-## Main Documentation
+## Tutorials (learning-oriented)
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture, technology stack, and admin-specific patterns
-- **[features.md](./features.md)** - Complete feature list and administrative capabilities
-- **[api-reference.md](./api-reference.md)** - Admin API integration and database management
-- **[deployment.md](./deployment.md)** - Production deployment guide for Google Cloud Platform
-- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Local development setup and contribution guide
-- **[authentication.md](./authentication.md)** - Authentication system implementation and configuration
+| Doc           | Purpose                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Coming soon_ | We capture end-to-end walkthroughs in the main README (local setup) and deployment how-tos below. Add a tutorial when you need a step-by-step story rather than discrete tasks. |
 
-## Implementation History
+## How-to guides (task-oriented)
 
-The `implementation/` folder contains historical implementation documents from the development phases:
+| Doc                                | Scope                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `docs/deployment.md`               | Deploying to Cloud Run via Cloud Build, managing secrets, rollback steps. |
+| `docs/authentication.md`           | Configuring Google OAuth + NextAuth and protecting routes.                |
+| `docs/csv-import-guide.md`         | Uploading and validating lead CSV files from the admin UI.                |
+| `docs/bounceAPI.md`                | Updating lead email statuses from external providers (bounce tracking).   |
+| `docs/postmaster-setup.md`         | Reading Google Postmaster metrics through the admin portal.               |
+| `docs/TICKETING_IMPLEMENTATION.md` | Operating and extending the ticketing stack (form ingestion + admin UI).  |
 
-- **[PHASE1_COMPLETION.md](./implementation/PHASE1_COMPLETION.md)** - Initial project setup and structure
-- **[PHASE2_COMPLETION.md](./implementation/PHASE2_COMPLETION.md)** - Build system and deployment configuration
-- **[PHASE3_COMPLETION.md](./implementation/PHASE3_COMPLETION.md)** - Multi-database integration and health checks
-- **[PHASE4_COMPLETION.md](./implementation/PHASE4_COMPLETION.md)** - Authentication system implementation
-- **[PRODUCTION_DEPLOYMENT_CHECKLIST.md](./implementation/PRODUCTION_DEPLOYMENT_CHECKLIST.md)** - Production deployment checklist
+## Reference (lookup)
 
-## Documentation Standards
+| Doc                                | Scope                                                               |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| `docs/api-reference.md`            | REST route map, accepted query params, and response shapes.         |
+| `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).       |
+| `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents. |
 
-All documentation follows these standards:
+## Explanation (deep understanding)
 
-- **Markdown format** with consistent formatting
-- **Version information** included in each document
-- **Last updated dates** maintained
-- **Cross-references** to related documentation
-- **Code examples** with proper syntax highlighting
-- **Clear section structure** with descriptive headings
+| Doc                    | Scope                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `docs/ARCHITECTURE.md` | Combined architecture + feature overview (runtime slices, data layout, extension checklist).                       |
+| `docs/features.*`      | Replaced by `docs/ARCHITECTURE.md`. Keep this file as the single source; do not resurrect the legacy feature list. |
 
-## For Developers
+## House rules
 
-When contributing to this service:
+1. Review `docs/AGENTS.md` and `.github/instructions/general.instructions.md` before editing; both spell out formatting expectations for contributors and automation.
+2. Timestamp significant rewrites inside each doc so on-call staff know which version they are reading.
+3. Capture new env vars in `env.manifest.ts` and reference them from the relevant doc instead of duplicating `.env` snippets.
+4. When you add a doc, register it under the correct Diátaxis table above so Copilot knowledge bases can locate it deterministically.[^2]
 
-1. Update relevant documentation when making changes
-2. Follow the existing documentation structure and style
-3. Include code examples for new admin features or components
-4. Update version information and last updated dates
-5. Cross-reference related documentation sections
+## Contributing to docs
 
-## For AI Agents
-
-This documentation is structured for both human and AI agent consumption:
-
-- **AGENTS.md** in the service root contains AI-readable technical specifications
-- **Structured metadata** in YAML format where appropriate
-- **Consistent terminology** across all documentation
-- **Complete API specifications** with integration examples
-- **Admin-specific patterns** with detailed implementation examples
+1. Pick the category above before writing. Mixing guidance types makes retrieval worse for vibe-coding sessions and Copilot knowledge bases.[^1][^3]
+2. Use short sections, tables, and fenced code blocks so agents can lift snippets without extra prompt engineering.[^2]
+3. Update timestamps/version callouts when content materially changes.
+4. Link related docs via relative paths; avoid repeating long explanations.
+5. Run `npm run format:fix` after editing Markdown so Prettier keeps tables aligned.
 
 ---
 
-**Documentation Version**: 1.0.0  
-**Last Updated**: June 29, 2025  
-**Service**: Mythoria Admin Portal v0.1.0+
+[^1]: https://diataxis.fr/
+
+[^2]: https://developers.google.com/tech-writing/one
+
+[^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot

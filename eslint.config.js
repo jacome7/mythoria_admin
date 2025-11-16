@@ -1,23 +1,21 @@
+import next from 'eslint-config-next';
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
+import nextTypescript from 'eslint-config-next/typescript';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import nextPlugin from '@next/eslint-plugin-next';
-import reactHooks from 'eslint-plugin-react-hooks';
 
-export default [
+const config = [
+  ...next,
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
-    ignores: ['node_modules', '.next', 'out', 'dist'],
+    ignores: ['node_modules', '.next', 'out', 'dist', 'coverage'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
-    plugins: {
-      '@next/next': nextPlugin,
-      'react-hooks': reactHooks,
-    },
     rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs['core-web-vitals'].rules,
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
@@ -61,3 +59,5 @@ export default [
     },
   },
 ];
+
+export default config;
