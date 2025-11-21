@@ -30,6 +30,7 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 | Tickets       | `POST /api/tickets`                  | Create a ticket (contact, print request, payment). UI and public forms hit the same handler.       |
 | Tickets       | `GET /api/tickets/[id]`              | Full ticket detail + comments.                                                                     |
 | Tickets       | `PATCH /api/tickets/[id]`            | Update status or priority.                                                                         |
+| Tickets       | `POST /api/tickets/[id]/actions`     | Admin-only MB Way workflow actions: `{ action: 'confirmPayment' | 'paymentNotReceived' }`.         |
 | Tickets       | `POST /api/tickets/[id]/comments`    | Append comments (`isInternal` toggles private notes).                                              |
 | Tickets       | `GET /api/tickets/metrics`           | Dashboard stats for the Tickets widget.                                                            |
 | Notifications | `GET /api/mail-marketing/*`          | Proxy routes for notification-engine APIs (campaign controls, stats).                              |

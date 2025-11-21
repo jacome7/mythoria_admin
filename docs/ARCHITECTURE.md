@@ -18,7 +18,7 @@ This guide condenses how the admin portal is wired today and merges the useful c
 - **Service usage analytics** – A companion “Service Usage” chart queries `credit_ledger` for debit events (story generation, narration, print, text/image edits) and stacks them by the same range filters so ops can spot expensive workloads quickly.
 - **Leads & marketing** – CSV import, deliverability health, and bounce APIs share the `/api/admin/leads*`, `/api/postmaster/*`, and `/api/mail-marketing/*` routes with UI in `src/app/leads` and `src/app/email-marketing`.
 - **Content & AI workflows** – Story moderation plus workflow diagnostics are handled in `src/app/stories`, `/api/admin/stories`, and `/api/workflows`. Token/cost tiles lean on `workflow-monitor.ts` and Drizzle queries against `workflows_db`.
-- **Tickets & support** – The ticketing UI (`src/app/tickets`, `src/components/TicketsWidget.tsx`) fronts `/api/tickets` and `TicketService`, storing state in `backoffice_db`.
+- **Tickets & support** – The ticketing UI (`src/app/tickets`, `src/components/TicketsWidget.tsx`) fronts `/api/tickets` and `TicketService`, storing state in `backoffice_db`. MB Way payment tickets embed service-to-service metadata from the web app and expose dedicated actions in `src/app/tickets/[id]/page.tsx` that call `/api/tickets/[id]/actions` to auto-credit accounts or close unresolved requests (guarded by a 5-day window and silent closures when payment never lands).
 - **Ops & health** – `/api/health`, `/api/server-status`, `/api/ping`, and the dashboard KPIs expose environmental, DB, and downstream reachability data for on-call staff.
 - **Dashboard streaming** – The homepage fetches `/api/admin/kpis` first and then progressively mounts each Recharts surface behind skeleton placeholders so users see structure immediately while heavier analytics hydrate sequentially.
 
@@ -62,5 +62,5 @@ Every admin API enforces:
 
 ---
 
-**Architecture Version**: 2.2.1  
-**Last Updated**: November 16, 2025
+**Architecture Version**: 2.2.2  
+**Last Updated**: November 20, 2025

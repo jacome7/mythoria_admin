@@ -2,20 +2,22 @@
  * Utility functions for ticket display and formatting
  */
 
+import type { TicketMetadata } from './types';
+
 // Payment request metadata interface
-interface PaymentRequestMetadata {
+type PaymentRequestMetadata = TicketMetadata & {
   amount?: number;
   credits?: number;
   phone?: string;
   paymentMethod?: string;
-}
+};
 
 // Flexible ticket interface for UI components
 interface TicketLike {
   id: string;
   category?: string;
   subject: string;
-  metadata?: Record<string, unknown> | unknown;
+  metadata?: TicketMetadata | null;
 }
 
 /**

@@ -6,49 +6,10 @@ import Link from 'next/link';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
+import type { TicketMetadata, TicketPaymentPackage } from '@/lib/ticketing/types';
 
-interface TicketMetadata {
-  phone?: string; // For payment requests (MB Way)
-  email?: string;
-  name?: string;
-  amount?: number;
-  credits?: number;
-  paymentMethod?: string;
-  author?: {
-    id?: string;
-    name?: string;
-    email?: string;
-    phone?: string;
-  };
-  // Print request fields
-  storyId?: string;
-  shippingAddress?: {
-    addressId?: string;
-  };
-  printFormat?: string;
-  numberOfCopies?: number;
-  // Enriched data for print requests
-  enrichedUser?: {
-    userId: string;
-    email: string;
-    displayName: string;
-  } | null;
-  enrichedStory?: {
-    storyId: string;
-    title: string;
-  } | null;
-  enrichedAddress?: {
-    addressId: string;
-    line1: string;
-    line2?: string;
-    city: string;
-    stateRegion?: string;
-    postalCode?: string;
-    country: string;
-    phone?: string;
-  } | null;
-  [key: string]: unknown; // Allow additional fields
-}
+const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+const EURO_FORMATTER = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' });
 
 interface Ticket {
   id: string;
@@ -91,6 +52,9 @@ export default function TicketDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
+  const [mbwayActionStatus, setMbwayActionStatus] = useState<'idle' | 'confirming' | 'closing'>('idle');
+  const [mbwayActionError, setMbwayActionError] = useState<string | null>(null);
+  const [mbwayActionMessage, setMbwayActionMessage] = useState<string | null>(null);
 
   const fetchTicket = useCallback(async () => {
     try {
@@ -312,6 +276,175 @@ export default function TicketDetailPage() {
     }
   };
 
+  const formatCurrency = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      return '—';
+    }
+    return EURO_FORMATTER.format(value);
+  };
+
+  const getMbwayStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'badge-success';
+      case 'not_received':
+        return 'badge-neutral';
+      default:
+        return 'badge-warning';
+    }
+  };
+
+  const getMbwayStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Payment confirmed';
+      case 'not_received':
+        return 'Payment not received';
+      default:
+        return 'Awaiting payment';
+    }
+  };
+
+  const renderCreditPackages = (packages: TicketPaymentPackage[] = []) => {
+    if (!packages.length) {
+      return null;
+    }
+
+    return (
+      <div className="overflow-x-auto rounded-lg border border-base-300">
+        <table className="table table-zebra table-sm">
+          <thead>
+            <tr>
+              <th>Package</th>
+              <th>Quantity</th>
+              <th>Credits</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {packages.map((pkg) => (
+              <tr key={`${pkg.packageId}-${pkg.totalPrice}`}>
+                <td>#{pkg.packageId}</td>
+                <td>{pkg.quantity}</td>
+                <td>{pkg.credits}</td>
+                <td>{formatCurrency(pkg.unitPrice)}</td>
+                <td>{formatCurrency(pkg.totalPrice)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderMbwayDetails = () => {
+    if (!ticket || ticket.category !== 'payment_request' || ticket.metadata?.paymentMethod !== 'mbway') {
+      return null;
+    }
+
+    const amountValue = ticket.metadata?.amount;
+    const creditsValue = ticket.metadata?.credits;
+    const amount = typeof amountValue === 'number' ? amountValue : undefined;
+    const credits = typeof creditsValue === 'number' ? creditsValue : undefined;
+    const packages = ticket.metadata?.creditPackages || [];
+    const status = ticket.metadata?.mbwayPayment?.status ?? 'pending';
+    const requestedAt = ticket.metadata?.mbwayPayment?.requestedAt || ticket.metadata?.requestedAt;
+    const updatedAt = ticket.metadata?.mbwayPayment?.updatedAt;
+    const updatedBy = ticket.metadata?.mbwayPayment?.updatedBy;
+    const paymentOrderId = ticket.metadata?.mbwayPayment?.paymentOrderId;
+
+    return (
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="card-title text-lg">MB Way Payment Details</h3>
+            <span className={`badge ${getMbwayStatusBadgeClass(status)}`}>
+              {getMbwayStatusLabel(status)}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm text-base-content/60">Amount</p>
+              <p className="text-xl font-semibold">{formatCurrency(amount)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-base-content/60">Credits</p>
+              <p className="text-xl font-semibold">{credits ?? '—'}</p>
+            </div>
+          </div>
+
+          {packages.length > 0 && (
+            <div className="space-y-2">
+              <p className="font-medium">Credit Packages</p>
+              {renderCreditPackages(packages)}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {requestedAt && (
+              <div>
+                <p className="text-base-content/60">Requested</p>
+                <p className="font-medium">{formatAdminDateTime(requestedAt)}</p>
+              </div>
+            )}
+            {updatedAt && (
+              <div>
+                <p className="text-base-content/60">Last updated</p>
+                <p className="font-medium">{formatAdminDateTime(updatedAt)}</p>
+                {updatedBy && <p className="text-base-content/70">by {updatedBy}</p>}
+              </div>
+            )}
+            {paymentOrderId && (
+              <div>
+                <p className="text-base-content/60">Payment Order ID</p>
+                <p className="font-mono text-sm">{paymentOrderId}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleMbwayAction = async (action: 'confirmPayment' | 'paymentNotReceived') => {
+    if (!ticket) {
+      return;
+    }
+
+    setMbwayActionError(null);
+    setMbwayActionMessage(null);
+    setMbwayActionStatus(action === 'confirmPayment' ? 'confirming' : 'closing');
+
+    try {
+      const response = await fetch(`/api/tickets/${ticketId}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const message = payload?.error || payload?.message || 'Failed to process MB Way action.';
+        throw new Error(message);
+      }
+
+      await fetchTicket();
+      setMbwayActionMessage(
+        action === 'confirmPayment'
+          ? 'Payment confirmed and credits added.'
+          : 'Ticket closed without notifying the customer.',
+      );
+    } catch (error) {
+      const fallback = 'Unable to process MB Way action.';
+      setMbwayActionError(error instanceof Error ? error.message : fallback);
+    } finally {
+      setMbwayActionStatus('idle');
+    }
+  };
+
   const renderPrintRequestMetadata = (metadata: TicketMetadata) => {
     return (
       <div className="card bg-base-100 shadow-sm">
@@ -490,19 +623,23 @@ export default function TicketDetailPage() {
       return String(value);
     };
 
+    const hiddenKeys = new Set(['creditPackages', 'mbwayPayment']);
+
     return (
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title text-lg">Additional Information</h3>
           <div className="space-y-2">
-            {Object.entries(metadata).map(([key, value]) => (
-              <div key={key} className="flex flex-col sm:flex-row">
-                <span className="font-medium min-w-32 capitalize">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}:
-                </span>
-                <span className="text-base-content/70 break-words">{renderValue(key, value)}</span>
-              </div>
-            ))}
+            {Object.entries(metadata)
+              .filter(([key]) => !hiddenKeys.has(key))
+              .map(([key, value]) => (
+                <div key={key} className="flex flex-col sm:flex-row">
+                  <span className="font-medium min-w-32 capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}:
+                  </span>
+                  <span className="text-base-content/70 break-words">{renderValue(key, value)}</span>
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -539,6 +676,27 @@ export default function TicketDetailPage() {
       </div>
     );
   }
+
+  const isMbwayTicket =
+    ticket.category === 'payment_request' && ticket.metadata?.paymentMethod === 'mbway';
+  const mbwayStatus = ticket.metadata?.mbwayPayment?.status ?? 'pending';
+  const terminalTicketStatus = ticket.status === 'resolved' || ticket.status === 'closed';
+  const mbwayResolved = mbwayStatus !== 'pending' || terminalTicketStatus;
+  const ticketCreatedAtMs = new Date(ticket.createdAt).getTime();
+  const nowMs = Date.now();
+  const ticketAgeMs = nowMs - ticketCreatedAtMs;
+  const paymentNotReceivedAvailableAt = ticketCreatedAtMs + FIVE_DAYS_MS;
+  const confirmDisabled = !isMbwayTicket || mbwayResolved || mbwayActionStatus !== 'idle';
+  const canMarkNotReceived =
+    isMbwayTicket &&
+    !terminalTicketStatus &&
+    mbwayStatus === 'pending' &&
+    ticketAgeMs >= FIVE_DAYS_MS;
+  const notReceivedDisabled = !canMarkNotReceived || mbwayActionStatus !== 'idle';
+  const daysUntilNotReceived = Math.ceil(
+    Math.max(paymentNotReceivedAvailableAt - nowMs, 0) / (24 * 60 * 60 * 1000),
+  );
+  const humanizedDaysUntilNotReceived = Math.max(daysUntilNotReceived, 1);
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -585,6 +743,8 @@ export default function TicketDetailPage() {
                 </div>
               </div>
             </div>
+
+            {isMbwayTicket && renderMbwayDetails()}
 
             {/* Metadata */}
             {ticket.metadata &&
@@ -656,6 +816,55 @@ export default function TicketDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {isMbwayTicket && (
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body space-y-3">
+                  <h3 className="card-title">MB Way Workflow</h3>
+                  <p className="text-sm text-base-content/70">
+                    Confirm the payment to add credits automatically or close silently if no payment is
+                    received after five days.
+                  </p>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => handleMbwayAction('confirmPayment')}
+                    disabled={confirmDisabled}
+                  >
+                    {mbwayActionStatus === 'confirming' ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : (
+                      'Confirm Payment'
+                    )}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleMbwayAction('paymentNotReceived')}
+                    disabled={notReceivedDisabled}
+                  >
+                    {mbwayActionStatus === 'closing' ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : (
+                      'Payment Not Received'
+                    )}
+                  </button>
+                  {!canMarkNotReceived &&
+                    !terminalTicketStatus &&
+                    mbwayStatus === 'pending' && (
+                      <p className="text-xs text-base-content/60">
+                        Available in {humanizedDaysUntilNotReceived} day
+                        {humanizedDaysUntilNotReceived === 1 ? '' : 's'} to avoid cancelling active
+                        payments.
+                      </p>
+                    )}
+                  {mbwayActionError && (
+                    <p className="text-error text-sm">{mbwayActionError}</p>
+                  )}
+                  {mbwayActionMessage && (
+                    <p className="text-success text-sm">{mbwayActionMessage}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Customer/Author Info */}
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">

@@ -12,58 +12,15 @@ import {
 } from '@/db/schema/tickets';
 import { eq, desc, sql, and, or, ilike } from 'drizzle-orm';
 import { notificationClient } from '@/lib/notifications/client';
+import type { TicketMetadata } from './types';
+export type { TicketMetadata } from './types';
 
 // Types for service methods
-export interface PaymentRequestMetadata {
+export interface PaymentRequestMetadata extends TicketMetadata {
   amount?: number;
   credits?: number;
   phone?: string;
   paymentMethod?: string;
-  [key: string]: unknown;
-}
-
-export interface TicketMetadata extends Record<string, unknown> {
-  // Extensible metadata for tickets
-  paymentMethod?: string;
-  amount?: number;
-  credits?: number;
-  phone?: string;
-  email?: string;
-  name?: string;
-  author?: {
-    id?: string;
-    name?: string;
-    email?: string;
-    phone?: string;
-  };
-  // Enriched data for print requests
-  storyId?: string;
-  shippingAddress?: {
-    addressId?: string;
-  };
-  printFormat?: string;
-  // Enriched user details
-  enrichedUser?: {
-    userId: string;
-    email: string;
-    displayName: string;
-  } | null;
-  // Enriched story details
-  enrichedStory?: {
-    storyId: string;
-    title: string;
-  } | null;
-  // Enriched address details
-  enrichedAddress?: {
-    addressId: string;
-    line1: string;
-    line2?: string;
-    city: string;
-    stateRegion?: string;
-    postalCode?: string;
-    country: string;
-    phone?: string;
-  } | null;
 }
 
 export interface CreateTicketData {
@@ -72,7 +29,7 @@ export interface CreateTicketData {
   subject: string;
   description: string;
   priority?: TicketPriority;
-  metadata?: Record<string, unknown>;
+  metadata?: TicketMetadata;
 }
 
 export interface CreateContactTicketData {
@@ -113,6 +70,7 @@ export interface TicketWithComments extends Ticket {
     email: string;
     phone?: string;
   } | null;
+  metadata?: TicketMetadata | null;
 }
 
 export class TicketService {
@@ -161,7 +119,7 @@ export class TicketService {
       subject: data.subject,
       description: data.description,
       priority: data.priority || 'medium',
-      metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+      metadata: data.metadata || null,
       status: 'open',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -172,7 +130,7 @@ export class TicketService {
     // Trigger notification
     await this.triggerNotification(ticket.id, 'created');
 
-    return ticket;
+    return { ...ticket, metadata: data.metadata || null } as Ticket;
   }
 
   /**
@@ -300,7 +258,7 @@ export class TicketService {
       .orderBy(ticketComments.createdAt);
 
     // Extract author information from metadata if available
-    let metadata = (ticket.metadata as TicketMetadata) || {};
+    let metadata = this.normalizeMetadata(ticket.metadata);
     const author = metadata.author
       ? {
           id: metadata.author.id || ticket.userId || '',
@@ -321,6 +279,26 @@ export class TicketService {
       comments,
       author,
     };
+  }
+
+  /**
+   * Ensure metadata is consistently represented as an object
+   */
+  private static normalizeMetadata(raw: unknown): TicketMetadata {
+    if (!raw) {
+      return {};
+    }
+
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw) as TicketMetadata;
+      } catch (error) {
+        console.error('Failed to parse ticket metadata string:', error);
+        return {};
+      }
+    }
+
+    return raw as TicketMetadata;
   }
 
   /**
@@ -447,6 +425,7 @@ export class TicketService {
   static async updateStatus(
     ticketId: string,
     status: TicketStatus,
+    options?: { suppressNotification?: boolean },
   ): Promise<TicketWithComments | null> {
     const db = getBackofficeDb();
 
@@ -466,14 +445,27 @@ export class TicketService {
       .returning();
 
     if (updatedTicket) {
-      // Trigger notification for status change
-      await this.triggerNotification(ticketId, status);
+      if (!options?.suppressNotification) {
+        await this.triggerNotification(ticketId, status);
+      }
 
       // Return the full ticket with author information
       return await this.getTicketById(ticketId);
     }
 
     return null;
+  }
+
+  /**
+   * Update ticket metadata without affecting other fields
+   */
+  static async updateMetadata(ticketId: string, metadata: TicketMetadata): Promise<void> {
+    const db = getBackofficeDb();
+
+    await db
+      .update(tickets)
+      .set({ metadata, updatedAt: new Date() })
+      .where(eq(tickets.id, ticketId));
   }
 
   /**
@@ -639,7 +631,7 @@ export class TicketService {
       }
 
       // Get customer email and name from metadata
-      const metadata = (ticket.metadata as TicketMetadata) || {};
+      const metadata = this.normalizeMetadata(ticket.metadata);
       const customerEmail = metadata.email;
       const customerName = metadata.name;
 
@@ -716,7 +708,7 @@ export class TicketService {
       }
 
       // Get customer email and name from metadata
-      const metadata = (ticket.metadata as TicketMetadata) || {};
+      const metadata = this.normalizeMetadata(ticket.metadata);
       const customerEmail = metadata.email;
       const customerName = metadata.name;
 

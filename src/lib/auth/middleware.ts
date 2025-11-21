@@ -15,8 +15,15 @@ export interface AuthResult {
  */
 export async function authenticateRequest(request: NextRequest): Promise<AuthResult> {
   try {
-    // Check for API key authentication first
-    const apiKey = request.headers.get('x-api-key') || request.headers.get('X-API-Key');
+    // Check for API key authentication first (supports bearer and legacy headers)
+    const authHeader = request.headers.get('authorization');
+    let bearerKey: string | null = null;
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      bearerKey = authHeader.slice(7).trim();
+    }
+
+    const legacyKey = request.headers.get('x-api-key') || request.headers.get('X-API-Key');
+    const apiKey = bearerKey || legacyKey;
 
     if (apiKey) {
       return await authenticateApiKey(apiKey);

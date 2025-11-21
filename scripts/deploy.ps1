@@ -2,10 +2,10 @@
 # This script deploys the admin portal to Google Cloud Run
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ProjectId = "oceanic-beach-460916-n5",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Region = "europe-west9",
     
     [switch]$Force = $false,
@@ -25,7 +25,6 @@ Write-Host "[INFO] Region: $Region"
 try {
     # Configuration
     $SERVICE_NAME = "mythoria-admin"
-    $IMAGE_NAME = "gcr.io/$ProjectId/$SERVICE_NAME"
     
     Write-Host "[INFO] Project: $ProjectId"
     Write-Host "[INFO] Service: $SERVICE_NAME"
@@ -80,53 +79,48 @@ try {
     }
     Write-Host "[OK] All APIs enabled"
 
-    if ($Fast) {
-        Write-Host "[INFO] Fast deploy: reusing last built image" -ForegroundColor Yellow
-        $digest = (gcloud container images list-tags $IMAGE_NAME --format="get(digest)" --limit=1 --sort-by=~timestamp 2>$null)
-        if (-not $digest) {
-            Write-Host "[ERR] No prior image found for $IMAGE_NAME. Fast deploy requires an existing image." -ForegroundColor Red
-            exit 1
-        }
-        $imageRef = "$IMAGE_NAME@sha256:$digest"
-        Write-Host "[INFO] Deploying $imageRef to $SERVICE_NAME in $Region" -ForegroundColor Cyan
-        gcloud run deploy $SERVICE_NAME --image $imageRef --region $Region --platform managed --quiet
-    } else {
-        function Invoke-NpmCiWithRecovery {
-            param([int]$MaxAttempts = 2)
-            $attempt = 1
-            while ($attempt -le $MaxAttempts) {
-                Write-Host "[INFO] Installing dependencies (npm ci) - attempt $attempt/$MaxAttempts" -ForegroundColor Blue
-                npm ci
-                if ($LASTEXITCODE -eq 0) { return $true }
+    function Invoke-NpmCiWithRecovery {
+        param([int]$MaxAttempts = 2)
+        $attempt = 1
+        while ($attempt -le $MaxAttempts) {
+            Write-Host "[INFO] Installing dependencies (npm ci) - attempt $attempt/$MaxAttempts" -ForegroundColor Blue
+            npm ci
+            if ($LASTEXITCODE -eq 0) { return $true }
 
-                Write-Host "[WARN] npm ci failed (exit $LASTEXITCODE). Attempting recovery..." -ForegroundColor Yellow
-                # Try to rename node_modules to free locks, then remove
-                if (Test-Path -Path "node_modules") {
-                    $timestamp = Get-Date -Format "yyyyMMddHHmmss"
-                    $backupDir = "node_modules_old_$timestamp"
-                    try { Rename-Item -Path "node_modules" -NewName $backupDir -ErrorAction Stop } catch {}
-                    # Try remove old dir in background best-effort
-                    try { Start-Job -ScriptBlock { param($p) Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue } -ArgumentList (Join-Path (Get-Location) $backupDir) | Out-Null } catch {}
-                }
-                Start-Sleep -Seconds 2
-                $attempt++
+            Write-Host "[WARN] npm ci failed (exit $LASTEXITCODE). Attempting recovery..." -ForegroundColor Yellow
+            # Try to rename node_modules to free locks, then remove
+            if (Test-Path -Path "node_modules") {
+                $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+                $backupDir = "node_modules_old_$timestamp"
+                try { Rename-Item -Path "node_modules" -NewName $backupDir -ErrorAction Stop } catch {}
+                # Try remove old dir in background best-effort
+                try { Start-Job -ScriptBlock { param($p) Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue } -ArgumentList (Join-Path (Get-Location) $backupDir) | Out-Null } catch {}
             }
-            return $false
+            Start-Sleep -Seconds 2
+            $attempt++
         }
+        return $false
+    }
 
-        # Install dependencies; prefer ci if lockfile exists, otherwise fallback to install
-        if (Test-Path -Path "package-lock.json") {
-            $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 1
-            if (-not $ciOk) {
-                Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
-                npm install --no-fund --no-audit
-                if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
-            }
-        } else {
-            Write-Host "[INFO] No package-lock.json found; installing dependencies (npm install)" -ForegroundColor Yellow
+    # Install dependencies; prefer ci if lockfile exists, otherwise fallback to install
+    if (Test-Path -Path "package-lock.json") {
+        $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 1
+        if (-not $ciOk) {
+            Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
             npm install --no-fund --no-audit
             if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
         }
+    }
+    else {
+        Write-Host "[INFO] No package-lock.json found; installing dependencies (npm install)" -ForegroundColor Yellow
+        npm install --no-fund --no-audit
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
+    }
+
+    if ($Fast) {
+        Write-Host "[INFO] Fast deploy requested: skipping lint/typecheck/tests" -ForegroundColor Yellow
+    }
+    else {
         Write-Host "[INFO] Linting (npm run lint)" -ForegroundColor Blue
         npm run lint
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Lint failed" -ForegroundColor Red; exit 1 }
@@ -136,18 +130,21 @@ try {
         Write-Host "[INFO] Tests (npm test)" -ForegroundColor Blue
         npm test
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Tests failed" -ForegroundColor Red; exit 1 }
-        Write-Host "[INFO] Building (npm run build)" -ForegroundColor Blue
-        npm run build
-        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
-        # Build and deploy with Cloud Build (cloudbuild.yaml)
-        Write-Host "[INFO] Starting Cloud Build production deployment..."
-        Write-Host "[INFO] This may take several minutes..."
-        
-        if ($VerboseLogging) {
-            gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
-        } else {
-            gcloud beta builds submit --config cloudbuild.yaml
-        }
+    }
+
+    Write-Host "[INFO] Building (npm run build)" -ForegroundColor Blue
+    npm run build
+    if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
+
+    # Build and deploy with Cloud Build (cloudbuild.yaml)
+    Write-Host "[INFO] Starting Cloud Build production deployment..."
+    Write-Host "[INFO] This may take several minutes..."
+    
+    if ($VerboseLogging) {
+        gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
+    }
+    else {
+        gcloud beta builds submit --config cloudbuild.yaml
     }
     
     if ($LASTEXITCODE -ne 0) {
@@ -161,7 +158,8 @@ try {
     
     if ([string]::IsNullOrEmpty($serviceUrl)) {
         Write-Host "[WARN] Could not retrieve service URL"
-    } else {
+    }
+    else {
         Write-Host "[OK] Deployment successful!"
         Write-Host "[OK] Service URL: $serviceUrl"
         Write-Host "[INFO] Admin Portal is now accessible at the URL above"
@@ -171,7 +169,8 @@ try {
         Write-Host "  - URL: $serviceUrl"
     }
 
-} catch {
+}
+catch {
     Write-Host "[ERR] Deployment failed with error: $($_.Exception.Message)"
     exit 1
 }

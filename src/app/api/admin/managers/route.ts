@@ -1,27 +1,29 @@
 import { NextRequest } from 'next/server';
-import { auth } from '@/auth';
 import { getBackofficeDb } from '@/db';
 import { managers, type NewManager } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { ALLOWED_DOMAINS } from '@/config/auth';
+import { auth } from '@/auth';
+import { authenticateRequest, unauthorizedResponse } from '@/lib/auth/middleware';
 
 /**
  * GET /api/admin/managers
  * Returns all managers (no pagination since there will be very few)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Authentication check
-    const session = await auth();
-    if (!session?.user?.email) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await authenticateRequest(request);
+    if (!authResult.success) {
+      return unauthorizedResponse(authResult.error);
     }
 
-    // Check if user has the required email domain
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
-
-    if (!isAllowedDomain) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    // Session-based requests still need to match allowed domains
+    if (authResult.source === 'session') {
+      const userEmail = authResult.userId || '';
+      const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => userEmail.endsWith(domain));
+      if (!isAllowedDomain) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Get backoffice database connection
