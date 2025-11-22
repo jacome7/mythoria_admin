@@ -186,6 +186,14 @@ export const envManifest: EnvVarDescriptor[] = [
     source: 'substitution',
   },
   {
+    name: 'STORY_GENERATION_WORKFLOW_API_KEY',
+    required: true,
+    scopes: ['prod', 'runtime', 'dev'],
+    secret: true,
+    source: 'secret-manager',
+    note: 'Used for server-to-server translation requests to SGW.',
+  },
+  {
     name: 'NOTIFICATION_ENGINE_URL',
     required: true,
     scopes: ['prod', 'runtime', 'dev'],

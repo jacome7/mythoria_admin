@@ -45,6 +45,7 @@ export interface CreatePrintTicketData {
   userId?: string;
   shippingAddress?: Record<string, unknown>;
   printFormat?: string;
+  numberOfCopies?: number;
 }
 
 export interface CreatePaymentTicketData {
@@ -62,7 +63,18 @@ export interface TicketFilters {
   limit?: number;
 }
 
-export interface TicketWithComments extends Ticket {
+export interface TicketWithComments {
+  id: string;
+  userId: string | null;
+  category: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+  resolvedAt: Date | null;
   comments: TicketComment[];
   author?: {
     id: string;
@@ -70,7 +82,6 @@ export interface TicketWithComments extends Ticket {
     email: string;
     phone?: string;
   } | null;
-  metadata?: TicketMetadata | null;
 }
 
 export class TicketService {
@@ -167,6 +178,7 @@ export class TicketService {
         storyId: data.storyId,
         shippingAddress: data.shippingAddress,
         printFormat: data.printFormat || 'standard',
+        numberOfCopies: data.numberOfCopies ?? 1,
       },
     });
   }

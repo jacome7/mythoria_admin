@@ -62,7 +62,7 @@ interface ServiceUsageChartProps {
 }
 
 export default function ServiceUsageChart({ onReady }: ServiceUsageChartProps = {}) {
-  const [range, setRange] = useState<RegistrationRange>('30d');
+  const [range, setRange] = useState<RegistrationRange>('7d');
   const [viewMode, setViewMode] = useState<ViewMode>('actions');
   const [buckets, setBuckets] = useState<NormalizedServiceUsageBucket[]>([]);
   const [totals, setTotals] = useState({ actions: 0, credits: 0 });

@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
           userId: body.userId,
           shippingAddress: body.shippingAddress,
           printFormat: body.printFormat,
+          numberOfCopies: body.numberOfCopies,
         });
         break;
 

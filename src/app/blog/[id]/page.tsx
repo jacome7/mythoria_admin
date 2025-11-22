@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 const LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'];
+const TARGET_TRANSLATION_LOCALES = LOCALES.filter((locale) => locale !== 'en-US');
 
 interface TranslationState {
   locale: string;
@@ -29,6 +30,12 @@ export default function EditBlogPostPage() {
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateModalOpen, setTranslateModalOpen] = useState(false);
+  const [selectedLocales, setSelectedLocales] = useState<string[]>(() => [...TARGET_TRANSLATION_LOCALES]);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [translateNotices, setTranslateNotices] = useState<Record<string, string[]>>({});
+  const [translateFormError, setTranslateFormError] = useState('');
 
   const loadBlogPost = useCallback(async () => {
     try {
@@ -68,6 +75,11 @@ export default function EditBlogPostPage() {
         });
 
         setTranslations(map);
+        setStatusMessage('');
+        setTranslateNotices({});
+        setTranslateModalOpen(false);
+        setTranslateFormError('');
+        setSelectedLocales([...TARGET_TRANSLATION_LOCALES]);
       } else if (res.status === 404) {
         setError('Blog post not found');
       } else {
@@ -121,6 +133,103 @@ export default function EditBlogPostPage() {
       .replace(/\s+/g, ' ') // collapse
       .trim();
     return plain.slice(0, 300);
+  }
+
+  function toggleLocale(locale: string) {
+    setSelectedLocales((prev) =>
+      prev.includes(locale) ? prev.filter((entry) => entry !== locale) : [...prev, locale],
+    );
+  }
+
+  function openTranslateModal() {
+    setTranslateFormError('');
+    setTranslateModalOpen(true);
+  }
+
+  function closeTranslateModal() {
+    if (isTranslating) return;
+    setTranslateModalOpen(false);
+    setTranslateFormError('');
+  }
+
+  const enTranslation = translations['en-US'];
+  const canTriggerTranslation = Boolean(
+    enTranslation?.slug?.trim() && enTranslation?.title?.trim() && enTranslation?.contentMdx?.trim(),
+  );
+
+  async function handleTranslateConfirm() {
+    setTranslateFormError('');
+    setError('');
+    setStatusMessage('');
+
+    if (selectedLocales.length === 0) {
+      setTranslateFormError('Select at least one locale to translate.');
+      return;
+    }
+
+    const source = translations['en-US'];
+    if (!source || !source.slug?.trim() || !source.title?.trim() || !source.contentMdx?.trim()) {
+      setTranslateFormError('Slug, title, and content are required before translating.');
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const response = await fetch('/api/admin/blog/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blogId: id,
+          targetLocales: selectedLocales,
+          segments: {
+            slug: source.slug.trim(),
+            title: source.title.trim(),
+            summary: source.summary?.trim() || undefined,
+            contentMdx: source.contentMdx,
+          },
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        const message = result?.error || 'Translation failed';
+        setTranslateFormError(message);
+        setError(message);
+        return;
+      }
+
+      const translatedLocales: Record<string, Partial<TranslationState>> = result?.data?.translations || {};
+      setTranslations((prev) => {
+        const next = { ...prev };
+        Object.entries(translatedLocales).forEach(([locale, translated]) => {
+          const current = next[locale] || { locale, slug: '', title: '', summary: '', contentMdx: '' };
+          next[locale] = {
+            ...current,
+            slug: translated.slug ?? current.slug,
+            title: translated.title ?? current.title,
+            summary: translated.summary ?? current.summary,
+            contentMdx: translated.contentMdx ?? current.contentMdx,
+          };
+        });
+        return next;
+      });
+
+      setTranslateNotices(result?.data?.notices || {});
+      const localesList = Object.keys(translatedLocales);
+      setStatusMessage(
+        localesList.length > 0
+          ? `Translated locales: ${localesList.join(', ')}`
+          : 'Translation completed but no locales reported changes.',
+      );
+      setTranslateModalOpen(false);
+      setTranslateFormError('');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Translation request failed';
+      setTranslateFormError(message);
+      setError(message);
+    } finally {
+      setIsTranslating(false);
+    }
   }
 
   // Core save method; accepts optional overrides so publish can reuse it
@@ -344,6 +453,32 @@ export default function EditBlogPostPage() {
             </div>
           )}
 
+          {statusMessage && (
+            <div className="alert alert-info">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+              </svg>
+              <span>{statusMessage}</span>
+            </div>
+          )}
+
+          {Object.keys(translateNotices).length > 0 && (
+            <div className="alert alert-warning">
+              <div>
+                <p className="font-semibold">Translation notices</p>
+                <ul className="list-disc ml-4 text-sm">
+                  {Object.entries(translateNotices).map(([locale, notices]) =>
+                    notices.map((notice, idx) => (
+                      <li key={`${locale}-${idx}`}>
+                        <span className="font-medium">{locale}:</span> {notice}
+                      </li>
+                    )),
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
               <div className="card bg-base-100 shadow-md">
@@ -365,6 +500,9 @@ export default function EditBlogPostPage() {
                     update={(field, value) => updateField(activeLocale, field, value)}
                     onPreview={preview}
                     previewHtml={previewHtml}
+                    onTranslate={openTranslateModal}
+                    canTranslate={canTriggerTranslation}
+                    isTranslating={isTranslating}
                   />
                 </div>
               </div>
@@ -492,6 +630,52 @@ export default function EditBlogPostPage() {
           </div>
         </div>
       </main>
+      {translateModalOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box space-y-4">
+            <h3 className="text-lg font-bold">Translate blog content</h3>
+            <p className="text-sm text-base-content/70">
+              Selected locales will be overwritten with a fresh translation generated from the en-US version.
+            </p>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {TARGET_TRANSLATION_LOCALES.map((locale) => (
+                <label key={locale} className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-primary checkbox-sm mt-1"
+                    checked={selectedLocales.includes(locale)}
+                    onChange={() => toggleLocale(locale)}
+                    disabled={isTranslating}
+                  />
+                  <span>
+                    <span className="font-medium">{locale}</span>
+                    <span className="block text-xs text-base-content/60">
+                      {translations[locale]?.contentMdx
+                        ? 'Existing content will be replaced.'
+                        : 'Currently empty; translation will populate this locale.'}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {translateFormError && <p className="text-error text-sm">{translateFormError}</p>}
+            <div className="modal-action">
+              <button className="btn btn-ghost" onClick={closeTranslateModal} disabled={isTranslating}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleTranslateConfirm}
+                disabled={isTranslating || selectedLocales.length === 0}
+              >
+                {isTranslating && <span className="loading loading-spinner loading-sm mr-2"></span>}
+                Replace locales
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={closeTranslateModal}></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -501,11 +685,17 @@ function LocaleEditor({
   update,
   onPreview,
   previewHtml,
+  onTranslate,
+  canTranslate = false,
+  isTranslating = false,
 }: {
   tr: TranslationState;
   update: (field: keyof TranslationState, value: string) => void;
   onPreview: () => void;
   previewHtml: string | null;
+  onTranslate?: () => void;
+  canTranslate?: boolean;
+  isTranslating?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -636,6 +826,28 @@ function LocaleEditor({
           </svg>
           Preview
         </button>
+        {tr.locale === 'en-US' && onTranslate && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm ml-auto"
+            onClick={onTranslate}
+            disabled={!canTranslate || isTranslating}
+          >
+            {isTranslating ? (
+              <span className="loading loading-spinner loading-sm"></span>
+            ) : (
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 8h14M7 16h10M12 4l4 8-4 8"
+                />
+              </svg>
+            )}
+            Translate
+          </button>
+        )}
       </div>
 
       {previewHtml && (

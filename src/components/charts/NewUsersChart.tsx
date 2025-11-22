@@ -60,7 +60,7 @@ interface NewUsersChartProps {
 }
 
 export default function NewUsersChart({ onReady }: NewUsersChartProps = {}) {
-  const [range, setRange] = useState<RegistrationRange>('30d');
+  const [range, setRange] = useState<RegistrationRange>('7d');
   const [mode, setMode] = useState<ForeverMode>('monthly');
   const [data, setData] = useState<NormalizedRegistrationBucket[]>([]);
   const [isLoading, setIsLoading] = useState(true);

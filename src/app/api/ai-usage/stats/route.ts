@@ -15,6 +15,7 @@ export interface TokenUsageStatsResponse {
   actionBreakdown: ActionUsage[];
   dailyUsage: DailyUsage[];
   topModels: ModelUsage[];
+  granularity: 'day' | 'month';
 }
 
 export interface ModelUsage {
@@ -47,14 +48,11 @@ export interface DailyUsage {
   totalTokens: number;
 }
 
-function getDateRange(period: string): { startDate: Date; endDate: Date } {
+function getDateRange(period: string): { startDate: Date; endDate: Date } | null {
   const endDate = new Date();
   const startDate = new Date();
 
   switch (period) {
-    case '1d':
-      startDate.setDate(endDate.getDate() - 1);
-      break;
     case '7d':
       startDate.setDate(endDate.getDate() - 7);
       break;
@@ -64,6 +62,8 @@ function getDateRange(period: string): { startDate: Date; endDate: Date } {
     case '90d':
       startDate.setDate(endDate.getDate() - 90);
       break;
+    case 'forever':
+      return null; // No date range for forever
     default:
       startDate.setDate(endDate.getDate() - 30); // Default to 30 days
   }
@@ -88,15 +88,17 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d';
-    const { startDate, endDate } = getDateRange(period);
+    const dateRange = getDateRange(period);
 
     const db = getWorkflowsDb();
 
     // Build the base where condition
-    const whereCondition = and(
-      gte(tokenUsageTracking.createdAt, startDate.toISOString()),
-      lte(tokenUsageTracking.createdAt, endDate.toISOString()),
-    );
+    const whereCondition = dateRange
+      ? and(
+          gte(tokenUsageTracking.createdAt, dateRange.startDate.toISOString()),
+          lte(tokenUsageTracking.createdAt, dateRange.endDate.toISOString()),
+        )
+      : undefined;
 
     // Get overall stats
     const [overallStats] = await db
@@ -176,10 +178,15 @@ export async function GET(request: NextRequest) {
           : 0,
     }));
 
-    // Get daily usage (aggregate by date)
+    // Get daily/monthly usage (aggregate by date or month)
+    const isForever = period === 'forever';
+    const dateGrouping = isForever
+      ? sql`date_trunc('month', ${tokenUsageTracking.createdAt})`
+      : sql`DATE(${tokenUsageTracking.createdAt})`;
+
     const dailyUsage = await db
       .select({
-        date: sql<string>`DATE(${tokenUsageTracking.createdAt})`,
+        date: sql<string>`${dateGrouping}`,
         totalCost: sql<number>`SUM(CAST(${tokenUsageTracking.estimatedCostInEuros} AS DECIMAL))`,
         requests: sql<number>`COUNT(*)`,
         inputTokens: sql<number>`SUM(${tokenUsageTracking.inputTokens})`,
@@ -187,8 +194,8 @@ export async function GET(request: NextRequest) {
       })
       .from(tokenUsageTracking)
       .where(whereCondition)
-      .groupBy(sql`DATE(${tokenUsageTracking.createdAt})`)
-      .orderBy(sql`DATE(${tokenUsageTracking.createdAt})`);
+      .groupBy(dateGrouping)
+      .orderBy(dateGrouping);
 
     // Calculate total tokens for daily usage
     const enhancedDailyUsage: DailyUsage[] = dailyUsage.map((day) => ({
@@ -212,6 +219,7 @@ export async function GET(request: NextRequest) {
       actionBreakdown: enhancedActionBreakdown,
       dailyUsage: enhancedDailyUsage,
       topModels,
+      granularity: isForever ? 'month' : 'day',
     };
 
     return NextResponse.json(response);

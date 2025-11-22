@@ -7,13 +7,13 @@ import DailyAiUsageChart, {
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 const PERIOD_OPTIONS: { label: string; value: Period }[] = [
-  { label: 'Last 24 hours', value: '1d' },
   { label: 'Last 7 days', value: '7d' },
   { label: 'Last 30 days', value: '30d' },
   { label: 'Last 90 days', value: '90d' },
+  { label: 'Forever', value: 'forever' },
 ];
 
-type Period = '1d' | '7d' | '30d' | '90d';
+type Period = '7d' | '30d' | '90d' | 'forever';
 
 interface TokenUsageStatsResponse {
   totalCost: number;
@@ -24,6 +24,7 @@ interface TokenUsageStatsResponse {
   topModels: ModelUsage[];
   actionBreakdown: ActionUsage[];
   dailyUsage: DailyAiUsagePoint[];
+  granularity: 'day' | 'month';
 }
 
 interface ModelUsage {
@@ -104,6 +105,7 @@ export default function AIUsagePage() {
   const dailyUsage = stats?.dailyUsage ?? [];
   const actionBreakdown = stats?.actionBreakdown ?? [];
   const topModels = stats?.topModels ?? [];
+  const granularity = stats?.granularity ?? 'day';
 
   if (loading || isFetching) {
     return (
@@ -124,15 +126,14 @@ export default function AIUsagePage() {
   return (
     <div className="min-h-screen bg-base-200">
       <main className="container mx-auto p-6 space-y-8">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-base-content">AI Usage & Costs</h1>
+            <h1 className="text-3xl font-bold text-base-content mb-2">AI Usage & Costs</h1>
             <p className="text-base-content/70">
               Monitor token burn, spend, and the workflows that drive AI usage.
             </p>
           </div>
-          <label className="form-control w-full max-w-xs">
-            <span className="mb-2 text-sm font-semibold text-base-content/70">Reporting window</span>
+          <div className="form-control">
             <select
               className="select select-bordered"
               value={timePeriod}
@@ -144,8 +145,8 @@ export default function AIUsagePage() {
                 </option>
               ))}
             </select>
-          </label>
-        </header>
+          </div>
+        </div>
 
         {error ? (
           <div className="alert alert-error shadow-lg">
@@ -159,41 +160,41 @@ export default function AIUsagePage() {
           </div>
         ) : (
           <>
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <MetricCard
+            <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+              <StatCard
                 label="Total cost"
                 value={currencyFormatter.format(totalCost)}
-                helper={`${numberFormatter.format(totalRequests)} requests`}
+                subtitle={`${numberFormatter.format(totalRequests)} requests`}
               />
-              <MetricCard
+              <StatCard
                 label="Total tokens"
                 value={`${numberFormatter.format(totalTokens / 1_000_000)}M`}
-                helper="Input + output"
+                subtitle="Input + output"
               />
-              <MetricCard
+              <StatCard
                 label="Avg cost / request"
                 value={currencyFormatter.format(averageCostPerRequest)}
-                helper="Across selected period"
+                subtitle="Across selected period"
               />
-              <MetricCard
+              <StatCard
                 label="Tracked actions"
                 value={numberFormatter.format(actionBreakdown.length)}
-                helper="token_usage_tracking"
+                subtitle="token_usage_tracking"
               />
             </section>
 
-            <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <section className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
               <div className="card bg-base-100 shadow-lg lg:col-span-2">
                 <div className="card-body">
-                  <div className="flex items-center justify-between">
-                    <h2 className="card-title">Daily usage trend</h2>
-                    <p className="text-xs text-base-content/60">Cost (bars) vs tokens (line)</p>
-                  </div>
-                  <div className="mt-4 h-80">
+                  <h3 className="card-title">Daily usage trend</h3>
+                  <p className="text-sm text-base-content/70">Cost (bars) vs tokens (line)</p>
+                  <div className="h-72">
                     {dailyUsage.length ? (
-                      <DailyAiUsageChart data={dailyUsage} currencyFormatter={currencyFormatter} />
+                      <DailyAiUsageChart data={dailyUsage} currencyFormatter={currencyFormatter} granularity={granularity} />
                     ) : (
-                      <EmptyState message="No AI usage recorded for this period." />
+                      <div className="flex h-full items-center justify-center text-base-content/70">
+                        No AI usage recorded for this period.
+                      </div>
                     )}
                   </div>
                 </div>
@@ -201,14 +202,12 @@ export default function AIUsagePage() {
 
               <div className="card bg-base-100 shadow-lg">
                 <div className="card-body">
-                  <div className="flex items-center justify-between">
-                    <h2 className="card-title">Top models</h2>
-                    <span className="text-xs text-base-content/60">Sorted by spend</span>
-                  </div>
+                  <h3 className="card-title">Top models</h3>
+                  <p className="text-sm text-base-content/70">Sorted by spend</p>
                   {topModels.length ? (
-                    <ul className="mt-4 space-y-3">
+                    <div className="mt-6 space-y-4">
                       {topModels.map((model) => (
-                        <li key={model.model} className="flex items-center justify-between">
+                        <div key={model.model} className="flex items-center justify-between">
                           <div>
                             <p className="font-semibold">{model.model}</p>
                             <p className="text-xs text-base-content/60">
@@ -223,11 +222,13 @@ export default function AIUsagePage() {
                               {numberFormatter.format(model.requests)} requests
                             </p>
                           </div>
-                        </li>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   ) : (
-                    <EmptyState compact message="No model activity." />
+                    <div className="flex items-center justify-center py-6 text-sm text-base-content/70">
+                      No model activity.
+                    </div>
                   )}
                 </div>
               </div>
@@ -235,10 +236,8 @@ export default function AIUsagePage() {
 
             <section className="card bg-base-100 shadow-lg">
               <div className="card-body">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <h2 className="card-title">Cost breakdown by action</h2>
-                  <p className="text-sm text-base-content/60">Derived from workflow executions</p>
-                </div>
+                <h3 className="card-title">Cost breakdown by action</h3>
+                <p className="text-sm text-base-content/70">Derived from workflow executions</p>
                 {actionBreakdown.length ? (
                   <div className="mt-4 overflow-x-auto">
                     <table className="table table-zebra">
@@ -315,7 +314,9 @@ export default function AIUsagePage() {
                     </table>
                   </div>
                 ) : (
-                  <EmptyState message="No AI actions were executed in this range." />
+                  <div className="flex h-full items-center justify-center py-8 text-center text-base-content/70">
+                    No AI actions were executed in this range.
+                  </div>
                 )}
               </div>
             </section>
@@ -326,22 +327,14 @@ export default function AIUsagePage() {
   );
 }
 
-function MetricCard({ label, value, helper }: { label: string; value: string; helper?: string }) {
+function StatCard({ label, value, subtitle }: { label: string; value: string; subtitle: string }) {
   return (
     <div className="card bg-base-100 shadow">
       <div className="card-body">
         <p className="text-xs uppercase tracking-wide text-base-content/60">{label}</p>
-        <p className="mt-2 text-3xl font-bold">{value}</p>
-        {helper ? <p className="text-sm text-base-content/60">{helper}</p> : null}
+        <p className="text-3xl font-bold mt-2">{value}</p>
+        <p className="text-sm text-base-content/60">{subtitle}</p>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ message, compact }: { message: string; compact?: boolean }) {
-  return (
-    <div className={`flex flex-col items-center justify-center text-center ${compact ? 'py-3' : 'py-8'}`}>
-      <p className="text-sm text-base-content/70">{message}</p>
     </div>
   );
 }

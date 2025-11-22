@@ -562,7 +562,7 @@ export default function TicketDetailPage() {
                   <div className="flex flex-col">
                     <span className="text-sm text-base-content/60">Address ID:</span>
                     <span className="font-mono text-sm text-base-content/80">
-                      {metadata.shippingAddress?.addressId || 'N/A'}
+                      {(metadata.shippingAddress?.addressId as string | undefined) || 'N/A'}
                     </span>
                   </div>
                   <span className="text-error text-sm">Address not found</span>

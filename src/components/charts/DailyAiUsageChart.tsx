@@ -24,6 +24,7 @@ export interface DailyAiUsagePoint {
 interface DailyAiUsageChartProps {
   data: DailyAiUsagePoint[];
   currencyFormatter: Intl.NumberFormat;
+  granularity?: 'day' | 'month';
 }
 
 type ChartDatum = DailyAiUsagePoint & {
@@ -37,15 +38,15 @@ const COLORS = {
   grid: 'rgba(148, 163, 184, 0.3)',
 };
 
-export default function DailyAiUsageChart({ data, currencyFormatter }: DailyAiUsageChartProps) {
+export default function DailyAiUsageChart({ data, currencyFormatter, granularity = 'day' }: DailyAiUsageChartProps) {
   const chartData: ChartDatum[] = useMemo(
     () =>
       data.map((point) => ({
         ...point,
-        label: formatLabel(point.date),
+        label: formatLabel(point.date, granularity),
         tokensInMillions: Number(point.totalTokens ?? 0) / 1_000_000,
       })),
-    [data],
+    [data, granularity],
   );
 
   return (
@@ -107,16 +108,28 @@ function CustomTooltip({
   );
 }
 
-function formatLabel(value: string) {
+function formatLabel(value: string, granularity: 'day' | 'month') {
   const date = new Date(value);
+  if (granularity === 'month') {
+    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  }
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatFullDate(value: string) {
   const date = new Date(value);
+  const hasDay = value.includes('T') || value.split('-').length === 3;
+  if (hasDay && value.split('-')[2] !== '01') {
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short',
+      timeZone: 'UTC',
+    });
+  }
   return date.toLocaleDateString('en-US', {
     month: 'long',
-    day: 'numeric',
-    weekday: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
   });
 }
