@@ -33,6 +33,9 @@ COPY . .
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Increase Node.js heap size for build
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Build the application with standalone output for better Cloud Run performance
 RUN npm run build
 
