@@ -179,6 +179,11 @@ export default function AdminHeader() {
                     Notifications
                   </Link>
                 </li>
+                <li>
+                  <Link href="/faq" onClick={closeDropdown}>
+                    FAQs
+                  </Link>
+                </li>
               </ul>
             </li>
 
@@ -369,6 +374,11 @@ export default function AdminHeader() {
                     <li>
                       <Link href="/notifications" onClick={closeDrawer}>
                         Notifications
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/faq" onClick={closeDrawer}>
+                        FAQs
                       </Link>
                     </li>
                   </ul>

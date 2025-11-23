@@ -33,7 +33,7 @@ export const blogPostTranslations = pgTable('blog_post_translations', {
   locale: varchar('locale', { length: 10 }).notNull(),
   slug: varchar('slug', { length: 160 }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
-  summary: varchar('summary', { length: 600 }).notNull(),
+  summary: varchar('summary', { length: 1000 }).notNull(),
   contentMdx: text('content_mdx').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()

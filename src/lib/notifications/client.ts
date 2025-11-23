@@ -81,6 +81,7 @@ class NotificationClient {
     priority?: 'low' | 'normal' | 'high' | 'urgent';
     metadata?: Record<string, unknown>;
     authorId?: string;
+    entityId?: string;
   }): Promise<NotificationResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/email/template`, {
@@ -101,6 +102,7 @@ class NotificationClient {
           ...(args.priority ? { priority: args.priority } : {}),
           ...(args.metadata ? { metadata: args.metadata } : {}),
           ...(args.authorId ? { authorId: args.authorId } : {}),
+          ...(args.entityId ? { entityId: args.entityId } : {}),
         }),
       });
       if (!response.ok) {
@@ -138,6 +140,37 @@ class NotificationClient {
         creditEventType: 'refund',
       },
       authorId: params.authorId,
+    });
+  }
+
+  /**
+   * Send credits added notification (e.g. voucher or MB Way confirmation)
+   */
+  async sendCreditsAddedNotification(params: {
+    email: string;
+    name: string;
+    credits: number;
+    preferredLocale?: string | null;
+    authorId?: string;
+    source?: string; // e.g. 'voucher', 'mbway'
+    entityId?: string;
+  }): Promise<NotificationResponse> {
+    const language = this.mapLocale(params.preferredLocale);
+    return this.sendTemplatedEmail({
+      templateId: 'credits-added',
+      recipients: [{ email: params.email, name: params.name, language }],
+      variables: {
+        name: params.name,
+        credits: params.credits,
+      },
+      priority: 'normal',
+      metadata: {
+        notificationType: 'credits-added',
+        creditEventType: 'credit_added',
+        source: params.source,
+      },
+      authorId: params.authorId,
+      entityId: params.entityId,
     });
   }
 

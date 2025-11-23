@@ -38,7 +38,11 @@ const COLORS = {
   grid: 'rgba(148, 163, 184, 0.3)',
 };
 
-export default function DailyAiUsageChart({ data, currencyFormatter, granularity = 'day' }: DailyAiUsageChartProps) {
+export default function DailyAiUsageChart({
+  data,
+  currencyFormatter,
+  granularity = 'day',
+}: DailyAiUsageChartProps) {
   const chartData: ChartDatum[] = useMemo(
     () =>
       data.map((point) => ({
@@ -65,7 +69,10 @@ export default function DailyAiUsageChart({ data, currencyFormatter, granularity
           tickFormatter={(value: number) => `${Number(value).toFixed(1)}M`}
           width={48}
         />
-        <Tooltip content={<CustomTooltip currencyFormatter={currencyFormatter} />} cursor={{ fill: 'rgba(59,130,246,0.08)' }} />
+        <Tooltip
+          content={<CustomTooltip currencyFormatter={currencyFormatter} />}
+          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+        />
         <Bar
           dataKey="totalCost"
           yAxisId="cost"

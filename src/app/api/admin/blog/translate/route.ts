@@ -12,7 +12,7 @@ const TranslateRequestSchema = z.object({
   segments: z.object({
     slug: z.string().min(1).max(160),
     title: z.string().min(1).max(255),
-    summary: z.string().max(600).optional(),
+    summary: z.string().max(1000).optional(),
     contentMdx: z.string().min(1),
   }),
 });
@@ -50,7 +50,10 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = TranslateRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid payload', issues: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid payload', issues: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const payload = parsed.data as TranslateRequest;
@@ -60,14 +63,20 @@ export async function POST(req: Request) {
 
   if (!workflowUrl || !workflowKey) {
     return NextResponse.json(
-      { error: 'Story Generation Workflow configuration is missing. Please set STORY_GENERATION_WORKFLOW_URL and STORY_GENERATION_WORKFLOW_API_KEY.' },
+      {
+        error:
+          'Story Generation Workflow configuration is missing. Please set STORY_GENERATION_WORKFLOW_URL and STORY_GENERATION_WORKFLOW_API_KEY.',
+      },
       { status: 500 },
     );
   }
 
   const targetLocales = Array.from(new Set(payload.targetLocales));
   if (targetLocales.length === 0) {
-    return NextResponse.json({ error: 'Select at least one locale to translate.' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Select at least one locale to translate.' },
+      { status: 400 },
+    );
   }
 
   const upstreamPayload = {
@@ -100,7 +109,10 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to reach the translation service', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Failed to reach the translation service',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 502 },
     );
   }
@@ -122,7 +134,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const normalizedTranslations: Record<string, { slug: string; title: string; summary: string; contentMdx: string }> = {};
+  const normalizedTranslations: Record<
+    string,
+    { slug: string; title: string; summary: string; contentMdx: string }
+  > = {};
 
   for (const locale of targetLocales) {
     const translation = upstreamJson.translations?.[locale];

@@ -15,6 +15,18 @@ interface TranslationState {
   contentMdx: string;
 }
 
+interface BlogFieldLimits {
+  slug: number;
+  title: number;
+  summary: number;
+}
+
+const DEFAULT_FIELD_LIMITS: BlogFieldLimits = {
+  slug: 160,
+  title: 255,
+  summary: 1000,
+};
+
 export default function EditBlogPostPage() {
   const { session, loading } = useAdminAuth();
   const router = useRouter();
@@ -32,10 +44,13 @@ export default function EditBlogPostPage() {
   const [error, setError] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateModalOpen, setTranslateModalOpen] = useState(false);
-  const [selectedLocales, setSelectedLocales] = useState<string[]>(() => [...TARGET_TRANSLATION_LOCALES]);
+  const [selectedLocales, setSelectedLocales] = useState<string[]>(() => [
+    ...TARGET_TRANSLATION_LOCALES,
+  ]);
   const [statusMessage, setStatusMessage] = useState('');
   const [translateNotices, setTranslateNotices] = useState<Record<string, string[]>>({});
   const [translateFormError, setTranslateFormError] = useState('');
+  const [fieldLimits, setFieldLimits] = useState<BlogFieldLimits>(DEFAULT_FIELD_LIMITS);
 
   const loadBlogPost = useCallback(async () => {
     try {
@@ -49,6 +64,15 @@ export default function EditBlogPostPage() {
         setHeroImageUrl(post.heroImageUrl || '');
         setStatus(post.status);
         setPublishedAt(post.publishedAt);
+        if (json.fieldLimits) {
+          setFieldLimits({
+            slug: json.fieldLimits.slug || DEFAULT_FIELD_LIMITS.slug,
+            title: json.fieldLimits.title || DEFAULT_FIELD_LIMITS.title,
+            summary: json.fieldLimits.summary || DEFAULT_FIELD_LIMITS.summary,
+          });
+        } else {
+          setFieldLimits(DEFAULT_FIELD_LIMITS);
+        }
 
         const map: Record<string, TranslationState> = {};
         trs.forEach((t: Record<string, string>) => {
@@ -154,7 +178,9 @@ export default function EditBlogPostPage() {
 
   const enTranslation = translations['en-US'];
   const canTriggerTranslation = Boolean(
-    enTranslation?.slug?.trim() && enTranslation?.title?.trim() && enTranslation?.contentMdx?.trim(),
+    enTranslation?.slug?.trim() &&
+      enTranslation?.title?.trim() &&
+      enTranslation?.contentMdx?.trim(),
   );
 
   async function handleTranslateConfirm() {
@@ -198,11 +224,18 @@ export default function EditBlogPostPage() {
         return;
       }
 
-      const translatedLocales: Record<string, Partial<TranslationState>> = result?.data?.translations || {};
+      const translatedLocales: Record<string, Partial<TranslationState>> = result?.data
+        ?.translations || {};
       setTranslations((prev) => {
         const next = { ...prev };
         Object.entries(translatedLocales).forEach(([locale, translated]) => {
-          const current = next[locale] || { locale, slug: '', title: '', summary: '', contentMdx: '' };
+          const current = next[locale] || {
+            locale,
+            slug: '',
+            title: '',
+            summary: '',
+            contentMdx: '',
+          };
           next[locale] = {
             ...current,
             slug: translated.slug ?? current.slug,
@@ -281,8 +314,20 @@ export default function EditBlogPostPage() {
           setStatus(responseData.data.post?.status ?? responseData.data.status);
           setPublishedAt(responseData.data.post?.publishedAt ?? responseData.data.publishedAt);
         }
-        // Redirect to listings after successful save
-        router.push('/blog');
+        if (responseData.fieldLimits) {
+          setFieldLimits({
+            slug: responseData.fieldLimits.slug || DEFAULT_FIELD_LIMITS.slug,
+            title: responseData.fieldLimits.title || DEFAULT_FIELD_LIMITS.title,
+            summary: responseData.fieldLimits.summary || DEFAULT_FIELD_LIMITS.summary,
+          });
+        }
+        if (responseData.warnings?.length) {
+          setStatusMessage(responseData.warnings.join(' '));
+        } else {
+          setStatusMessage('');
+          // Redirect to listings after successful save with no warnings
+          router.push('/blog');
+        }
       }
     } catch {
       setError('Network error during save');
@@ -456,7 +501,12 @@ export default function EditBlogPostPage() {
           {statusMessage && (
             <div className="alert alert-info">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
+                />
               </svg>
               <span>{statusMessage}</span>
             </div>
@@ -503,6 +553,7 @@ export default function EditBlogPostPage() {
                     onTranslate={openTranslateModal}
                     canTranslate={canTriggerTranslation}
                     isTranslating={isTranslating}
+                    fieldLimits={fieldLimits}
                   />
                 </div>
               </div>
@@ -635,7 +686,8 @@ export default function EditBlogPostPage() {
           <div className="modal-box space-y-4">
             <h3 className="text-lg font-bold">Translate blog content</h3>
             <p className="text-sm text-base-content/70">
-              Selected locales will be overwritten with a fresh translation generated from the en-US version.
+              Selected locales will be overwritten with a fresh translation generated from the en-US
+              version.
             </p>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {TARGET_TRANSLATION_LOCALES.map((locale) => (
@@ -660,7 +712,11 @@ export default function EditBlogPostPage() {
             </div>
             {translateFormError && <p className="text-error text-sm">{translateFormError}</p>}
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={closeTranslateModal} disabled={isTranslating}>
+              <button
+                className="btn btn-ghost"
+                onClick={closeTranslateModal}
+                disabled={isTranslating}
+              >
                 Cancel
               </button>
               <button
@@ -688,6 +744,7 @@ function LocaleEditor({
   onTranslate,
   canTranslate = false,
   isTranslating = false,
+  fieldLimits,
 }: {
   tr: TranslationState;
   update: (field: keyof TranslationState, value: string) => void;
@@ -696,7 +753,11 @@ function LocaleEditor({
   onTranslate?: () => void;
   canTranslate?: boolean;
   isTranslating?: boolean;
+  fieldLimits: BlogFieldLimits;
 }) {
+  const slugLimit = fieldLimits?.slug ?? DEFAULT_FIELD_LIMITS.slug;
+  const titleLimit = fieldLimits?.title ?? DEFAULT_FIELD_LIMITS.title;
+  const summaryLimit = fieldLimits?.summary ?? DEFAULT_FIELD_LIMITS.summary;
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -716,7 +777,7 @@ function LocaleEditor({
                   className={`input input-bordered w-full ${hasContent && missingSlug ? 'input-error' : ''}`}
                   value={tr.slug}
                   onChange={(e) => update('slug', e.target.value)}
-                  maxLength={160}
+                  maxLength={slugLimit}
                   pattern="[a-z0-9-]+"
                   placeholder="blog-post-slug"
                 />
@@ -747,7 +808,7 @@ function LocaleEditor({
                   className={`input input-bordered w-full ${hasContent && missingTitle ? 'input-error' : ''}`}
                   value={tr.title}
                   onChange={(e) => update('title', e.target.value)}
-                  maxLength={255}
+                  maxLength={titleLimit}
                   placeholder="Blog Post Title"
                 />
                 {hasContent && missingTitle && (
@@ -777,11 +838,11 @@ function LocaleEditor({
           rows={3}
           value={tr.summary}
           onChange={(e) => update('summary', e.target.value)}
-          maxLength={600}
+          maxLength={summaryLimit}
           placeholder="A brief summary of the blog post..."
         />
         <div className="label justify-between">
-          <span className="label-text-alt">{`${tr.summary?.length ?? 0}/600`}</span>
+          <span className="label-text-alt">{`${tr.summary?.length ?? 0}/${summaryLimit}`}</span>
           {!tr.summary?.length && (tr.contentMdx?.length ?? 0) > 20 && (
             <span className="label-text-alt text-base-content/60">
               Will be auto-generated on save

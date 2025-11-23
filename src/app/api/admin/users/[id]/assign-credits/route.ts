@@ -55,6 +55,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (!notifyResult.success) {
         warning = `Credits assigned but refund email failed: ${notifyResult.error}`;
       }
+    } else if (eventType === 'voucher') {
+      const notifyResult = await notificationClient.sendCreditsAddedNotification({
+        email: user.email,
+        name: user.displayName,
+        credits: amount,
+        preferredLocale: user.preferredLocale,
+        authorId: user.authorId,
+        source: 'voucher',
+        entityId: crypto.randomUUID(),
+      });
+      if (!notifyResult.success) {
+        warning = `Credits assigned but voucher email failed: ${notifyResult.error}`;
+      }
     }
 
     return NextResponse.json({

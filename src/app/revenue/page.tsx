@@ -244,7 +244,6 @@ export default function RevenuePage() {
             </div>
           </div>
         </div>
-
       </main>
     </div>
   );

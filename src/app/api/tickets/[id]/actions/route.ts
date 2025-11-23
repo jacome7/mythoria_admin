@@ -7,6 +7,9 @@ import { getMythoriaDb } from '@/db';
 import { paymentOrders, paymentEvents } from '@/db/schema/payments';
 import { creditLedger, authorCreditBalances } from '@/db/schema/credits';
 import { sql } from 'drizzle-orm';
+import { notificationClient } from '@/lib/notifications/client';
+import { adminService } from '@/db/services';
+import { ga4Service } from '@/lib/analytics/ga4';
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
@@ -40,11 +43,17 @@ export async function POST(
 
   const metadata = (ticket.metadata || {}) as TicketMetadata;
   if (ticket.category !== 'payment_request' || metadata.paymentMethod !== 'mbway') {
-    return NextResponse.json({ error: 'Action only available for MB Way payment tickets' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Action only available for MB Way payment tickets' },
+      { status: 400 },
+    );
   }
 
   if (metadata.mbwayPayment?.status === 'confirmed') {
-    return NextResponse.json({ error: 'Payment already confirmed for this ticket' }, { status: 409 });
+    return NextResponse.json(
+      { error: 'Payment already confirmed for this ticket' },
+      { status: 409 },
+    );
   }
 
   if (metadata.mbwayPayment?.status === 'not_received') {
@@ -55,10 +64,7 @@ export async function POST(
   }
 
   if (ticket.status === 'resolved' || ticket.status === 'closed') {
-    return NextResponse.json(
-      { error: 'This ticket has already been completed.' },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: 'This ticket has already been completed.' }, { status: 409 });
   }
 
   if (action === 'confirmPayment') {
@@ -66,7 +72,9 @@ export async function POST(
       await confirmMbwayPayment(ticket, metadata, session.user.email!);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Unable to confirm MB Way payment for this ticket.';
+        error instanceof Error
+          ? error.message
+          : 'Unable to confirm MB Way payment for this ticket.';
       return NextResponse.json({ error: message }, { status: 400 });
     }
   } else {
@@ -184,6 +192,50 @@ async function confirmMbwayPayment(
 
   await TicketService.updateMetadata(ticket.id, updatedMetadata);
   await TicketService.updateStatus(ticket.id, 'resolved');
+
+  // Send GA4 Purchase Event
+  try {
+    // Extract analytics data from metadata if available
+    const analyticsData = metadata.analytics ?? {};
+
+    await ga4Service.sendPurchaseEvent({
+      user_id: authorId,
+      client_id: analyticsData.client_id,
+      session_id: analyticsData.session_id,
+      transaction_id: orderId || `MBWAY-${ticket.id}`,
+      value: amount,
+      currency: 'EUR',
+      items: [
+        {
+          item_id: `credits-${credits}`,
+          item_name: `${credits} Credits Bundle`,
+          price: amount,
+          quantity: 1,
+        },
+      ],
+    });
+  } catch (error) {
+    console.error('Failed to send GA4 purchase event:', error);
+  }
+
+  // Send notification to user
+  try {
+    const user = await adminService.getUserById(authorId);
+    if (user && user.email) {
+      await notificationClient.sendCreditsAddedNotification({
+        email: user.email,
+        name: user.displayName || user.email,
+        credits: credits,
+        preferredLocale: user.preferredLocale,
+        authorId: authorId,
+        source: 'mbway',
+        entityId: ticket.id,
+      });
+    }
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+    // Don't fail the request if notification fails
+  }
 }
 
 async function closeMbwayTicket(

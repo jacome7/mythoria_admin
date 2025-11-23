@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminBlogService } from '@/db/services';
 import { validateMdxSource } from '@/lib/blog/mdx-validate';
+import { getBlogTranslationFieldLimits, resolveBlogFieldLimits } from '@/db/blog/limits';
+import { normalizeAdminTranslations } from '@/lib/blog/normalize-translations';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
 function ensureAdminEmail(email?: string | null) {
@@ -17,9 +19,13 @@ export async function GET(req: Request) {
   const match = req.url.match(/\/api\/admin\/blog\/([^/]+)/);
   const id = match ? decodeURIComponent(match[1]) : null;
   if (!id) return NextResponse.json({ error: 'Invalid blog id' }, { status: 400 });
-  const data = await adminBlogService.getById(id);
+  const [data, limits] = await Promise.all([
+    adminBlogService.getById(id),
+    getBlogTranslationFieldLimits(),
+  ]);
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ data });
+  const fieldLimits = resolveBlogFieldLimits(limits);
+  return NextResponse.json({ data, fieldLimits });
 }
 
 export async function PUT(req: Request) {
@@ -31,51 +37,44 @@ export async function PUT(req: Request) {
   const id = match ? decodeURIComponent(match[1]) : null;
   if (!id) return NextResponse.json({ error: 'Invalid blog id' }, { status: 400 });
   const body = await req.json();
-  // Basic validation matching DB constraints
-  if (Array.isArray(body.translations)) {
-    for (const tr of body.translations) {
-      // Validate MDX compiles
-      const result = validateMdxSource(tr.contentMdx || '');
-      if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 400 });
-
-      // Enforce length constraints to avoid DB errors
-      const locale = tr.locale || 'unknown locale';
-      if (
-        typeof tr.slug !== 'string' ||
-        tr.slug.length < 1 ||
-        tr.slug.length > 160 ||
-        !/^[a-z0-9-]+$/.test(tr.slug)
-      ) {
-        return NextResponse.json(
-          {
-            error: `Invalid slug for ${locale}. Use lowercase letters, numbers, and hyphens only, max 160 characters.`,
-          },
-          { status: 400 },
-        );
-      }
-      if (typeof tr.title !== 'string' || tr.title.length < 1 || tr.title.length > 255) {
-        return NextResponse.json(
-          { error: `Title too long for ${locale}. Maximum 255 characters.` },
-          { status: 400 },
-        );
-      }
-      if (typeof tr.summary !== 'string' || tr.summary.length < 1 || tr.summary.length > 600) {
-        return NextResponse.json(
-          { error: `Summary too long for ${locale}. Maximum 600 characters.` },
-          { status: 400 },
-        );
-      }
-    }
+  if (!Array.isArray(body.translations) || body.translations.length === 0) {
+    return NextResponse.json(
+      { error: 'At least one translation is required when saving a blog post.' },
+      { status: 400 },
+    );
   }
+
+  const rawLimits = await getBlogTranslationFieldLimits();
+  const fieldLimits = resolveBlogFieldLimits(rawLimits);
+
+  for (const tr of body.translations) {
+    const result = validateMdxSource(tr.contentMdx || '');
+    if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 400 });
+  }
+
+  let normalizedTranslations;
+  let warnings: string[] = [];
   try {
-    const updated = await adminBlogService.update(id, body);
-    return NextResponse.json({ data: updated });
+    const normalized = normalizeAdminTranslations(body.translations, rawLimits);
+    normalizedTranslations = normalized.translations;
+    warnings = normalized.warnings;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid translation payload';
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  try {
+    const updated = await adminBlogService.update(id, {
+      ...body,
+      translations: normalizedTranslations,
+    });
+    return NextResponse.json({ data: updated, fieldLimits, warnings });
   } catch (e: unknown) {
     // Provide a cleaner error message
     const message = e instanceof Error ? e.message : 'Update failed';
     const friendly =
       message.includes('value too long') || message.includes('length')
-        ? 'One or more fields exceed the allowed length. Title max 255, Summary max 600, Slug max 160.'
+        ? `One or more fields exceed the allowed length. Title max ${fieldLimits.title}, Summary max ${fieldLimits.summary}, Slug max ${fieldLimits.slug}.`
         : message;
     return NextResponse.json({ error: friendly }, { status: 400 });
   }

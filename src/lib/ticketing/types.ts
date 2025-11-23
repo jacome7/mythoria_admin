@@ -56,5 +56,10 @@ export interface TicketMetadata {
     updatedBy?: string;
     paymentOrderId?: string;
   };
+  analytics?: {
+    client_id?: string;
+    session_id?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }

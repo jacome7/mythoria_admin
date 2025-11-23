@@ -98,6 +98,21 @@ export const envManifest: EnvVarDescriptor[] = [
     note: 'Used to build links back to main app (AdminStoryReader component).',
   },
 
+  {
+    name: 'NEXT_PUBLIC_GA_MEASUREMENT_ID',
+    required: true,
+    scopes: ['prod', 'build', 'public'],
+    source: 'secret-manager',
+    note: 'Analytics instrumentation id.',
+  },
+  {
+    name: 'GOOGLE_ANALYTICS_API_SECRET',
+    required: true,
+    scopes: ['prod', 'runtime'],
+    secret: true,
+    source: 'secret-manager',
+    note: 'Required for server-side Measurement Protocol events.',
+  },
   // Databases (connection details shared across three logical DBs)
   {
     name: 'DB_HOST',

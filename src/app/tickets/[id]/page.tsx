@@ -52,7 +52,9 @@ export default function TicketDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
-  const [mbwayActionStatus, setMbwayActionStatus] = useState<'idle' | 'confirming' | 'closing'>('idle');
+  const [mbwayActionStatus, setMbwayActionStatus] = useState<'idle' | 'confirming' | 'closing'>(
+    'idle',
+  );
   const [mbwayActionError, setMbwayActionError] = useState<string | null>(null);
   const [mbwayActionMessage, setMbwayActionMessage] = useState<string | null>(null);
 
@@ -339,7 +341,11 @@ export default function TicketDetailPage() {
   };
 
   const renderMbwayDetails = () => {
-    if (!ticket || ticket.category !== 'payment_request' || ticket.metadata?.paymentMethod !== 'mbway') {
+    if (
+      !ticket ||
+      ticket.category !== 'payment_request' ||
+      ticket.metadata?.paymentMethod !== 'mbway'
+    ) {
       return null;
     }
 
@@ -637,7 +643,9 @@ export default function TicketDetailPage() {
                   <span className="font-medium min-w-32 capitalize">
                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}:
                   </span>
-                  <span className="text-base-content/70 break-words">{renderValue(key, value)}</span>
+                  <span className="text-base-content/70 break-words">
+                    {renderValue(key, value)}
+                  </span>
                 </div>
               ))}
           </div>
@@ -821,8 +829,8 @@ export default function TicketDetailPage() {
                 <div className="card-body space-y-3">
                   <h3 className="card-title">MB Way Workflow</h3>
                   <p className="text-sm text-base-content/70">
-                    Confirm the payment to add credits automatically or close silently if no payment is
-                    received after five days.
+                    Confirm the payment to add credits automatically or close silently if no payment
+                    is received after five days.
                   </p>
                   <button
                     className="btn btn-primary btn-sm"
@@ -846,18 +854,14 @@ export default function TicketDetailPage() {
                       'Payment Not Received'
                     )}
                   </button>
-                  {!canMarkNotReceived &&
-                    !terminalTicketStatus &&
-                    mbwayStatus === 'pending' && (
-                      <p className="text-xs text-base-content/60">
-                        Available in {humanizedDaysUntilNotReceived} day
-                        {humanizedDaysUntilNotReceived === 1 ? '' : 's'} to avoid cancelling active
-                        payments.
-                      </p>
-                    )}
-                  {mbwayActionError && (
-                    <p className="text-error text-sm">{mbwayActionError}</p>
+                  {!canMarkNotReceived && !terminalTicketStatus && mbwayStatus === 'pending' && (
+                    <p className="text-xs text-base-content/60">
+                      Available in {humanizedDaysUntilNotReceived} day
+                      {humanizedDaysUntilNotReceived === 1 ? '' : 's'} to avoid cancelling active
+                      payments.
+                    </p>
                   )}
+                  {mbwayActionError && <p className="text-error text-sm">{mbwayActionError}</p>}
                   {mbwayActionMessage && (
                     <p className="text-success text-sm">{mbwayActionMessage}</p>
                   )}

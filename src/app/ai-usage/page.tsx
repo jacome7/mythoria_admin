@@ -1,9 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import DailyAiUsageChart, {
-  type DailyAiUsagePoint,
-} from '@/components/charts/DailyAiUsageChart';
+import DailyAiUsageChart, { type DailyAiUsagePoint } from '@/components/charts/DailyAiUsageChart';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 const PERIOD_OPTIONS: { label: string; value: Period }[] = [
@@ -190,7 +188,11 @@ export default function AIUsagePage() {
                   <p className="text-sm text-base-content/70">Cost (bars) vs tokens (line)</p>
                   <div className="h-72">
                     {dailyUsage.length ? (
-                      <DailyAiUsageChart data={dailyUsage} currencyFormatter={currencyFormatter} granularity={granularity} />
+                      <DailyAiUsageChart
+                        data={dailyUsage}
+                        currencyFormatter={currencyFormatter}
+                        granularity={granularity}
+                      />
                     ) : (
                       <div className="flex h-full items-center justify-center text-base-content/70">
                         No AI usage recorded for this period.
@@ -277,7 +279,10 @@ export default function AIUsagePage() {
                           </td>
                           <td>
                             {numberFormatter.format(
-                              actionBreakdown.reduce((sum, action) => sum + action.uniqueStories, 0),
+                              actionBreakdown.reduce(
+                                (sum, action) => sum + action.uniqueStories,
+                                0,
+                              ),
                             )}
                           </td>
                           <td>
@@ -289,8 +294,10 @@ export default function AIUsagePage() {
                           </td>
                           <td>
                             {numberFormatter.format(
-                              actionBreakdown.reduce((sum, action) => sum + action.outputTokens, 0) /
-                                1_000_000,
+                              actionBreakdown.reduce(
+                                (sum, action) => sum + action.outputTokens,
+                                0,
+                              ) / 1_000_000,
                             )}
                             M
                           </td>

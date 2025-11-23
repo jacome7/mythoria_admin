@@ -197,9 +197,7 @@ function ChartPanelSkeleton({ title, description }: ChartPanelSkeletonProps) {
     >
       <div className="space-y-2">
         <div className="text-base font-semibold text-base-content/70">{title}</div>
-        {description ? (
-          <p className="text-sm text-base-content/60">{description}</p>
-        ) : null}
+        {description ? <p className="text-sm text-base-content/60">{description}</p> : null}
       </div>
       <div className="mt-6 grid gap-4 text-sm md:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (

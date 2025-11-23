@@ -11,12 +11,12 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 ## Endpoint map
 
 | Area          | Method + path                        | Notes                                                                                              |
-| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- | --- | --- | ---------- |
+| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------ | --- | ---------- |
 | Health        | `GET /api/health`                    | Lightweight DB + downstream probe. Add `?debug=true` for env metadata.                             |
 | Health        | `GET /api/server-status`             | Aggregated status card data (env parity, Pub/Sub, Notification Engine).                            |
 | Health        | `GET /api/ping`                      | API-key validation for service-to-service traffic.                                                 |
 | Users         | `GET /api/admin/users`               | Paginated admin directory. Query params: `page`, `limit`, `search`, `sortBy`, `sortOrder`.         |
-| Users         | `GET /api/admin/users/registrations` | Aggregated author registrations for the dashboard chart (`range=7d                                 | 30d | 90d | forever`). |
+| Users         | `GET /api/admin/users/registrations` | Aggregated author registrations for the dashboard chart (`range=7d                                 | 30d                      | 90d | forever`). |
 | Leads         | `GET /api/admin/leads`               | Paginated leads table with filters (`status`, `language`).                                         |
 | Leads         | `POST /api/admin/leads`              | Upsert a single lead (email + language required).                                                  |
 | Leads         | `POST /api/admin/leads/bulk`         | Bulk status changes (e.g., set `emailStatus` to `hard_bounce`). Requires API key.                  |
@@ -30,11 +30,23 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 | Tickets       | `POST /api/tickets`                  | Create a ticket (contact, print request, payment). UI and public forms hit the same handler.       |
 | Tickets       | `GET /api/tickets/[id]`              | Full ticket detail + comments.                                                                     |
 | Tickets       | `PATCH /api/tickets/[id]`            | Update status or priority.                                                                         |
-| Tickets       | `POST /api/tickets/[id]/actions`     | Admin-only MB Way workflow actions: `{ action: 'confirmPayment' | 'paymentNotReceived' }`.         |
+| Tickets       | `POST /api/tickets/[id]/actions`     | Admin-only MB Way workflow actions: `{ action: 'confirmPayment'                                    | 'paymentNotReceived' }`. |
 | Tickets       | `POST /api/tickets/[id]/comments`    | Append comments (`isInternal` toggles private notes).                                              |
 | Tickets       | `GET /api/tickets/metrics`           | Dashboard stats for the Tickets widget.                                                            |
 | Notifications | `GET /api/mail-marketing/*`          | Proxy routes for notification-engine APIs (campaign controls, stats).                              |
 | Postmaster    | `GET /api/postmaster/traffic-stats`  | Google Postmaster telemetry for deliverability dashboards.                                         |
+
+### Blog management
+
+| Area | Method + path                 | Notes                                                                                                                                                                                            |
+| ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Blog | `GET /api/admin/blog`         | Paginated list with `status`, `locale`, and `search` filters.                                                                                                                                    |
+| Blog | `POST /api/admin/blog`        | Creates a draft. Response includes `fieldLimits` and optional `warnings` when data needs sanitizing.                                                                                             |
+| Blog | `GET /api/admin/blog/[id]`    | Returns `{ data, fieldLimits }` so the editor can enforce live DB limits.                                                                                                                        |
+| Blog | `PUT /api/admin/blog/[id]`    | Updates hero image, status, and translations. Response shape: `{ data, fieldLimits, warnings }`. Summaries exceeding the DB column length are truncated server-side and surfaced via `warnings`. |
+| Blog | `DELETE /api/admin/blog/[id]` | Deletes the post plus translations.                                                                                                                                                              |
+
+`fieldLimits` mirrors the active PostgreSQL schema (values pulled from `information_schema` at runtime) and exposes `{ slug, title, summary }` maximum lengths. Clients should prefer these numbers over hard-coded limits. When the API returns `warnings` (e.g., "Summary for en-US exceeded 500 characters and was truncated."), keep the editor open, highlight the affected locale, and let the author decide whether to revise or accept the shorter summary.
 
 Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this table when you add or rename routes.
 
@@ -57,4 +69,4 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ---
 
-_Last updated: November 16, 2025_
+_Last updated: November 23, 2025_

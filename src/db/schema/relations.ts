@@ -8,6 +8,7 @@ import { creditLedger, authorCreditBalances } from './credits';
 import { storyRatings } from './ratings';
 import { printProviders, printRequests } from './print';
 import { blogPosts, blogPostTranslations } from './blog';
+import { faqSections, faqEntries } from './faq';
 
 // -----------------------------------------------------------------------------
 // Relations (for type safety with Drizzle ORM queries)
@@ -179,5 +180,17 @@ export const blogPostTranslationsRelations = relations(blogPostTranslations, ({ 
   post: one(blogPosts, {
     fields: [blogPostTranslations.postId],
     references: [blogPosts.id],
+  }),
+}));
+
+// FAQ relations
+export const faqSectionsRelations = relations(faqSections, ({ many }) => ({
+  entries: many(faqEntries),
+}));
+
+export const faqEntriesRelations = relations(faqEntries, ({ one }) => ({
+  section: one(faqSections, {
+    fields: [faqEntries.sectionId],
+    references: [faqSections.id],
   }),
 }));

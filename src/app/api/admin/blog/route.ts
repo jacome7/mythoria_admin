@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminBlogService } from '@/db/services';
 import { validateMdxSource } from '@/lib/blog/mdx-validate';
+import { getBlogTranslationFieldLimits, resolveBlogFieldLimits } from '@/db/blog/limits';
+import { normalizeAdminTranslations } from '@/lib/blog/normalize-translations';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
 function ensureAdminEmail(email?: string | null) {
@@ -30,15 +32,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const body = await req.json();
-  if (body.translations) {
+  const rawLimits = await getBlogTranslationFieldLimits();
+  const fieldLimits = resolveBlogFieldLimits(rawLimits);
+
+  let translationsPayload = body.translations;
+  let warnings: string[] = [];
+  if (Array.isArray(body.translations) && body.translations.length > 0) {
     for (const tr of body.translations) {
       const result = validateMdxSource(tr.contentMdx || '');
       if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 400 });
     }
+    try {
+      const normalized = normalizeAdminTranslations(body.translations, rawLimits);
+      translationsPayload = normalized.translations;
+      warnings = normalized.warnings;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid translation payload';
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
   }
   try {
-    const created = await adminBlogService.create(body);
-    return NextResponse.json({ data: created });
+    const created = await adminBlogService.create({
+      ...body,
+      translations: translationsPayload,
+    });
+    return NextResponse.json({ data: created, fieldLimits, warnings });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Create failed';
     return NextResponse.json({ error: message }, { status: 400 });

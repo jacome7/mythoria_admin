@@ -219,13 +219,16 @@ export default function NewUsersChart({ onReady }: NewUsersChartProps = {}) {
         ) : (
           <div className="h-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={trendLineData} margin={{ top: 8, left: -12, right: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
-              <XAxis
-                dataKey="label"
-                tick={(props) => <CustomTick {...props} meta={tickMeta} />}
-                interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
-              />
+              <ComposedChart
+                data={trendLineData}
+                margin={{ top: 8, left: -12, right: 0, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
+                <XAxis
+                  dataKey="label"
+                  tick={(props) => <CustomTick {...props} meta={tickMeta} />}
+                  interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
+                />
                 <YAxis
                   width={30}
                   allowDecimals={false}
@@ -233,31 +236,31 @@ export default function NewUsersChart({ onReady }: NewUsersChartProps = {}) {
                   tick={{ fontSize: 10 }}
                   tickFormatter={(value) => formatter.format(value)}
                 />
-              <Tooltip
-                content={<CustomTooltip mode={mode} range={range} />}
-                cursor={{ fill: 'rgba(147, 197, 253, 0.08)' }}
-              />
-              <Legend wrapperStyle={{ display: 'none' }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {chartData.map((entry) => (
-                  <Cell
-                    key={entry.date}
-                    fill={getBarFill(entry, range === 'forever' && mode === 'cumulative')}
-                  />
-                ))}
-              </Bar>
-              <Line
-                type="monotone"
-                dataKey="trend"
-                stroke={COLORS.trend}
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={false}
-                activeDot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+                <Tooltip
+                  content={<CustomTooltip mode={mode} range={range} />}
+                  cursor={{ fill: 'rgba(147, 197, 253, 0.08)' }}
+                />
+                <Legend wrapperStyle={{ display: 'none' }} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry) => (
+                    <Cell
+                      key={entry.date}
+                      fill={getBarFill(entry, range === 'forever' && mode === 'cumulative')}
+                    />
+                  ))}
+                </Bar>
+                <Line
+                  type="monotone"
+                  dataKey="trend"
+                  stroke={COLORS.trend}
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  activeDot={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </section>

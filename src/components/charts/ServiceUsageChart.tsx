@@ -209,12 +209,12 @@ export default function ServiceUsageChart({ onReady }: ServiceUsageChartProps = 
           <div className="h-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 0, bottom: 8, left: -12 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
-              <XAxis
-                dataKey="label"
-                tick={(props) => <CustomTick {...props} meta={tickMeta} />}
-                interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
-              />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
+                <XAxis
+                  dataKey="label"
+                  tick={(props) => <CustomTick {...props} meta={tickMeta} />}
+                  interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
+                />
                 <YAxis
                   width={32}
                   allowDecimals={false}
@@ -222,33 +222,33 @@ export default function ServiceUsageChart({ onReady }: ServiceUsageChartProps = 
                   tick={{ fontSize: 10 }}
                   tickFormatter={(value) => formatter.format(Number(value))}
                 />
-              <Tooltip
-                content={<CustomTooltip viewMode={viewMode} />}
-                cursor={{ fill: 'rgba(147, 197, 253, 0.08)' }}
-              />
-              <Legend wrapperStyle={{ display: 'none' }} />
-              {SERVICE_USAGE_EVENT_TYPES.map((eventType, index) => (
-                <Bar
-                  key={eventType}
-                  dataKey={`${eventType}-${viewMode}`}
-                  stackId="usage"
-                  fill={EVENT_COLORS[eventType]}
-                  radius={
-                    index === SERVICE_USAGE_EVENT_TYPES.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]
-                  }
+                <Tooltip
+                  content={<CustomTooltip viewMode={viewMode} />}
+                  cursor={{ fill: 'rgba(147, 197, 253, 0.08)' }}
                 />
-              ))}
-              <Line
-                type="monotone"
-                dataKey={lineKey}
-                stroke="#0ea5e9"
-                strokeWidth={2}
-                dot={false}
-                activeDot={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+                <Legend wrapperStyle={{ display: 'none' }} />
+                {SERVICE_USAGE_EVENT_TYPES.map((eventType, index) => (
+                  <Bar
+                    key={eventType}
+                    dataKey={`${eventType}-${viewMode}`}
+                    stackId="usage"
+                    fill={EVENT_COLORS[eventType]}
+                    radius={
+                      index === SERVICE_USAGE_EVENT_TYPES.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]
+                    }
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey={lineKey}
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </section>

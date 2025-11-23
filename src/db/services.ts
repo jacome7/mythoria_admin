@@ -11,6 +11,8 @@ import {
   leads,
   emailStatusEnum,
   paymentOrders,
+  faqSections,
+  faqEntries,
 } from './schema';
 import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
 import { storyGenerationRuns, storyGenerationSteps } from './schema/workflows';
@@ -1663,5 +1665,339 @@ export const adminService = {
       .from(leads);
 
     return stats || null;
+  },
+
+  // ---------------------------------------------------------------------------
+  // FAQ Sections
+  // ---------------------------------------------------------------------------
+  async getFaqSections(
+    page: number = 1,
+    limit: number = 100,
+    searchTerm?: string,
+    isActiveFilter?: string,
+  ) {
+    const db = getMythoriaDb();
+    const offset = (page - 1) * limit;
+
+    type Condition = ReturnType<typeof like> | ReturnType<typeof eq>;
+    const conditions: Condition[] = [];
+
+    if (searchTerm && searchTerm.trim()) {
+      const pattern = `%${searchTerm.trim()}%`;
+      conditions.push(
+        or(
+          like(sql`LOWER(${faqSections.sectionKey})`, pattern.toLowerCase()),
+          like(sql`LOWER(${faqSections.defaultLabel})`, pattern.toLowerCase()),
+        ) as Condition,
+      );
+    }
+
+    if (isActiveFilter === 'true') {
+      conditions.push(eq(faqSections.isActive, true));
+    } else if (isActiveFilter === 'false') {
+      conditions.push(eq(faqSections.isActive, false));
+    }
+
+    const whereClause: Condition | undefined = conditions.length
+      ? conditions
+          .slice(1)
+          .reduce<Condition>((acc, cur) => and(acc, cur) as Condition, conditions[0])
+      : undefined;
+
+    const totalCountResult = await db
+      .select({ value: count() })
+      .from(faqSections)
+      .where(whereClause ?? sql`true`);
+    const totalCount = totalCountResult[0]?.value || 0;
+
+    const baseSelect = db.select().from(faqSections);
+    const rows = await (whereClause ? baseSelect.where(whereClause) : baseSelect)
+      .orderBy(asc(faqSections.sortOrder))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: offset + rows.length < totalCount,
+        hasPrev: page > 1,
+      },
+    };
+  },
+
+  async getFaqSectionById(id: string) {
+    const db = getMythoriaDb();
+    const [section] = await db.select().from(faqSections).where(eq(faqSections.id, id));
+    return section || null;
+  },
+
+  async createFaqSection(data: {
+    sectionKey: string;
+    defaultLabel: string;
+    description?: string;
+    iconName?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) {
+    const db = getMythoriaDb();
+
+    // Check if section key already exists
+    const [existing] = await db
+      .select()
+      .from(faqSections)
+      .where(eq(faqSections.sectionKey, data.sectionKey));
+
+    if (existing) {
+      throw new Error(`Section with key "${data.sectionKey}" already exists`);
+    }
+
+    // If no sortOrder provided, get max + 1
+    if (data.sortOrder === undefined) {
+      const [maxSort] = await db
+        .select({ value: sql<number>`COALESCE(MAX(${faqSections.sortOrder}), 0)` })
+        .from(faqSections);
+      data.sortOrder = (maxSort?.value || 0) + 1;
+    }
+
+    const [section] = await db.insert(faqSections).values(data).returning();
+    return section;
+  },
+
+  async updateFaqSection(
+    id: string,
+    data: {
+      defaultLabel?: string;
+      description?: string;
+      iconName?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+    },
+  ) {
+    const db = getMythoriaDb();
+
+    const [section] = await db
+      .update(faqSections)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(faqSections.id, id))
+      .returning();
+
+    return section || null;
+  },
+
+  async deleteFaqSection(id: string) {
+    const db = getMythoriaDb();
+
+    // Check if section has entries
+    const [entriesCount] = await db
+      .select({ value: count() })
+      .from(faqEntries)
+      .where(eq(faqEntries.sectionId, id));
+
+    if (entriesCount && entriesCount.value > 0) {
+      throw new Error('Cannot delete section with existing FAQ entries');
+    }
+
+    const [section] = await db.delete(faqSections).where(eq(faqSections.id, id)).returning();
+    return section || null;
+  },
+
+  // ---------------------------------------------------------------------------
+  // FAQ Entries
+  // ---------------------------------------------------------------------------
+  async getFaqEntries(
+    page: number = 1,
+    limit: number = 50,
+    searchTerm?: string,
+    sectionId?: string,
+    locale?: string,
+    isPublishedFilter?: string,
+  ) {
+    const db = getMythoriaDb();
+    const offset = (page - 1) * limit;
+
+    type Condition = ReturnType<typeof like> | ReturnType<typeof eq>;
+    const conditions: Condition[] = [];
+
+    if (searchTerm && searchTerm.trim()) {
+      const pattern = `%${searchTerm.trim()}%`;
+      conditions.push(
+        or(
+          like(sql`LOWER(${faqEntries.title})`, pattern.toLowerCase()),
+          like(sql`LOWER(${faqEntries.contentMdx})`, pattern.toLowerCase()),
+        ) as Condition,
+      );
+    }
+
+    if (sectionId) {
+      conditions.push(eq(faqEntries.sectionId, sectionId));
+    }
+
+    if (locale) {
+      conditions.push(eq(faqEntries.locale, locale));
+    }
+
+    if (isPublishedFilter === 'true') {
+      conditions.push(eq(faqEntries.isPublished, true));
+    } else if (isPublishedFilter === 'false') {
+      conditions.push(eq(faqEntries.isPublished, false));
+    }
+
+    const whereClause: Condition | undefined = conditions.length
+      ? conditions
+          .slice(1)
+          .reduce<Condition>((acc, cur) => and(acc, cur) as Condition, conditions[0])
+      : undefined;
+
+    const totalCountResult = await db
+      .select({ value: count() })
+      .from(faqEntries)
+      .where(whereClause ?? sql`true`);
+    const totalCount = totalCountResult[0]?.value || 0;
+
+    const baseSelect = db
+      .select({
+        entry: faqEntries,
+        section: faqSections,
+      })
+      .from(faqEntries)
+      .leftJoin(faqSections, eq(faqEntries.sectionId, faqSections.id));
+
+    const rows = await (whereClause ? baseSelect.where(whereClause) : baseSelect)
+      .orderBy(asc(faqEntries.questionSortOrder))
+      .limit(limit)
+      .offset(offset);
+
+    const data = rows.map((row) => ({
+      ...row.entry,
+      section: row.section,
+    }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: offset + rows.length < totalCount,
+        hasPrev: page > 1,
+      },
+    };
+  },
+
+  async getFaqEntryById(id: string) {
+    const db = getMythoriaDb();
+    const [result] = await db
+      .select({
+        entry: faqEntries,
+        section: faqSections,
+      })
+      .from(faqEntries)
+      .leftJoin(faqSections, eq(faqEntries.sectionId, faqSections.id))
+      .where(eq(faqEntries.id, id));
+
+    if (!result) return null;
+
+    return {
+      ...result.entry,
+      section: result.section,
+    };
+  },
+
+  async getFaqEntriesByKey(faqKey: string) {
+    const db = getMythoriaDb();
+    const entries = await db
+      .select({
+        entry: faqEntries,
+        section: faqSections,
+      })
+      .from(faqEntries)
+      .leftJoin(faqSections, eq(faqEntries.sectionId, faqSections.id))
+      .where(eq(faqEntries.faqKey, faqKey))
+      .orderBy(asc(faqEntries.locale));
+
+    return entries.map((row) => ({
+      ...row.entry,
+      section: row.section,
+    }));
+  },
+
+  async createFaqEntry(data: {
+    sectionId: string;
+    faqKey: string;
+    locale: string;
+    title: string;
+    contentMdx: string;
+    questionSortOrder?: number;
+    isPublished?: boolean;
+  }) {
+    const db = getMythoriaDb();
+
+    // Check if entry with same faqKey and locale exists
+    const [existing] = await db
+      .select()
+      .from(faqEntries)
+      .where(and(eq(faqEntries.faqKey, data.faqKey), eq(faqEntries.locale, data.locale)));
+
+    if (existing) {
+      throw new Error(
+        `FAQ entry with key "${data.faqKey}" already exists for locale "${data.locale}"`,
+      );
+    }
+
+    // If no questionSortOrder provided, get max + 1 for this section
+    if (data.questionSortOrder === undefined) {
+      const [maxSort] = await db
+        .select({ value: sql<number>`COALESCE(MAX(${faqEntries.questionSortOrder}), 0)` })
+        .from(faqEntries)
+        .where(eq(faqEntries.sectionId, data.sectionId));
+      data.questionSortOrder = (maxSort?.value || 0) + 1;
+    }
+
+    const [entry] = await db.insert(faqEntries).values(data).returning();
+    return entry;
+  },
+
+  async updateFaqEntry(
+    id: string,
+    data: {
+      sectionId?: string;
+      title?: string;
+      contentMdx?: string;
+      questionSortOrder?: number;
+      isPublished?: boolean;
+    },
+  ) {
+    const db = getMythoriaDb();
+
+    const [entry] = await db
+      .update(faqEntries)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(faqEntries.id, id))
+      .returning();
+
+    return entry || null;
+  },
+
+  async deleteFaqEntry(id: string) {
+    const db = getMythoriaDb();
+    const [entry] = await db.delete(faqEntries).where(eq(faqEntries.id, id)).returning();
+    return entry || null;
+  },
+
+  async bulkDeleteFaqEntries(ids: string[]) {
+    const db = getMythoriaDb();
+    const entries = await db.delete(faqEntries).where(inArray(faqEntries.id, ids)).returning();
+    return entries;
   },
 };
