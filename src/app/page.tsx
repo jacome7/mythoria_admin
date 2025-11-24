@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import KPICard from '../components/KPICard';
+import GrossMarginChart from '@/components/charts/GrossMarginChart';
 import NewUsersChart from '@/components/charts/NewUsersChart';
 import ServiceUsageChart from '@/components/charts/ServiceUsageChart';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -17,7 +18,11 @@ export default function AdminPortal() {
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
   const [kpiError, setKpiError] = useState<string | null>(null);
-  const [chartVisibility, setChartVisibility] = useState({ newUsers: false, serviceUsage: false });
+  const [chartVisibility, setChartVisibility] = useState({
+    newUsers: false,
+    serviceUsage: false,
+    grossMargin: false,
+  });
 
   const fetchKPIs = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -65,6 +70,10 @@ export default function AdminPortal() {
 
   const handleNewUsersReady = useCallback(() => {
     setChartVisibility((prev) => (prev.serviceUsage ? prev : { ...prev, serviceUsage: true }));
+  }, []);
+
+  const handleServiceUsageReady = useCallback(() => {
+    setChartVisibility((prev) => (prev.grossMargin ? prev : { ...prev, grossMargin: true }));
   }, []);
 
   // Show loading state while checking authentication
@@ -171,11 +180,19 @@ export default function AdminPortal() {
             />
           )}
           {chartVisibility.serviceUsage ? (
-            <ServiceUsageChart />
+            <ServiceUsageChart onReady={handleServiceUsageReady} />
           ) : (
             <ChartPanelSkeleton
               title="Service usage"
               description="Monitor credit-consuming activities like story creation, narration, and print orders."
+            />
+          )}
+          {chartVisibility.grossMargin ? (
+            <GrossMarginChart />
+          ) : (
+            <ChartPanelSkeleton
+              title="Revenue vs AI costs"
+              description="Compare sales against AI spend and monitor gross margin."
             />
           )}
         </div>
