@@ -50,6 +50,15 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 
 Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this table when you add or rename routes.
 
+### FAQ management
+
+| Area | Method + path                          | Notes |
+| ---- | -------------------------------------- | ----- |
+| FAQ  | `GET /api/faq/entries`                 | Paginated FAQ entries with search, locale, section, publish status, and sort controls. |
+| FAQ  | `POST /api/faq/entries`                | Creates a FAQ entry. New entries are published by default unless `isPublished` is set to `false`. |
+| FAQ  | `POST /api/faq/entries/[id]/translate` | Translates a single FAQ to missing locales via Story Generation Workflow and publishes the created translations. |
+| FAQ  | `POST /api/faq/entries/bulk-translate` | Starts a server-side bulk translation job for multiple FAQ IDs. Poll status with `GET /api/faq/entries/bulk-translate?jobId=<id>`. |
+
 ## Response shapes
 
 - **Use the exported types** – `adminService`, `TicketService`, and the workflow helpers already expose TypeScript interfaces. Re-export or import those types in your UI components/tests to avoid drift.
@@ -69,4 +78,4 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ---
 
-_Last updated: November 23, 2025_
+_Last updated: February 6, 2026_

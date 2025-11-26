@@ -1973,6 +1973,10 @@ export const adminService = {
       data.questionSortOrder = (maxSort?.value || 0) + 1;
     }
 
+    if (data.isPublished === undefined) {
+      data.isPublished = true;
+    }
+
     const [entry] = await db.insert(faqEntries).values(data).returning();
     return entry;
   },
