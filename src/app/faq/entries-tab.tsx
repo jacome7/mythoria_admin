@@ -30,6 +30,9 @@ interface PaginationData {
   limit: number;
 }
 
+type SortField = 'questionSortOrder' | 'section' | 'locale' | 'title' | 'faqKey';
+type SortOrder = 'asc' | 'desc';
+
 const LOCALES = [
   { code: 'en-US', label: 'English (US)' },
   { code: 'pt-PT', label: 'Portuguese (PT)' },
@@ -49,6 +52,8 @@ export default function FaqEntriesTab() {
   const [localeFilter, setLocaleFilter] = useState('all');
   const [publishedFilter, setPublishedFilter] = useState('all');
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<SortField>('questionSortOrder');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,6 +94,8 @@ export default function FaqEntriesTab() {
           ...(sectionFilter !== 'all' && { sectionId: sectionFilter }),
           ...(localeFilter !== 'all' && { locale: localeFilter }),
           ...(publishedFilter !== 'all' && { isPublished: publishedFilter }),
+          sortField,
+          sortOrder,
         });
 
         const response = await fetch(`/api/faq/entries?${params.toString()}`);
@@ -105,7 +112,7 @@ export default function FaqEntriesTab() {
         setIsLoading(false);
       }
     },
-    [searchTerm, sectionFilter, localeFilter, publishedFilter],
+    [searchTerm, sectionFilter, localeFilter, publishedFilter, sortField, sortOrder],
   );
 
   useEffect(() => {
@@ -119,6 +126,17 @@ export default function FaqEntriesTab() {
   const handleSearch = (term: string) => {
     setSearchTerm(term);
     setCurrentPage(1);
+  };
+
+  const handleSort = (field: SortField) => {
+    setCurrentPage(1);
+    setSortField(field);
+    setSortOrder((prevOrder) => (field === sortField && prevOrder === 'asc' ? 'desc' : 'asc'));
+  };
+
+  const renderSortIndicator = (field: SortField) => {
+    if (sortField !== field) return null;
+    return <span>{sortOrder === 'asc' ? '▲' : '▼'}</span>;
   };
 
   const openCreateModal = () => {
@@ -377,10 +395,42 @@ export default function FaqEntriesTab() {
                   onChange={handleSelectAll}
                 />
               </th>
-              <th>Locale</th>
-              <th>Section</th>
-              <th>Title</th>
-              <th>FAQ Key</th>
+              <th>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 font-semibold"
+                  onClick={() => handleSort('locale')}
+                >
+                  Locale {renderSortIndicator('locale')}
+                </button>
+              </th>
+              <th>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 font-semibold"
+                  onClick={() => handleSort('section')}
+                >
+                  Section {renderSortIndicator('section')}
+                </button>
+              </th>
+              <th>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 font-semibold"
+                  onClick={() => handleSort('title')}
+                >
+                  Title {renderSortIndicator('title')}
+                </button>
+              </th>
+              <th>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 font-semibold"
+                  onClick={() => handleSort('faqKey')}
+                >
+                  FAQ Key {renderSortIndicator('faqKey')}
+                </button>
+              </th>
               <th>Status</th>
               <th>Actions</th>
             </tr>

@@ -24,6 +24,14 @@ export async function GET(request: NextRequest) {
     const sectionId = searchParams.get('sectionId') || undefined;
     const locale = searchParams.get('locale') || undefined;
     const isPublishedFilter = searchParams.get('isPublished') || undefined;
+    const sortFieldParam = searchParams.get('sortField');
+    const sortOrderParam = searchParams.get('sortOrder');
+
+    const allowedSortFields = ['questionSortOrder', 'section', 'locale', 'title', 'faqKey'] as const;
+    const sortField = allowedSortFields.includes(sortFieldParam as (typeof allowedSortFields)[number])
+      ? (sortFieldParam as (typeof allowedSortFields)[number])
+      : 'questionSortOrder';
+    const sortOrder = sortOrderParam === 'desc' ? 'desc' : 'asc';
 
     const result = await adminService.getFaqEntries(
       page,
@@ -32,6 +40,8 @@ export async function GET(request: NextRequest) {
       sectionId,
       locale,
       isPublishedFilter,
+      sortField,
+      sortOrder,
     );
 
     return NextResponse.json(result);
