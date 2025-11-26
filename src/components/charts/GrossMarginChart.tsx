@@ -43,7 +43,7 @@ const COLORS = {
 };
 
 export default function GrossMarginChart({ onReady }: { onReady?: () => void }) {
-  const [range, setRange] = useState<RegistrationRange>('30d');
+  const [range, setRange] = useState<RegistrationRange>('7d');
   const [currencyCode, setCurrencyCode] = useState('EUR');
   const [chartData, setChartData] = useState<ChartDatum[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +55,8 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
       new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currencyCode,
-        minimumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       }),
     [currencyCode],
   );
