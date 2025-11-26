@@ -1818,6 +1818,8 @@ export const adminService = {
     sectionId?: string,
     locale?: string,
     isPublishedFilter?: string,
+    sortField: 'questionSortOrder' | 'section' | 'locale' | 'title' | 'faqKey' = 'questionSortOrder',
+    sortOrder: 'asc' | 'desc' = 'asc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
@@ -1869,8 +1871,18 @@ export const adminService = {
       .from(faqEntries)
       .leftJoin(faqSections, eq(faqEntries.sectionId, faqSections.id));
 
+    const sortColumn = {
+      questionSortOrder: faqEntries.questionSortOrder,
+      section: faqSections.defaultLabel,
+      locale: faqEntries.locale,
+      title: faqEntries.title,
+      faqKey: faqEntries.faqKey,
+    }[sortField];
+
+    const orderDirection = sortOrder === 'desc' ? desc : asc;
+
     const rows = await (whereClause ? baseSelect.where(whereClause) : baseSelect)
-      .orderBy(asc(faqEntries.questionSortOrder))
+      .orderBy(orderDirection(sortColumn), asc(faqEntries.id))
       .limit(limit)
       .offset(offset);
 
