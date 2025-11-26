@@ -33,6 +33,36 @@ interface PaginationData {
 type SortField = 'questionSortOrder' | 'section' | 'locale' | 'title' | 'faqKey';
 type SortOrder = 'asc' | 'desc';
 
+type BulkJobStatus = 'pending' | 'in-progress' | 'completed' | 'failed';
+type BulkJobItemStatus = 'pending' | 'translating' | 'completed' | 'skipped' | 'error';
+
+interface BulkTranslationJobItem {
+  entryId: string;
+  faqKey?: string;
+  sourceLocale?: string;
+  status: BulkJobItemStatus;
+  message?: string;
+  createdTranslations?: number;
+  targetLocales?: string[];
+  errors?: string[];
+}
+
+interface BulkTranslationJob {
+  id: string;
+  status: BulkJobStatus;
+  requestedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  items: BulkTranslationJobItem[];
+  summary: {
+    total: number;
+    completed: number;
+    skipped: number;
+    errors: number;
+    translationsCreated: number;
+  };
+}
+
 const LOCALES = [
   { code: 'en-US', label: 'English (US)' },
   { code: 'pt-PT', label: 'Portuguese (PT)' },
@@ -65,11 +95,14 @@ export default function FaqEntriesTab() {
     title: '',
     contentMdx: '',
     questionSortOrder: 0,
-    isPublished: false,
+    isPublished: true,
   });
   const [formErrors, setFormErrors] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isBulkTranslating, setIsBulkTranslating] = useState(false);
+  const [bulkJob, setBulkJob] = useState<BulkTranslationJob | null>(null);
+  const [bulkJobError, setBulkJobError] = useState<string | null>(null);
 
   const fetchSections = useCallback(async () => {
     try {
@@ -148,7 +181,7 @@ export default function FaqEntriesTab() {
       title: '',
       contentMdx: '',
       questionSortOrder: 0,
-      isPublished: false,
+      isPublished: true,
     });
     setFormErrors(null);
     setIsModalOpen(true);
@@ -313,6 +346,103 @@ export default function FaqEntriesTab() {
     setSelectedEntries(newSelected);
   };
 
+  const refreshBulkJobStatus = useCallback(
+    async (jobId: string) => {
+      try {
+        const response = await fetch(`/api/faq/entries/bulk-translate?jobId=${jobId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setBulkJob(data.job);
+          setBulkJobError(null);
+        } else {
+          const errorData = await response.json();
+          setBulkJobError(errorData.error || 'Failed to fetch job status');
+        }
+      } catch (error) {
+        console.error('Error refreshing bulk job status:', error);
+        setBulkJobError('Network error while refreshing job status');
+      }
+    },
+    [],
+  );
+
+  const handleBulkTranslate = async () => {
+    if (selectedEntries.size === 0) return;
+
+    if (
+      !confirm(
+        `This will translate ${selectedEntries.size} FAQ${selectedEntries.size > 1 ? 's' : ''} to all missing locales. Continue?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsBulkTranslating(true);
+    setBulkJobError(null);
+
+    try {
+      const response = await fetch('/api/faq/entries/bulk-translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryIds: Array.from(selectedEntries) }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBulkJob(data.job);
+      } else {
+        const errorData = await response.json();
+        setBulkJobError(errorData.error || 'Failed to start bulk translation');
+      }
+    } catch (error) {
+      console.error('Error starting bulk translation:', error);
+      setBulkJobError('Network error while starting bulk translation');
+    } finally {
+      setIsBulkTranslating(false);
+    }
+  };
+
+  const renderBulkStatusBadge = (status: BulkJobStatus) => {
+    const styles: Record<BulkJobStatus, string> = {
+      pending: 'badge-warning',
+      'in-progress': 'badge-info',
+      completed: 'badge-success',
+      failed: 'badge-error',
+    };
+
+    return <span className={`badge ${styles[status]} capitalize`}>{status.replace('-', ' ')}</span>;
+  };
+
+  const renderJobItemBadge = (status: BulkJobItemStatus) => {
+    const styles: Record<BulkJobItemStatus, string> = {
+      pending: 'badge-warning',
+      translating: 'badge-info',
+      completed: 'badge-success',
+      skipped: 'badge-ghost',
+      error: 'badge-error',
+    };
+
+    return <span className={`badge ${styles[status]} capitalize`}>{status.replace('-', ' ')}</span>;
+  };
+
+  useEffect(() => {
+    if (!bulkJob || bulkJob.status === 'completed' || bulkJob.status === 'failed') {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      refreshBulkJobStatus(bulkJob.id);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [bulkJob, refreshBulkJobStatus]);
+
+  useEffect(() => {
+    if (bulkJob && (bulkJob.status === 'completed' || bulkJob.status === 'failed')) {
+      fetchEntries(currentPage);
+    }
+  }, [bulkJob, fetchEntries, currentPage]);
+
   return (
     <div>
       {/* Controls */}
@@ -373,6 +503,16 @@ export default function FaqEntriesTab() {
             <FaPlus className="mr-2" />
             Add Entry
           </button>
+          {selectedEntries.size > 0 && (
+            <button className="btn btn-secondary" onClick={handleBulkTranslate} disabled={isBulkTranslating}>
+              {isBulkTranslating ? (
+                <span className="loading loading-spinner loading-sm mr-2"></span>
+              ) : (
+                <FaGlobe className="mr-2" />
+              )}
+              Translate {selectedEntries.size} Selected
+            </button>
+          )}
           {selectedEntries.size > 0 && (
             <button className="btn btn-error" onClick={handleBulkDelete}>
               <FaTrash className="mr-2" />
@@ -532,6 +672,106 @@ export default function FaqEntriesTab() {
             >
               »
             </button>
+          </div>
+        </div>
+      )}
+
+      {bulkJob && (
+        <div className="mt-6 bg-base-100 border border-base-200 rounded-lg p-4 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div>
+              <p className="text-sm text-base-content/60">Bulk translation job</p>
+              <h3 className="text-lg font-semibold">Job {bulkJob.id}</h3>
+              <div className="flex flex-wrap gap-2 mt-2 text-sm text-base-content/70">
+                <span>Requested by: {bulkJob.requestedBy}</span>
+                <span>Created: {new Date(bulkJob.createdAt).toLocaleString()}</span>
+                <span>Updated: {new Date(bulkJob.updatedAt).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {renderBulkStatusBadge(bulkJob.status)}
+              <button
+                className="btn btn-sm"
+                onClick={() => refreshBulkJobStatus(bulkJob.id)}
+                disabled={bulkJob.status === 'completed' || bulkJob.status === 'failed'}
+              >
+                Refresh status
+              </button>
+              <button className="btn btn-sm btn-ghost" onClick={() => setBulkJob(null)}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="stat bg-base-200/50 shadow-none">
+              <div className="stat-title">Total</div>
+              <div className="stat-value text-primary">{bulkJob.summary.total}</div>
+              <div className="stat-desc">FAQs queued</div>
+            </div>
+            <div className="stat bg-base-200/50 shadow-none">
+              <div className="stat-title">Translations created</div>
+              <div className="stat-value text-success">{bulkJob.summary.translationsCreated}</div>
+              <div className="stat-desc">Across all locales</div>
+            </div>
+            <div className="stat bg-base-200/50 shadow-none">
+              <div className="stat-title">Issues</div>
+              <div className="stat-value text-error">{bulkJob.summary.errors}</div>
+              <div className="stat-desc">Errors or missing locales</div>
+            </div>
+          </div>
+
+          {bulkJobError && (
+            <div className="alert alert-error mb-4">
+              <span>{bulkJobError}</span>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>FAQ ID</th>
+                  <th>Status</th>
+                  <th>Translations</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bulkJob.items.map((item) => (
+                  <tr key={item.entryId}>
+                    <td className="font-mono text-xs">{item.entryId}</td>
+                    <td>{renderJobItemBadge(item.status)}</td>
+                    <td>
+                      {item.createdTranslations !== undefined ? (
+                        <span className="badge badge-outline">
+                          {item.createdTranslations} new
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="text-sm">
+                      <div className="flex flex-col gap-1">
+                        {item.message && <span>{item.message}</span>}
+                        {item.targetLocales && item.targetLocales.length > 0 && (
+                          <span className="text-xs text-base-content/70">
+                            Targets: {item.targetLocales.join(', ')}
+                          </span>
+                        )}
+                        {item.errors && item.errors.length > 0 && (
+                          <ul className="text-xs text-error list-disc list-inside">
+                            {item.errors.map((error) => (
+                              <li key={error}>{error}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
