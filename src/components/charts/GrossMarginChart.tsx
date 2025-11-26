@@ -138,13 +138,14 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+            <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0} />
               <YAxis
                 tickFormatter={(value: number) => currencyFormatter.format(Number(value))}
-                tickMargin={6}
-                width={96}
+                tickMargin={4}
+                tick={{ fontSize: 10 }}
+                width={48}
               />
               <Tooltip
                 content={<CustomTooltip currencyFormatter={currencyFormatter} granularity={granularity} />}
