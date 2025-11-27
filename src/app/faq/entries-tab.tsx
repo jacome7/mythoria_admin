@@ -78,6 +78,7 @@ export default function FaqEntriesTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [faqKeyFilter, setFaqKeyFilter] = useState('');
   const [sectionFilter, setSectionFilter] = useState('all');
   const [localeFilter, setLocaleFilter] = useState('all');
   const [publishedFilter, setPublishedFilter] = useState('all');
@@ -120,10 +121,12 @@ export default function FaqEntriesTab() {
     async (page: number) => {
       try {
         setIsLoading(true);
+        const trimmedFaqKey = faqKeyFilter.trim();
         const params = new URLSearchParams({
           page: page.toString(),
           limit: '50',
           ...(searchTerm && { search: searchTerm }),
+          ...(trimmedFaqKey && { faqKey: trimmedFaqKey }),
           ...(sectionFilter !== 'all' && { sectionId: sectionFilter }),
           ...(localeFilter !== 'all' && { locale: localeFilter }),
           ...(publishedFilter !== 'all' && { isPublished: publishedFilter }),
@@ -145,7 +148,7 @@ export default function FaqEntriesTab() {
         setIsLoading(false);
       }
     },
-    [searchTerm, sectionFilter, localeFilter, publishedFilter, sortField, sortOrder],
+    [searchTerm, faqKeyFilter, sectionFilter, localeFilter, publishedFilter, sortField, sortOrder],
   );
 
   useEffect(() => {
@@ -158,6 +161,11 @@ export default function FaqEntriesTab() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setCurrentPage(1);
+  };
+
+  const handleFaqKeyFilterChange = (value: string) => {
+    setFaqKeyFilter(value);
     setCurrentPage(1);
   };
 
@@ -346,25 +354,22 @@ export default function FaqEntriesTab() {
     setSelectedEntries(newSelected);
   };
 
-  const refreshBulkJobStatus = useCallback(
-    async (jobId: string) => {
-      try {
-        const response = await fetch(`/api/faq/entries/bulk-translate?jobId=${jobId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setBulkJob(data.job);
-          setBulkJobError(null);
-        } else {
-          const errorData = await response.json();
-          setBulkJobError(errorData.error || 'Failed to fetch job status');
-        }
-      } catch (error) {
-        console.error('Error refreshing bulk job status:', error);
-        setBulkJobError('Network error while refreshing job status');
+  const refreshBulkJobStatus = useCallback(async (jobId: string) => {
+    try {
+      const response = await fetch(`/api/faq/entries/bulk-translate?jobId=${jobId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setBulkJob(data.job);
+        setBulkJobError(null);
+      } else {
+        const errorData = await response.json();
+        setBulkJobError(errorData.error || 'Failed to fetch job status');
       }
-    },
-    [],
-  );
+    } catch (error) {
+      console.error('Error refreshing bulk job status:', error);
+      setBulkJobError('Network error while refreshing job status');
+    }
+  }, []);
 
   const handleBulkTranslate = async () => {
     if (selectedEntries.size === 0) return;
@@ -455,6 +460,13 @@ export default function FaqEntriesTab() {
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
+          <input
+            type="text"
+            placeholder="Filter by FAQ key..."
+            className="input input-bordered flex-1"
+            value={faqKeyFilter}
+            onChange={(e) => handleFaqKeyFilterChange(e.target.value)}
+          />
           <select
             className="select select-bordered"
             value={sectionFilter}
@@ -504,7 +516,11 @@ export default function FaqEntriesTab() {
             Add Entry
           </button>
           {selectedEntries.size > 0 && (
-            <button className="btn btn-secondary" onClick={handleBulkTranslate} disabled={isBulkTranslating}>
+            <button
+              className="btn btn-secondary"
+              onClick={handleBulkTranslate}
+              disabled={isBulkTranslating}
+            >
               {isBulkTranslating ? (
                 <span className="loading loading-spinner loading-sm mr-2"></span>
               ) : (
@@ -534,6 +550,15 @@ export default function FaqEntriesTab() {
                   checked={entries.length > 0 && selectedEntries.size === entries.length}
                   onChange={handleSelectAll}
                 />
+              </th>
+              <th>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 font-semibold"
+                  onClick={() => handleSort('questionSortOrder')}
+                >
+                  Sort Order {renderSortIndicator('questionSortOrder')}
+                </button>
               </th>
               <th>
                 <button
@@ -578,13 +603,13 @@ export default function FaqEntriesTab() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="text-center py-8">
+                <td colSpan={8} className="text-center py-8">
                   <span className="loading loading-spinner loading-lg"></span>
                 </td>
               </tr>
             ) : entries.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-8 text-base-content/60">
+                <td colSpan={8} className="text-center py-8 text-base-content/60">
                   No entries found
                 </td>
               </tr>
@@ -598,6 +623,9 @@ export default function FaqEntriesTab() {
                       checked={selectedEntries.has(entry.id)}
                       onChange={() => toggleSelect(entry.id)}
                     />
+                  </td>
+                  <td>
+                    <span className="badge badge-outline">{entry.questionSortOrder}</span>
                   </td>
                   <td>
                     <span className="badge badge-outline">{entry.locale}</span>
@@ -744,9 +772,7 @@ export default function FaqEntriesTab() {
                     <td>{renderJobItemBadge(item.status)}</td>
                     <td>
                       {item.createdTranslations !== undefined ? (
-                        <span className="badge badge-outline">
-                          {item.createdTranslations} new
-                        </span>
+                        <span className="badge badge-outline">{item.createdTranslations} new</span>
                       ) : (
                         '—'
                       )}
