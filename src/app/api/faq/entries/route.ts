@@ -23,12 +23,21 @@ export async function GET(request: NextRequest) {
     const searchTerm = searchParams.get('search') || undefined;
     const sectionId = searchParams.get('sectionId') || undefined;
     const locale = searchParams.get('locale') || undefined;
+    const faqKey = searchParams.get('faqKey') || undefined;
     const isPublishedFilter = searchParams.get('isPublished') || undefined;
     const sortFieldParam = searchParams.get('sortField');
     const sortOrderParam = searchParams.get('sortOrder');
 
-    const allowedSortFields = ['questionSortOrder', 'section', 'locale', 'title', 'faqKey'] as const;
-    const sortField = allowedSortFields.includes(sortFieldParam as (typeof allowedSortFields)[number])
+    const allowedSortFields = [
+      'questionSortOrder',
+      'section',
+      'locale',
+      'title',
+      'faqKey',
+    ] as const;
+    const sortField = allowedSortFields.includes(
+      sortFieldParam as (typeof allowedSortFields)[number],
+    )
       ? (sortFieldParam as (typeof allowedSortFields)[number])
       : 'questionSortOrder';
     const sortOrder = sortOrderParam === 'desc' ? 'desc' : 'asc';
@@ -39,6 +48,7 @@ export async function GET(request: NextRequest) {
       searchTerm,
       sectionId,
       locale,
+      faqKey,
       isPublishedFilter,
       sortField,
       sortOrder,
