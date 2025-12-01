@@ -52,11 +52,11 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ### FAQ management
 
-| Area | Method + path                          | Notes |
-| ---- | -------------------------------------- | ----- |
-| FAQ  | `GET /api/faq/entries`                 | Paginated FAQ entries with search, locale, section, publish status, and sort controls. |
-| FAQ  | `POST /api/faq/entries`                | Creates a FAQ entry. New entries are published by default unless `isPublished` is set to `false`. |
-| FAQ  | `POST /api/faq/entries/[id]/translate` | Translates a single FAQ to missing locales via Story Generation Workflow and publishes the created translations. |
+| Area | Method + path                          | Notes                                                                                                                              |
+| ---- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| FAQ  | `GET /api/faq/entries`                 | Paginated FAQ entries with search, locale, section, FAQ key, publish status, and sort controls.                                    |
+| FAQ  | `POST /api/faq/entries`                | Creates a FAQ entry. New entries are published by default unless `isPublished` is set to `false`.                                  |
+| FAQ  | `POST /api/faq/entries/[id]/translate` | Translates a single FAQ to missing locales via Story Generation Workflow and publishes the created translations.                   |
 | FAQ  | `POST /api/faq/entries/bulk-translate` | Starts a server-side bulk translation job for multiple FAQ IDs. Poll status with `GET /api/faq/entries/bulk-translate?jobId=<id>`. |
 
 ## Response shapes
@@ -78,4 +78,4 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ---
 
-_Last updated: February 6, 2026_
+_Last updated: February 11, 2026_

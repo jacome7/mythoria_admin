@@ -1817,8 +1817,14 @@ export const adminService = {
     searchTerm?: string,
     sectionId?: string,
     locale?: string,
+    faqKey?: string,
     isPublishedFilter?: string,
-    sortField: 'questionSortOrder' | 'section' | 'locale' | 'title' | 'faqKey' = 'questionSortOrder',
+    sortField:
+      | 'questionSortOrder'
+      | 'section'
+      | 'locale'
+      | 'title'
+      | 'faqKey' = 'questionSortOrder',
     sortOrder: 'asc' | 'desc' = 'asc',
   ) {
     const db = getMythoriaDb();
@@ -1843,6 +1849,10 @@ export const adminService = {
 
     if (locale) {
       conditions.push(eq(faqEntries.locale, locale));
+    }
+
+    if (faqKey) {
+      conditions.push(eq(faqEntries.faqKey, faqKey));
     }
 
     if (isPublishedFilter === 'true') {
