@@ -37,100 +37,142 @@ type Job = {
 };
 
 const translationJobs = new Map<string, Job>();
+const MAX_CONCURRENT_TRANSLATIONS = 10;
 
 function updateJob(jobId: string, updates: Partial<Job>) {
   const job = translationJobs.get(jobId);
 
   if (!job) return;
 
-  const nextJob = {
-    ...job,
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  } satisfies Job;
+  Object.assign(job, updates);
+  job.updatedAt = new Date().toISOString();
+  translationJobs.set(jobId, job);
+}
 
-  translationJobs.set(jobId, nextJob);
+function markJobUpdated(job: Job) {
+  job.updatedAt = new Date().toISOString();
+  translationJobs.set(job.id, job);
+}
+
+async function processJobEntry(jobId: string, entryId: string, requestedBy: string) {
+  const job = translationJobs.get(jobId);
+
+  if (!job) return;
+
+  const itemIndex = job.items.findIndex((item) => item.entryId === entryId);
+  if (itemIndex === -1) {
+    return;
+  }
+
+  const item = job.items[itemIndex];
+  job.items[itemIndex] = { ...item, status: 'translating' };
+  markJobUpdated(job);
+
+  try {
+    const result = await translateFaqEntryById(entryId, requestedBy);
+    const currentJob = translationJobs.get(jobId);
+
+    if (!currentJob) {
+      return;
+    }
+
+    const currentIndex = currentJob.items.findIndex((jobItem) => jobItem.entryId === entryId);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const currentItem = currentJob.items[currentIndex];
+
+    if (result.outcome === 'not_found') {
+      currentJob.items[currentIndex] = {
+        ...currentItem,
+        status: 'error',
+        message: 'FAQ entry not found',
+      };
+      currentJob.summary.errors += 1;
+      markJobUpdated(currentJob);
+      return;
+    }
+
+    if (result.outcome === 'nothing_to_translate') {
+      currentJob.items[currentIndex] = {
+        ...currentItem,
+        status: 'skipped',
+        message: 'All locales already translated',
+        faqKey: result.sourceEntry.faqKey,
+        sourceLocale: result.sourceEntry.locale,
+        targetLocales: result.targetLocales,
+      };
+      currentJob.summary.skipped += 1;
+      markJobUpdated(currentJob);
+      return;
+    }
+
+    currentJob.summary.completed += 1;
+    currentJob.summary.translationsCreated += result.createdEntries.length;
+
+    currentJob.items[currentIndex] = {
+      ...currentItem,
+      status: result.errors?.length ? 'error' : 'completed',
+      faqKey: result.sourceEntry.faqKey,
+      sourceLocale: result.sourceEntry.locale,
+      targetLocales: result.targetLocales,
+      createdTranslations: result.createdEntries.length,
+      errors: result.errors?.map((e) => `${e.locale}: ${e.error}`),
+      message: result.errors?.length
+        ? `Created ${result.createdEntries.length} translations with ${result.errors.length} errors`
+        : `Created ${result.createdEntries.length} translations`,
+    };
+
+    if (result.errors?.length) {
+      currentJob.summary.errors += 1;
+    }
+
+    markJobUpdated(currentJob);
+  } catch (error) {
+    console.error('Bulk translation worker error:', error);
+    const currentJob = translationJobs.get(jobId);
+
+    if (!currentJob) {
+      return;
+    }
+
+    const currentIndex = currentJob.items.findIndex((jobItem) => jobItem.entryId === entryId);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const currentItem = currentJob.items[currentIndex];
+
+    currentJob.items[currentIndex] = {
+      ...currentItem,
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Unexpected error during translation',
+    };
+    currentJob.summary.errors += 1;
+    markJobUpdated(currentJob);
+  }
 }
 
 async function processJob(jobId: string, entryIds: string[], requestedBy: string) {
   updateJob(jobId, { status: 'in-progress' });
 
-  for (const entryId of entryIds) {
-    const job = translationJobs.get(jobId);
+  let currentIndex = 0;
+  const workerCount = Math.min(MAX_CONCURRENT_TRANSLATIONS, entryIds.length);
 
-    if (!job) {
-      break;
-    }
-
-    const itemIndex = job.items.findIndex((item) => item.entryId === entryId);
-    if (itemIndex === -1) {
-      continue;
-    }
-
-    const item = job.items[itemIndex];
-    job.items[itemIndex] = { ...item, status: 'translating' };
-    translationJobs.set(jobId, { ...job, updatedAt: new Date().toISOString() });
-
-    try {
-      const result = await translateFaqEntryById(entryId, requestedBy);
-
-      if (result.outcome === 'not_found') {
-        job.items[itemIndex] = {
-          ...item,
-          status: 'error',
-          message: 'FAQ entry not found',
-        };
-        job.summary.errors += 1;
-        translationJobs.set(jobId, { ...job, updatedAt: new Date().toISOString() });
-        continue;
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const index = currentIndex++;
+      if (index >= entryIds.length) {
+        break;
       }
 
-      if (result.outcome === 'nothing_to_translate') {
-        job.items[itemIndex] = {
-          ...item,
-          status: 'skipped',
-          message: 'All locales already translated',
-          faqKey: result.sourceEntry.faqKey,
-          sourceLocale: result.sourceEntry.locale,
-          targetLocales: result.targetLocales,
-        };
-        job.summary.skipped += 1;
-        translationJobs.set(jobId, { ...job, updatedAt: new Date().toISOString() });
-        continue;
-      }
-
-      job.summary.completed += 1;
-      job.summary.translationsCreated += result.createdEntries.length;
-
-      job.items[itemIndex] = {
-        ...item,
-        status: result.errors?.length ? 'error' : 'completed',
-        faqKey: result.sourceEntry.faqKey,
-        sourceLocale: result.sourceEntry.locale,
-        targetLocales: result.targetLocales,
-        createdTranslations: result.createdEntries.length,
-        errors: result.errors?.map((e) => `${e.locale}: ${e.error}`),
-        message: result.errors?.length
-          ? `Created ${result.createdEntries.length} translations with ${result.errors.length} errors`
-          : `Created ${result.createdEntries.length} translations`,
-      };
-
-      if (result.errors?.length) {
-        job.summary.errors += 1;
-      }
-
-      translationJobs.set(jobId, { ...job, updatedAt: new Date().toISOString() });
-    } catch (error) {
-      console.error('Bulk translation worker error:', error);
-      job.items[itemIndex] = {
-        ...item,
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Unexpected error during translation',
-      };
-      job.summary.errors += 1;
-      translationJobs.set(jobId, { ...job, updatedAt: new Date().toISOString() });
+      const entryId = entryIds[index];
+      await processJobEntry(jobId, entryId, requestedBy);
     }
-  }
+  });
+
+  await Promise.all(workers);
 
   const finalJob = translationJobs.get(jobId);
 
@@ -139,11 +181,7 @@ async function processJob(jobId: string, entryIds: string[], requestedBy: string
   const hasOnlyErrors =
     finalJob.summary.completed === 0 && finalJob.summary.skipped === 0 && finalJob.summary.errors > 0;
 
-  translationJobs.set(jobId, {
-    ...finalJob,
-    status: hasOnlyErrors ? 'failed' : 'completed',
-    updatedAt: new Date().toISOString(),
-  });
+  updateJob(jobId, { status: hasOnlyErrors ? 'failed' : 'completed' });
 }
 
 export async function GET(request: NextRequest) {

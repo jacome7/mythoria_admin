@@ -6,6 +6,7 @@ export const SERVICE_USAGE_EVENT_TYPES = [
   'eBookGeneration',
   'audioBookGeneration',
   'printOrder',
+  'selfPrinting',
   'textEdit',
   'imageEdit',
 ] as const;

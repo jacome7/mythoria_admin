@@ -51,6 +51,7 @@ const EVENT_COLORS: Record<ServiceUsageEventType, string> = {
   eBookGeneration: '#2563eb',
   audioBookGeneration: '#c026d3',
   printOrder: '#f97316',
+  selfPrinting: '#8b5cf6',
   textEdit: '#059669',
   imageEdit: '#f43f5e',
 };
@@ -274,6 +275,7 @@ function formatEventLabel(eventType: ServiceUsageEventType) {
     eBookGeneration: 'Story creation',
     audioBookGeneration: 'Narration',
     printOrder: 'Print request',
+    selfPrinting: 'Self printing',
     textEdit: 'Text edit',
     imageEdit: 'Image edit',
   };
