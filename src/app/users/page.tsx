@@ -39,6 +39,7 @@ export default function UsersPage() {
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<50 | 100 | 200>(50);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -49,7 +50,7 @@ export default function UsersPage() {
         setIsLoading(true);
         const params = new URLSearchParams({
           page: page.toString(),
-          limit: '100',
+          limit: pageSize.toString(),
           ...(searchTerm && { search: searchTerm }),
           sortBy: sortField,
           sortOrder: sortOrder,
@@ -69,7 +70,7 @@ export default function UsersPage() {
         setIsLoading(false);
       }
     },
-    [searchTerm, sortField, sortOrder],
+    [searchTerm, sortField, sortOrder, pageSize],
   );
 
   useEffect(() => {
@@ -80,6 +81,11 @@ export default function UsersPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: 50 | 100 | 200) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
   const handleSearch = (term: string) => {
@@ -160,6 +166,15 @@ export default function UsersPage() {
               >
                 {sortOrder === 'asc' ? '↑' : '↓'}
               </button>
+              <select
+                className="select select-bordered"
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value) as 50 | 100 | 200)}
+              >
+                <option value={50}>50 rows</option>
+                <option value={100}>100 rows</option>
+                <option value={200}>200 rows</option>
+              </select>
             </div>
           </div>
         </div>
@@ -266,41 +281,64 @@ export default function UsersPage() {
         </div>
 
         {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <div className="btn-group">
-              <button
-                className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`}
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={!pagination.hasPrev}
-              >
-                Previous
-              </button>
-
-              {/* Page numbers */}
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNum = Math.max(1, currentPage - 2) + i;
-                if (pageNum > pagination.totalPages) return null;
-
-                return (
-                  <button
-                    key={pageNum}
-                    className={`btn ${currentPage === pageNum ? 'btn-active' : ''}`}
-                    onClick={() => handlePageChange(pageNum)}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              <button
-                className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={!pagination.hasNext}
-              >
-                Next
-              </button>
+        {pagination && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-base-content/80">
+              <span>
+                Showing{' '}
+                {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.totalCount)}-
+                {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of{' '}
+                {pagination.totalCount}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide">Rows</span>
+                <select
+                  className="select select-bordered select-sm"
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value) as 50 | 100 | 200)}
+                >
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+              </div>
             </div>
+
+            {pagination.totalPages > 1 && (
+              <div className="btn-group">
+                <button
+                  className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!pagination.hasPrev}
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, currentPage - 2) + i;
+                  if (pageNum > pagination.totalPages) return null;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`btn ${currentPage === pageNum ? 'btn-active' : ''}`}
+                      onClick={() => handlePageChange(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!pagination.hasNext}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

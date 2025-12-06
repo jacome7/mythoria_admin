@@ -31,11 +31,12 @@ export async function GET(request: Request) {
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get users data
-    const users = await adminService.getUsers(page, limit, search, sortBy, sortOrder);
+    const [users, totalCount] = await Promise.all([
+      adminService.getUsers(page, limit, search, sortBy, sortOrder),
+      adminService.countUsers(search),
+    ]);
 
-    // Calculate pagination info
-    // We'd need to add a separate count method to get total count
-    const totalCount = users.length; // This is approximated for now
+    const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       data: users,
@@ -43,8 +44,8 @@ export async function GET(request: Request) {
         page,
         limit,
         totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasNext: users.length === limit,
+        totalPages,
+        hasNext: page < totalPages,
         hasPrev: page > 1,
       },
     });

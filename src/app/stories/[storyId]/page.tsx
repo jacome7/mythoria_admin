@@ -7,13 +7,16 @@ import { useStoryDetail } from '@/app/stories/[storyId]/hooks/useStoryDetail';
 import { StoryHeader } from '@/app/stories/[storyId]/components/StoryHeader';
 import { StoryActions } from '@/app/stories/[storyId]/components/StoryActions';
 import { ChapterTable } from '@/app/stories/[storyId]/components/ChapterTable';
-import { DownloadLinks } from '@/app/stories/[storyId]/components/DownloadLinks';
+import { StoryActionPanel } from '@/app/stories/[storyId]/components/StoryActionPanel';
 
 export default function StoryDetailPage() {
   const { session, loading } = useAdminAuth();
   const params = useParams();
   const storyId = params?.storyId as string;
-  const { story, isLoading, setStory } = useStoryDetail(storyId, !loading && !!session?.user);
+  const { story, isLoading, setStory, fetchStory } = useStoryDetail(
+    storyId,
+    !loading && !!session?.user,
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -98,7 +101,7 @@ export default function StoryDetailPage() {
             </div>
           </div>
 
-          <DownloadLinks story={story} storyId={storyId} />
+          <StoryActionPanel story={story} storyId={storyId} onStoryRefresh={fetchStory} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

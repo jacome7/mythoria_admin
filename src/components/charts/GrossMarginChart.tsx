@@ -1,7 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type { NormalizedRevenueBucket } from '@/lib/analytics/revenue';
 import type { RegistrationRange, RegistrationGranularity } from '@/lib/analytics/registrations';
 
@@ -107,7 +116,8 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
         <div>
           <h2 className="text-xl font-semibold">Revenue vs AI costs</h2>
           <p className="text-sm text-base-content/70">
-            Revenue bars stay positive, AI spend is plotted below the axis, and the margin line shows gross profit.
+            Revenue bars stay positive, AI spend is plotted below the axis, and the margin line
+            shows gross profit.
           </p>
         </div>
         <div className="join">
@@ -140,7 +150,11 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11 }}
+                interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
+              />
               <YAxis
                 tickFormatter={(value: number) => currencyFormatter.format(Number(value))}
                 tickMargin={4}
@@ -148,7 +162,9 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
                 width={48}
               />
               <Tooltip
-                content={<CustomTooltip currencyFormatter={currencyFormatter} granularity={granularity} />}
+                content={
+                  <CustomTooltip currencyFormatter={currencyFormatter} granularity={granularity} />
+                }
                 cursor={{ fill: 'rgba(59,130,246,0.08)' }}
               />
               <Bar dataKey="revenue" name="Revenue" fill={COLORS.revenue} radius={[6, 6, 0, 0]} />
@@ -170,10 +186,7 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
   );
 }
 
-function mergeData(
-  revenue: RevenueSnapshotResponse,
-  aiUsage: AiUsageStatsResponse,
-): ChartDatum[] {
+function mergeData(revenue: RevenueSnapshotResponse, aiUsage: AiUsageStatsResponse): ChartDatum[] {
   const revenueMap = new Map<string, NormalizedRevenueBucket>();
   const aiCostMap = new Map<string, DailyUsagePoint>();
   const dateLookup = new Map<string, Date>();

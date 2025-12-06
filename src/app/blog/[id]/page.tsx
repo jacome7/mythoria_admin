@@ -179,8 +179,8 @@ export default function EditBlogPostPage() {
   const enTranslation = translations['en-US'];
   const canTriggerTranslation = Boolean(
     enTranslation?.slug?.trim() &&
-      enTranslation?.title?.trim() &&
-      enTranslation?.contentMdx?.trim(),
+    enTranslation?.title?.trim() &&
+    enTranslation?.contentMdx?.trim(),
   );
 
   async function handleTranslateConfirm() {

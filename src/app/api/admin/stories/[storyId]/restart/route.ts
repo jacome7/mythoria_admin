@@ -24,17 +24,19 @@ export async function POST(
 
     const { storyId } = await params;
 
-    // Verify the story exists and is in 'writing' status
+    // Verify the story exists and can be restarted from its current status
     const story = await adminService.getStoryByIdWithAuthor(storyId);
 
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
 
-    if (story.status !== 'writing') {
+    const canRestart = story.status === 'writing' || story.status === 'published';
+
+    if (!canRestart) {
       return NextResponse.json(
         {
-          error: 'Only stories in "writing" status can have their generation restarted',
+          error: 'Only stories in "writing" or "published" status can be restarted',
         },
         { status: 400 },
       );

@@ -43,10 +43,13 @@ export default function StoriesPage() {
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<50 | 100 | 200>(50);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterFeatured, setFilterFeatured] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const [sortBy, setSortBy] = useState<'title' | 'createdAt' | 'updatedAt' | 'status'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Debounce the search term update
   useEffect(() => {
@@ -63,12 +66,12 @@ export default function StoriesPage() {
         setIsLoading(true);
         const params = new URLSearchParams({
           page: page.toString(),
-          limit: '100',
+          limit: pageSize.toString(),
           ...(searchTerm && { search: searchTerm }),
           ...(filterStatus !== 'all' && { status: filterStatus }),
           ...(filterFeatured !== 'all' && { featured: filterFeatured }),
-          sortBy: 'createdAt',
-          sortOrder: 'desc',
+          sortBy: sortBy,
+          sortOrder: sortOrder,
         });
 
         const response = await fetch(`/api/admin/stories?${params.toString()}`);
@@ -85,7 +88,7 @@ export default function StoriesPage() {
         setIsLoading(false);
       }
     },
-    [searchTerm, filterStatus, filterFeatured],
+    [searchTerm, filterStatus, filterFeatured, sortBy, sortOrder, pageSize],
   );
 
   useEffect(() => {
@@ -96,6 +99,11 @@ export default function StoriesPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: 50 | 100 | 200) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
   const handleSearch = (term: string) => {
@@ -116,6 +124,21 @@ export default function StoriesPage() {
   const handleFeaturedFilter = (featured: string) => {
     setFilterFeatured(featured);
     setCurrentPage(1);
+  };
+
+  const handleSort = (column: 'title' | 'createdAt' | 'updatedAt' | 'status') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (column: 'title' | 'createdAt' | 'updatedAt' | 'status') => {
+    if (sortBy !== column) return '↕';
+    return sortOrder === 'asc' ? '↑' : '↓';
   };
 
   const getStatusColor = (status: string) => {
@@ -206,6 +229,21 @@ export default function StoriesPage() {
                   <option value="clean">Not Featured</option>
                 </select>
               </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Rows per page</span>
+                </label>
+                <select
+                  className="select select-bordered w-full max-w-xs"
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value) as 50 | 100 | 200)}
+                >
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -249,11 +287,34 @@ export default function StoriesPage() {
               <table className="table table-zebra w-full">
                 <thead>
                   <tr>
-                    <th>Story</th>
+                    <th>
+                      <button onClick={() => handleSort('title')} className="btn btn-ghost btn-xs">
+                        Story {getSortIcon('title')}
+                      </button>
+                    </th>
                     <th>Author</th>
-                    <th>Status</th>
+                    <th>
+                      <button onClick={() => handleSort('status')} className="btn btn-ghost btn-xs">
+                        Status {getSortIcon('status')}
+                      </button>
+                    </th>
                     <th>Chapters</th>
-                    <th>Created</th>
+                    <th>
+                      <button
+                        onClick={() => handleSort('createdAt')}
+                        className="btn btn-ghost btn-xs"
+                      >
+                        Created {getSortIcon('createdAt')}
+                      </button>
+                    </th>
+                    <th>
+                      <button
+                        onClick={() => handleSort('updatedAt')}
+                        className="btn btn-ghost btn-xs"
+                      >
+                        Last Updated {getSortIcon('updatedAt')}
+                      </button>
+                    </th>
                     <th>Flags</th>
                     <th>Actions</th>
                   </tr>
@@ -293,6 +354,9 @@ export default function StoriesPage() {
                         <div className="text-sm">{formatAdminDate(story.createdAt)}</div>
                       </td>
                       <td>
+                        <div className="text-sm">{formatAdminDate(story.updatedAt)}</div>
+                      </td>
+                      <td>
                         <div className="flex gap-1">
                           {story.isFeatured && (
                             <span className="badge badge-info badge-xs">Featured</span>
@@ -324,41 +388,64 @@ export default function StoriesPage() {
         </div>
 
         {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <div className="btn-group">
-              <button
-                className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`}
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={!pagination.hasPrev}
-              >
-                Previous
-              </button>
-
-              {/* Page numbers */}
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNum = Math.max(1, currentPage - 2) + i;
-                if (pageNum > pagination.totalPages) return null;
-
-                return (
-                  <button
-                    key={pageNum}
-                    className={`btn ${currentPage === pageNum ? 'btn-active' : ''}`}
-                    onClick={() => handlePageChange(pageNum)}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              <button
-                className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={!pagination.hasNext}
-              >
-                Next
-              </button>
+        {pagination && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-base-content/80">
+              <span>
+                Showing{' '}
+                {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.totalCount)}-
+                {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of{' '}
+                {pagination.totalCount}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wide">Rows</span>
+                <select
+                  className="select select-bordered select-sm"
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value) as 50 | 100 | 200)}
+                >
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+              </div>
             </div>
+
+            {pagination.totalPages > 1 && (
+              <div className="btn-group">
+                <button
+                  className={`btn ${!pagination.hasPrev ? 'btn-disabled' : ''}`}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!pagination.hasPrev}
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, currentPage - 2) + i;
+                  if (pageNum > pagination.totalPages) return null;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`btn ${currentPage === pageNum ? 'btn-active' : ''}`}
+                      onClick={() => handlePageChange(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  className={`btn ${!pagination.hasNext ? 'btn-disabled' : ''}`}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!pagination.hasNext}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

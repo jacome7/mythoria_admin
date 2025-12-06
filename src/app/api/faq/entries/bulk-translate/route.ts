@@ -179,7 +179,9 @@ async function processJob(jobId: string, entryIds: string[], requestedBy: string
   if (!finalJob) return;
 
   const hasOnlyErrors =
-    finalJob.summary.completed === 0 && finalJob.summary.skipped === 0 && finalJob.summary.errors > 0;
+    finalJob.summary.completed === 0 &&
+    finalJob.summary.skipped === 0 &&
+    finalJob.summary.errors > 0;
 
   updateJob(jobId, { status: hasOnlyErrors ? 'failed' : 'completed' });
 }

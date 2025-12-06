@@ -10,31 +10,33 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 
 ## Endpoint map
 
-| Area          | Method + path                        | Notes                                                                                              |
-| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------ | --- | ---------- |
-| Health        | `GET /api/health`                    | Lightweight DB + downstream probe. Add `?debug=true` for env metadata.                             |
-| Health        | `GET /api/server-status`             | Aggregated status card data (env parity, Pub/Sub, Notification Engine).                            |
-| Health        | `GET /api/ping`                      | API-key validation for service-to-service traffic.                                                 |
-| Users         | `GET /api/admin/users`               | Paginated admin directory. Query params: `page`, `limit`, `search`, `sortBy`, `sortOrder`.         |
-| Users         | `GET /api/admin/users/registrations` | Aggregated author registrations for the dashboard chart (`range=7d                                 | 30d                      | 90d | forever`). |
-| Leads         | `GET /api/admin/leads`               | Paginated leads table with filters (`status`, `language`).                                         |
-| Leads         | `POST /api/admin/leads`              | Upsert a single lead (email + language required).                                                  |
-| Leads         | `POST /api/admin/leads/bulk`         | Bulk status changes (e.g., set `emailStatus` to `hard_bounce`). Requires API key.                  |
-| Leads         | `POST /api/admin/leads/import`       | CSV upload endpoint used by the admin UI (multipart form data).                                    |
-| Stories       | `GET /api/admin/stories`             | Story moderation feed (filters for author, status, timeframe).                                     |
-| Stories       | `PATCH /api/admin/stories/[id]`      | Update status/moderation metadata.                                                                 |
-| Workflows     | `GET /api/workflows`                 | Workflow run history + filters.                                                                    |
-| Workflows     | `GET /api/workflows/[runId]`         | Detailed run diagnostics.                                                                          |
-| Workflows     | `GET /api/workflows/token-usage`     | Aggregated token + cost analytics.                                                                 |
-| Tickets       | `GET /api/tickets`                   | Support ticket list with `status`, `category`, `priority`, `search`, `page`, `limit` query params. |
-| Tickets       | `POST /api/tickets`                  | Create a ticket (contact, print request, payment). UI and public forms hit the same handler.       |
-| Tickets       | `GET /api/tickets/[id]`              | Full ticket detail + comments.                                                                     |
-| Tickets       | `PATCH /api/tickets/[id]`            | Update status or priority.                                                                         |
-| Tickets       | `POST /api/tickets/[id]/actions`     | Admin-only MB Way workflow actions: `{ action: 'confirmPayment'                                    | 'paymentNotReceived' }`. |
-| Tickets       | `POST /api/tickets/[id]/comments`    | Append comments (`isInternal` toggles private notes).                                              |
-| Tickets       | `GET /api/tickets/metrics`           | Dashboard stats for the Tickets widget.                                                            |
-| Notifications | `GET /api/mail-marketing/*`          | Proxy routes for notification-engine APIs (campaign controls, stats).                              |
-| Postmaster    | `GET /api/postmaster/traffic-stats`  | Google Postmaster telemetry for deliverability dashboards.                                         |
+| Area          | Method + path                                      | Notes                                                                                                     |
+| ------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------ | --- | ---------- |
+| Health        | `GET /api/health`                                  | Lightweight DB + downstream probe. Add `?debug=true` for env metadata.                                    |
+| Health        | `GET /api/server-status`                           | Aggregated status card data (env parity, Pub/Sub, Notification Engine).                                   |
+| Health        | `GET /api/ping`                                    | API-key validation for service-to-service traffic.                                                        |
+| Users         | `GET /api/admin/users`                             | Paginated admin directory. Query params: `page`, `limit`, `search`, `sortBy`, `sortOrder`.                |
+| Users         | `GET /api/admin/users/registrations`               | Aggregated author registrations for the dashboard chart (`range=7d                                        | 30d                      | 90d | forever`). |
+| Leads         | `GET /api/admin/leads`                             | Paginated leads table with filters (`status`, `language`).                                                |
+| Leads         | `POST /api/admin/leads`                            | Upsert a single lead (email + language required).                                                         |
+| Leads         | `POST /api/admin/leads/bulk`                       | Bulk status changes (e.g., set `emailStatus` to `hard_bounce`). Requires API key.                         |
+| Leads         | `POST /api/admin/leads/import`                     | CSV upload endpoint used by the admin UI (multipart form data).                                           |
+| Stories       | `GET /api/admin/stories`                           | Story moderation feed (filters for author, status, timeframe).                                            |
+| Stories       | `PATCH /api/admin/stories/[id]`                    | Update status/moderation metadata.                                                                        |
+| Stories       | `POST /api/admin/stories/[id]/generate-audiobook`  | Dispatches privileged narration jobs without touching credits. Body: `{ voice, includeBackgroundMusic }`. |
+| Stories       | `GET /api/admin/stories/[id]/audio/[chapterIndex]` | Streams proxied chapter audio from Cloud Storage so admins can listen per chapter.                        |
+| Workflows     | `GET /api/workflows`                               | Workflow run history + filters.                                                                           |
+| Workflows     | `GET /api/workflows/[runId]`                       | Detailed run diagnostics.                                                                                 |
+| Workflows     | `GET /api/workflows/token-usage`                   | Aggregated token + cost analytics.                                                                        |
+| Tickets       | `GET /api/tickets`                                 | Support ticket list with `status`, `category`, `priority`, `search`, `page`, `limit` query params.        |
+| Tickets       | `POST /api/tickets`                                | Create a ticket (contact, print request, payment). UI and public forms hit the same handler.              |
+| Tickets       | `GET /api/tickets/[id]`                            | Full ticket detail + comments.                                                                            |
+| Tickets       | `PATCH /api/tickets/[id]`                          | Update status or priority.                                                                                |
+| Tickets       | `POST /api/tickets/[id]/actions`                   | Admin-only MB Way workflow actions: `{ action: 'confirmPayment'                                           | 'paymentNotReceived' }`. |
+| Tickets       | `POST /api/tickets/[id]/comments`                  | Append comments (`isInternal` toggles private notes).                                                     |
+| Tickets       | `GET /api/tickets/metrics`                         | Dashboard stats for the Tickets widget.                                                                   |
+| Notifications | `GET /api/mail-marketing/*`                        | Proxy routes for notification-engine APIs (campaign controls, stats).                                     |
+| Postmaster    | `GET /api/postmaster/traffic-stats`                | Google Postmaster telemetry for deliverability dashboards.                                                |
 
 ### Blog management
 
@@ -78,4 +80,4 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ---
 
-_Last updated: February 11, 2026_
+_Last updated: December 2, 2025_

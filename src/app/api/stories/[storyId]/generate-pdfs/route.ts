@@ -16,7 +16,7 @@ export async function POST(
     const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
     const pubsub = new PubSub({ projectId });
     const runId = uuidv4();
-    const data = JSON.stringify({ storyId, runId, initiatedBy: 'adminPortal' });
+    const data = JSON.stringify({ storyId, runId, initiatedBy: 'adminPortal', origin: 'admin' });
     const dataBuffer = Buffer.from(data);
     await pubsub.topic(topicName).publishMessage({ data: dataBuffer });
     return NextResponse.json({ success: true, message: 'PDF generation triggered.' });

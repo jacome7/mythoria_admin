@@ -558,14 +558,32 @@ export const adminService = {
             : authors.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
-    const query = db.select().from(authors);
-    if (whereCondition) {
-      query.where(whereCondition);
-    }
+    const baseQuery = db.select().from(authors);
+    const filteredQuery = whereCondition ? baseQuery.where(whereCondition) : baseQuery;
 
-    const results = await query.orderBy(orderDirection).limit(limit).offset(offset);
+    const results = await filteredQuery.orderBy(orderDirection).limit(limit).offset(offset);
 
     return results;
+  },
+
+  async countUsers(searchTerm?: string) {
+    const db = getMythoriaDb();
+
+    let whereCondition = undefined;
+    if (searchTerm && searchTerm.trim()) {
+      const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
+      whereCondition = or(
+        like(sql`LOWER(${authors.displayName})`, searchPattern),
+        like(sql`LOWER(${authors.email})`, searchPattern),
+        like(sql`LOWER(${authors.mobilePhone})`, searchPattern),
+      );
+    }
+
+    const baseQuery = db.select({ value: count() }).from(authors);
+    const filteredQuery = whereCondition ? baseQuery.where(whereCondition) : baseQuery;
+
+    const [result] = await filteredQuery;
+    return Number(result?.value ?? 0);
   },
 
   async getUserById(authorId: string) {
@@ -691,12 +709,10 @@ export const adminService = {
       sortBy === 'title' ? stories.title : sortBy === 'status' ? stories.status : stories.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
-    const query = db.select().from(stories);
-    if (whereCondition) {
-      query.where(whereCondition);
-    }
+    const baseQuery = db.select().from(stories);
+    const filteredQuery = whereCondition ? baseQuery.where(whereCondition) : baseQuery;
 
-    const results = await query.orderBy(orderDirection).limit(limit).offset(offset);
+    const results = await filteredQuery.orderBy(orderDirection).limit(limit).offset(offset);
 
     return results;
   },
@@ -707,7 +723,7 @@ export const adminService = {
     searchTerm?: string,
     statusFilter?: string,
     featuredFilter?: string,
-    sortBy: 'title' | 'createdAt' | 'status' = 'createdAt',
+    sortBy: 'title' | 'createdAt' | 'updatedAt' | 'status' = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
@@ -737,7 +753,13 @@ export const adminService = {
     }
 
     const orderColumn =
-      sortBy === 'title' ? stories.title : sortBy === 'status' ? stories.status : stories.createdAt;
+      sortBy === 'title'
+        ? stories.title
+        : sortBy === 'status'
+          ? stories.status
+          : sortBy === 'updatedAt'
+            ? stories.updatedAt
+            : stories.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
     // Build the query with conditional where clause
@@ -803,6 +825,49 @@ export const adminService = {
     return results;
   },
 
+  async countStoriesWithAuthors(
+    searchTerm?: string,
+    statusFilter?: string,
+    featuredFilter?: string,
+  ) {
+    const db = getMythoriaDb();
+
+    const whereConditions = [];
+
+    if (searchTerm && searchTerm.trim()) {
+      const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
+      whereConditions.push(
+        sql`(LOWER(${stories.title}) LIKE ${searchPattern} OR 
+             LOWER(${authors.displayName}) LIKE ${searchPattern} OR 
+             LOWER(${authors.email}) LIKE ${searchPattern})`,
+      );
+    }
+
+    if (statusFilter && statusFilter !== 'all') {
+      whereConditions.push(eq(stories.status, statusFilter as 'draft' | 'writing' | 'published'));
+    }
+
+    if (featuredFilter && featuredFilter !== 'all') {
+      const isFeatured = featuredFilter === 'featured';
+      whereConditions.push(eq(stories.isFeatured, isFeatured));
+    }
+
+    const baseCountQuery = db
+      .select({ value: count() })
+      .from(stories)
+      .innerJoin(authors, eq(stories.authorId, authors.authorId));
+
+    let combinedCondition = whereConditions[0];
+    for (let i = 1; i < whereConditions.length; i++) {
+      combinedCondition = sql`${combinedCondition} AND ${whereConditions[i]}`;
+    }
+
+    const countQuery = combinedCondition ? baseCountQuery.where(combinedCondition) : baseCountQuery;
+
+    const [result] = await countQuery;
+    return Number(result?.value ?? 0);
+  },
+
   async getStoryById(storyId: string) {
     const db = getMythoriaDb();
     const [story] = await db.select().from(stories).where(eq(stories.storyId, storyId));
@@ -825,6 +890,9 @@ export const adminService = {
         coverPdfUri: stories.coverPdfUri,
         coverUri: stories.coverUri,
         backcoverUri: stories.backcoverUri,
+        audiobookUri: stories.audiobookUri,
+        audiobookStatus: stories.audiobookStatus,
+        hasAudio: stories.hasAudio,
         // htmlUri/pdfUri removed
         plotDescription: stories.plotDescription,
         synopsis: stories.synopsis,
@@ -1043,13 +1111,10 @@ export const adminService = {
             : pricing.serviceCode;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
-    const results = await db
-      .select()
-      .from(pricing)
-      .where(whereCondition)
-      .orderBy(orderDirection)
-      .limit(limit)
-      .offset(offset);
+    const baseQuery = db.select().from(pricing);
+    const filteredQuery = whereCondition ? baseQuery.where(whereCondition) : baseQuery;
+
+    const results = await filteredQuery.orderBy(orderDirection).limit(limit).offset(offset);
 
     return results;
   },

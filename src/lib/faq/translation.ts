@@ -52,7 +52,10 @@ export type FaqTranslationResult =
       errors?: { locale: string; error: string }[];
     };
 
-export async function translateFaqEntryById(entryId: string, requestedBy: string): Promise<FaqTranslationResult> {
+export async function translateFaqEntryById(
+  entryId: string,
+  requestedBy: string,
+): Promise<FaqTranslationResult> {
   const sourceEntry = await adminService.getFaqEntryById(entryId);
 
   if (!sourceEntry) {

@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
+export type AudiobookChapterMap = Record<string, unknown> | null;
+
+export interface AudioChapterEntry {
+  chapterTitle?: string;
+  audioUri: string;
+  duration?: number;
+  imageUri?: string;
+}
+
 export interface StoryDetail {
   storyId: string;
   title: string;
@@ -19,6 +28,9 @@ export interface StoryDetail {
   isFeatured: boolean;
   interiorPdfUri: string | null;
   coverPdfUri: string | null;
+  audiobookStatus: 'generating' | 'completed' | 'failed' | null;
+  audiobookUri: AudioChapterEntry[] | AudiobookChapterMap | null;
+  hasAudio: boolean;
   plotDescription: string | null;
   synopsis: string | null;
   place: string | null;

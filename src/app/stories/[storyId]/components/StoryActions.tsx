@@ -102,7 +102,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
 
   return (
     <>
-      {story.status === 'writing' && (
+      {(story.status === 'writing' || story.status === 'published') && (
         <button className="btn btn-warning" onClick={() => setIsRestartModalOpen(true)}>
           Restart Story Generation
         </button>
@@ -210,7 +210,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
                 <ul className="list-disc list-inside space-y-1">
                   <li>Create a new workflow run for this story</li>
                   <li>Trigger the story generation workflow again</li>
-                  <li>The story will remain in &quot;writing&quot; status</li>
+                  <li>The story will stay in its current status</li>
                   <li>Any previous generation progress may be overwritten</li>
                 </ul>
               </div>
