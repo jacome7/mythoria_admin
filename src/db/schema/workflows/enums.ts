@@ -7,6 +7,7 @@ export const runStatus = pgEnum('run_status', [
   'failed',
   'completed',
   'cancelled',
+  'blocked',
 ]);
 export const stepStatus = pgEnum('step_status', ['pending', 'running', 'failed', 'completed']);
 export const aiActionType = pgEnum('ai_action_type', [
@@ -20,5 +21,8 @@ export const aiActionType = pgEnum('ai_action_type', [
   'audio_generation',
   'content_validation',
   'image_edit',
+  'prompt_rewrite',
+  'blog_translation',
+  'character_photo_analysis',
   'test',
 ]);

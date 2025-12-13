@@ -12,7 +12,7 @@ export interface WorkflowExecutionStatus {
   runId: string;
   storyId: string;
   workflowExecutionName: string | null;
-  currentDbStatus: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  currentDbStatus: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'blocked';
   workflowStatus: 'ACTIVE' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN';
   statusMatch: boolean;
   lastHeartbeat: Date | null;
