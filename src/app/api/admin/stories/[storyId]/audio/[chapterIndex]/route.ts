@@ -33,12 +33,23 @@ export async function GET(
       return NextResponse.json({ error: 'No audiobook available for this story' }, { status: 404 });
     }
 
-    const audiobookData = story.audiobookUri as Record<string, unknown>;
-    let chapterKey = `chapter_${chapterIdx + 1}`;
-    let audioUri = audiobookData[chapterKey];
-    if (!audioUri) {
-      chapterKey = String(chapterIdx + 1);
-      audioUri = audiobookData[chapterKey];
+    let audioUri: string | undefined;
+
+    // New structured array format
+    if (Array.isArray(story.audiobookUri)) {
+      const chapter = story.audiobookUri[chapterIdx];
+      if (chapter && typeof chapter === 'object' && 'audioUri' in chapter) {
+        audioUri = (chapter as { audioUri?: unknown }).audioUri as string | undefined;
+      }
+    } else {
+      // Legacy map formats
+      const audiobookData = story.audiobookUri as Record<string, unknown>;
+      let chapterKey = `chapter_${chapterIdx + 1}`;
+      audioUri = audiobookData[chapterKey] as string | undefined;
+      if (!audioUri) {
+        chapterKey = String(chapterIdx + 1);
+        audioUri = audiobookData[chapterKey] as string | undefined;
+      }
     }
 
     if (!audioUri || typeof audioUri !== 'string') {
