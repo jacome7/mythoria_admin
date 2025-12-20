@@ -511,7 +511,7 @@ export default function TicketDetailPage() {
                   <div className="flex flex-col">
                     <span className="text-sm text-base-content/60">Title:</span>
                     <Link
-                      href={`/story/${metadata.enrichedStory.storyId}`}
+                      href={`/stories/${metadata.enrichedStory.storyId}`}
                       className="link link-primary font-medium"
                     >
                       {metadata.enrichedStory.title}
