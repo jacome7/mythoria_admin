@@ -16,8 +16,9 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 
 # Update npm and install dependencies
+# Using --loglevel=error to suppress deprecation warnings from transitive dependencies
 RUN npm install -g npm@latest && \
-    npm ci --prefer-offline --no-audit
+    npm ci --prefer-offline --no-audit --loglevel=error
 
 # Rebuild the source code only when needed
 FROM base AS builder
