@@ -98,12 +98,27 @@ export const graphicalStyleEnum = pgEnum('graphical_style', [
   'minimalist',
   'vintage',
   'comic_book',
+  'euro_comic_book',
   'anime',
   'pixar_style',
   'disney_style',
   'sketch',
   'oil_painting',
   'colored_pencil',
+]);
+
+export const literaryPersonaEnum = pgEnum('literary_persona', [
+  'storyteller',
+  'adventurous-narrator',
+  'fun-reporter',
+  'friendly-educator',
+  'institutional-chronicler',
+  'pub-buddy-narrator',
+  'classic-novelist',
+  'noir-investigator',
+  'whimsical-poet',
+  'scifi-analyst',
+  'folklore-traditionalist',
 ]);
 
 export const aiActionTypeEnum = pgEnum('ai_action_type', [
@@ -117,9 +132,6 @@ export const aiActionTypeEnum = pgEnum('ai_action_type', [
   'story_enhancement',
   'audio_generation',
   'content_validation',
-  'prompt_rewrite',
-  'blog_translation',
-  'character_photo_analysis',
   'test',
 ]);
 
@@ -215,3 +227,14 @@ export const notificationPreferenceEnum = pgEnum('notification_preference', [
   'inspiration', // Tips & ideas (default)
   'news', // Product news & special promos
 ]);
+
+// Partner directory enums
+export const partnerTypeEnum = pgEnum('partner_type', ['printer', 'attraction', 'retail', 'other']);
+
+export const partnerServiceScopeEnum = pgEnum('partner_service_scope', [
+  'local',
+  'national',
+  'international',
+]);
+
+export const partnerStatusEnum = pgEnum('partner_status', ['active', 'draft', 'hidden']);

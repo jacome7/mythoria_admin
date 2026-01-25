@@ -29,7 +29,8 @@ export const characters = pgTable(
     traits: json('traits').$type<string[]>().default([]), // Array of character traits (max 5)
     characteristics: text('characteristics'),
     physicalDescription: text('physical_description'),
-    photoUrl: text('photo_url'),
+    photoUrl: text('photo_url'), // Public URL for display
+    photoGcsUri: text('photo_gcs_uri'), // Full GCS path: characters/{authorId}/{characterId}.jpg
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({

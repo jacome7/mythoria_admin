@@ -17,6 +17,11 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 | Health        | `GET /api/ping`                                    | API-key validation for service-to-service traffic.                                                        |
 | Users         | `GET /api/admin/users`                             | Paginated admin directory. Query params: `page`, `limit`, `search`, `sortBy`, `sortOrder`.                |
 | Users         | `GET /api/admin/users/registrations`               | Aggregated author registrations for the dashboard chart (`range=7d                                        | 30d                      | 90d | forever`). |
+| Partners      | `GET /api/admin/partners`                          | List partner directory entries (ordered by display order, then name).                                     |
+| Partners      | `POST /api/admin/partners`                         | Create a partner record. Validates short description JSON, email, and E.164 phone format.                 |
+| Partners      | `GET /api/admin/partners/[id]`                     | Fetch a single partner by id.                                                                             |
+| Partners      | `PUT /api/admin/partners/[id]`                     | Update a partner record.                                                                                  |
+| Partners      | `DELETE /api/admin/partners/[id]`                  | Delete a partner record.                                                                                  |
 | Leads         | `GET /api/admin/leads`                             | Paginated leads table with filters (`status`, `language`).                                                |
 | Leads         | `POST /api/admin/leads`                            | Upsert a single lead (email + language required).                                                         |
 | Leads         | `POST /api/admin/leads/bulk`                       | Bulk status changes (e.g., set `emailStatus` to `hard_bounce`). Requires API key.                         |
@@ -80,4 +85,4 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ---
 
-_Last updated: December 2, 2025_
+_Last updated: January 16, 2026_

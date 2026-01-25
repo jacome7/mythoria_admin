@@ -30,6 +30,8 @@ tags:
     description: Customer support ticketing utilities.
   - name: Admin Users
     description: User roster, balances, and manual credit adjustments.
+  - name: Partners
+    description: Partner directory management for Mythoria.
   - name: Admin Stories
     description: Editorial workflows for generated stories.
   - name: Admin Blog
@@ -1077,6 +1079,133 @@ ef: '#/components/responses/InternalError'
     delete:
       tags: [Admin Users]
       summary: Delete a manager
+      responses:
+        '200':
+          description: Deletion confirmed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required: [message]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/partners:
+    get:
+      tags: [Partners]
+      summary: List partner directory entries
+      responses:
+        '200':
+          description: Partner records from the mythoria database.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Partner'
+                  count:
+                    type: integer
+                required: [data]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Partners]
+      summary: Create a partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerInput'
+      responses:
+        '201':
+          description: Created partner.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/partners/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Partners]
+      summary: Get partner by id
+      responses:
+        '200':
+          description: Partner record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Partners]
+      summary: Update a partner record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerInput'
+      responses:
+        '200':
+          description: Updated partner.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Partners]
+      summary: Delete a partner
       responses:
         '200':
           description: Deletion confirmed.
@@ -3007,6 +3136,104 @@ components:
         role:
           type: string
       required: [name, email]
+    Partner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [printer, attraction, retail, other]
+        logoUrl:
+          type: string
+          format: uri
+        websiteUrl:
+          type: string
+          format: uri
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        mobilePhone:
+          type: string
+          nullable: true
+        addressLine1:
+          type: string
+          nullable: true
+        addressLine2:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        postalCode:
+          type: string
+          nullable: true
+        countryCode:
+          type: string
+          nullable: true
+        shortDescription:
+          type: object
+          additionalProperties:
+            type: string
+        serviceScope:
+          type: string
+          enum: [local, national, international]
+          nullable: true
+        status:
+          type: string
+          enum: [active, draft, hidden]
+        displayOrder:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, type, logoUrl, shortDescription, status]
+    PartnerInput:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [printer, attraction, retail, other]
+        logoUrl:
+          type: string
+          format: uri
+        websiteUrl:
+          type: string
+          format: uri
+        email:
+          type: string
+        mobilePhone:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        countryCode:
+          type: string
+        shortDescription:
+          type: object
+          additionalProperties:
+            type: string
+        serviceScope:
+          type: string
+          enum: [local, national, international]
+        status:
+          type: string
+          enum: [active, draft, hidden]
+        displayOrder:
+          type: integer
+      required: [name, type, logoUrl, shortDescription]
     AuthorSummary:
       type: object
       properties:

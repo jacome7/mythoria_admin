@@ -39,6 +39,7 @@ export enum GraphicalStyle {
   MINIMALIST = 'minimalist',
   VINTAGE = 'vintage',
   COMIC_BOOK = 'comic_book',
+  EURO_COMIC_BOOK = 'euro_comic_book',
   ANIME = 'anime',
   PIXAR_STYLE = 'pixar_style',
   DISNEY_STYLE = 'disney_style',
@@ -46,6 +47,180 @@ export enum GraphicalStyle {
   OIL_PAINTING = 'oil_painting',
   COLORED_PENCIL = 'colored_pencil',
 }
+
+export enum LiteraryPersona {
+  STORYTELLER = 'storyteller',
+  ADVENTUROUS_NARRATOR = 'adventurous-narrator',
+  FUN_REPORTER = 'fun-reporter',
+  FRIENDLY_EDUCATOR = 'friendly-educator',
+  INSTITUTIONAL_CHRONICLER = 'institutional-chronicler',
+  PUB_BUDDY_NARRATOR = 'pub-buddy-narrator',
+  CLASSIC_NOVELIST = 'classic-novelist',
+  NOIR_INVESTIGATOR = 'noir-investigator',
+  WHIMSICAL_POET = 'whimsical-poet',
+  SCIFI_ANALYST = 'scifi-analyst',
+  FOLKLORE_TRADITIONALIST = 'folklore-traditionalist',
+}
+
+export type LiteraryPersonaProfile = {
+  pov: '1st' | '2nd' | '3rd-limited' | '3rd-omniscient' | 'objective';
+  povAlternatives?: Array<'1st' | '2nd' | '3rd-limited' | '3rd-omniscient' | 'objective'>;
+  tone: number;
+  formality: number;
+  rhythm: number;
+  vocabulary: number;
+  fictionality: number;
+  dialogueDensity?: number;
+  sensoriality?: number;
+  subtextIrony?: number;
+  techniques?: string[];
+};
+
+export const LiteraryPersonaMetadata: Record<LiteraryPersona, LiteraryPersonaProfile> = {
+  [LiteraryPersona.STORYTELLER]: {
+    pov: '1st',
+    povAlternatives: ['3rd-limited'],
+    tone: 2,
+    formality: 2,
+    rhythm: 2,
+    vocabulary: 3,
+    fictionality: 3,
+    dialogueDensity: 3,
+    sensoriality: 4,
+    subtextIrony: 2,
+    techniques: ['free-indirect-discourse'],
+  },
+  [LiteraryPersona.ADVENTUROUS_NARRATOR]: {
+    pov: '2nd',
+    povAlternatives: ['3rd-limited'],
+    tone: 4,
+    formality: 1,
+    rhythm: 5,
+    vocabulary: 3,
+    fictionality: 5,
+    dialogueDensity: 4,
+    sensoriality: 4,
+    subtextIrony: 3,
+    techniques: ['4th-wall-break'],
+  },
+  [LiteraryPersona.FUN_REPORTER]: {
+    pov: 'objective',
+    povAlternatives: ['3rd-limited'],
+    tone: 4,
+    formality: 3,
+    rhythm: 4,
+    vocabulary: 3,
+    fictionality: 2,
+    dialogueDensity: 4,
+    sensoriality: 3,
+    subtextIrony: 4,
+    techniques: ['4th-wall-break'],
+  },
+  [LiteraryPersona.FRIENDLY_EDUCATOR]: {
+    pov: '2nd',
+    povAlternatives: ['1st'],
+    tone: 3,
+    formality: 2,
+    rhythm: 3,
+    vocabulary: 2,
+    fictionality: 2,
+    dialogueDensity: 3,
+    sensoriality: 4,
+    subtextIrony: 1,
+    techniques: [],
+  },
+  [LiteraryPersona.INSTITUTIONAL_CHRONICLER]: {
+    pov: 'objective',
+    povAlternatives: ['3rd-limited'],
+    tone: 2,
+    formality: 5,
+    rhythm: 3,
+    vocabulary: 4,
+    fictionality: 1,
+    dialogueDensity: 1,
+    sensoriality: 2,
+    subtextIrony: 1,
+    techniques: [],
+  },
+  [LiteraryPersona.PUB_BUDDY_NARRATOR]: {
+    pov: '1st',
+    povAlternatives: ['3rd-limited'],
+    tone: 5,
+    formality: 1,
+    rhythm: 4,
+    vocabulary: 2,
+    fictionality: 3,
+    dialogueDensity: 5,
+    sensoriality: 3,
+    subtextIrony: 4,
+    techniques: ['unreliable-narrator', '4th-wall-break'],
+  },
+  [LiteraryPersona.CLASSIC_NOVELIST]: {
+    pov: '3rd-limited',
+    povAlternatives: ['3rd-omniscient', '1st'],
+    tone: 3,
+    formality: 3,
+    rhythm: 3,
+    vocabulary: 3,
+    fictionality: 3,
+    dialogueDensity: 3,
+    sensoriality: 3,
+    subtextIrony: 2,
+    techniques: ['show-dont-tell', 'free-indirect-discourse', 'scene-anchoring'],
+  },
+  [LiteraryPersona.NOIR_INVESTIGATOR]: {
+    pov: '1st',
+    povAlternatives: ['3rd-limited'],
+    tone: 1,
+    formality: 3,
+    rhythm: 4,
+    vocabulary: 3,
+    fictionality: 4,
+    dialogueDensity: 3,
+    sensoriality: 5,
+    subtextIrony: 5,
+    techniques: ['cliffhangers', 'hardboiled-voiceover', 'unreliable-assumptions'],
+  },
+  [LiteraryPersona.WHIMSICAL_POET]: {
+    pov: '3rd-omniscient',
+    povAlternatives: ['1st'],
+    tone: 5,
+    formality: 4,
+    rhythm: 1,
+    vocabulary: 5,
+    fictionality: 3,
+    dialogueDensity: 2,
+    sensoriality: 5,
+    subtextIrony: 1,
+    techniques: ['stream-of-consciousness', 'synesthetic-imagery', 'lyrical-refrains'],
+  },
+  [LiteraryPersona.SCIFI_ANALYST]: {
+    pov: '1st',
+    povAlternatives: ['objective'],
+    tone: 2,
+    formality: 4,
+    rhythm: 3,
+    vocabulary: 4,
+    fictionality: 5,
+    dialogueDensity: 3,
+    sensoriality: 2,
+    subtextIrony: 3,
+    techniques: ['epistolary', 'systems-thinking', 'status-reports'],
+  },
+  [LiteraryPersona.FOLKLORE_TRADITIONALIST]: {
+    pov: '3rd-omniscient',
+    povAlternatives: ['3rd-limited'],
+    tone: 3,
+    formality: 4,
+    rhythm: 2,
+    vocabulary: 3,
+    fictionality: 5,
+    dialogueDensity: 2,
+    sensoriality: 3,
+    subtextIrony: 1,
+    techniques: ['allegory', 'rule-of-three', 'oral-cadence'],
+  },
+};
 
 // Human-readable labels for UI display
 export const TargetAudienceLabels: Record<TargetAudience, string> = {
@@ -86,6 +261,7 @@ export const GraphicalStyleLabels: Record<GraphicalStyle, string> = {
   [GraphicalStyle.MINIMALIST]: 'Minimalist',
   [GraphicalStyle.VINTAGE]: 'Vintage',
   [GraphicalStyle.COMIC_BOOK]: 'Comic Book',
+  [GraphicalStyle.EURO_COMIC_BOOK]: 'Humorous Adventure',
   [GraphicalStyle.ANIME]: 'Anime',
   [GraphicalStyle.PIXAR_STYLE]: 'Pixar Style',
   [GraphicalStyle.DISNEY_STYLE]: 'Disney Style',
@@ -100,6 +276,8 @@ export const getAllTargetAudiences = (): TargetAudience[] => Object.values(Targe
 export const getAllNovelStyles = (): NovelStyle[] => Object.values(NovelStyle);
 
 export const getAllGraphicalStyles = (): GraphicalStyle[] => Object.values(GraphicalStyle);
+
+export const getAllLiteraryPersonas = (): LiteraryPersona[] => Object.values(LiteraryPersona);
 
 // Helper functions to map between enum values and labels
 export const getTargetAudienceLabel = (value: TargetAudience): string =>

@@ -84,6 +84,7 @@ describe('AdminHeader', () => {
 
     expect(screen.getByText('Managers')).toBeInTheDocument();
     expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('Partners')).toBeInTheDocument();
     expect(screen.getByText('Stories')).toBeInTheDocument();
     expect(screen.getByText('Notifications')).toBeInTheDocument();
   });
@@ -102,6 +103,7 @@ describe('AdminHeader', () => {
 
     expect(screen.getByText('Managers')).toBeInTheDocument();
     expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('Partners')).toBeInTheDocument();
     expect(screen.getByText('Stories')).toBeInTheDocument();
     expect(screen.getByText('Notifications')).toBeInTheDocument();
     // Services is under Financials, not Management; ensure we don't falsely assert it here

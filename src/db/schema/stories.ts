@@ -18,6 +18,7 @@ import {
   targetAudienceEnum,
   novelStyleEnum,
   graphicalStyleEnum,
+  literaryPersonaEnum,
   accessLevelEnum,
   collaboratorRoleEnum,
   audiobookStatusEnum,
@@ -45,6 +46,7 @@ export const stories = pgTable(
     targetAudience: targetAudienceEnum('target_audience'),
     novelStyle: novelStyleEnum('novel_style'),
     graphicalStyle: graphicalStyleEnum('graphical_style'),
+    literaryPersona: literaryPersonaEnum('literary_persona'),
     status: storyStatusEnum('status').default('draft'),
     features: jsonb('features'), // {"ebook":true,"printed":false,"audiobook":true}
     deliveryAddress: jsonb('delivery_address'), // Delivery address for printed books
