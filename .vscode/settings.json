@@ -1,0 +1,19 @@
+{
+  // Enable Agent Mode (if you haven’t already)
+  "chat.agent.enabled": true,
+  // Hands-free execution
+  "chat.tools.autoApprove": true, // no tool prompts
+  "chat.editing.autoAcceptDelay": 1, // accept edits after 1 s
+  "chat.editing.confirmEditRequestRemoval": false,
+  "chat.editing.confirmEditRequestRetry": false,
+  // Formatting defaults
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "never",
+    "source.fixAll.eslint": "explicit"
+  },
+  "prettier.requireConfig": true,
+  "prettier.configPath": "${workspaceFolder}/.prettierrc.json"
+}

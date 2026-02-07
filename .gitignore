@@ -41,7 +41,6 @@ next-env.d.ts
 drizzle/
 
 # IDE
-.vscode/
 .idea/
 
 # OS

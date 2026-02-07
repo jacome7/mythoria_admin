@@ -1,0 +1,24 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "googleDevKnowledgeApiKey",
+      "description": "Google Developer Knowledge API Key",
+      "password": true
+    }
+  ],
+  "servers": {
+     "googleDeveloperKnowledge": {
+      "type": "http",
+      "url": "https://developerknowledge.googleapis.com/mcp",
+      "headers": {
+        "X-Goog-Api-Key": "AIzaSyDvqQfXZsAHTRTFHJiXijZG0q6ycKKN26o"
+      }
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}
