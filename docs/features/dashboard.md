@@ -11,8 +11,10 @@ The home dashboard (`src/app/page.tsx`) is the operational landing page for admi
 1. The page mounts and requests `/api/admin/kpis`.
 2. Skeleton cards and chart placeholders render first to keep perceived latency low.
 3. KPI cards update once payloads arrive (registrations, service usage, system counters).
-4. Linked cards route admins into detail pages (`/users`, `/stories`, `/tickets`, `/server-status`, `/ai-usage`).
-5. Error states are shown inline with retry actions.
+4. Chart range filters are synchronized across New users, Service usage, and Revenue vs AI costs.
+5. Revenue vs AI costs now supports `Forever`, which switches the series aggregation to monthly buckets.
+6. Linked cards route admins into detail pages (`/users`, `/stories`, `/tickets`, `/server-status`, `/ai-usage`).
+7. Error states are shown inline with retry actions.
 
 ## Backend and API touchpoints
 

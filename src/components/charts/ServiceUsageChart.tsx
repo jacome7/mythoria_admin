@@ -60,10 +60,15 @@ const formatter = new Intl.NumberFormat('en-US');
 
 interface ServiceUsageChartProps {
   onReady?: () => void;
+  range: RegistrationRange;
+  onRangeChange: (nextRange: RegistrationRange) => void;
 }
 
-export default function ServiceUsageChart({ onReady }: ServiceUsageChartProps = {}) {
-  const [range, setRange] = useState<RegistrationRange>('7d');
+export default function ServiceUsageChart({
+  onReady,
+  range,
+  onRangeChange,
+}: ServiceUsageChartProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('actions');
   const [buckets, setBuckets] = useState<NormalizedServiceUsageBucket[]>([]);
   const [totals, setTotals] = useState({ actions: 0, credits: 0 });
@@ -160,7 +165,7 @@ export default function ServiceUsageChart({ onReady }: ServiceUsageChartProps = 
                 key={option.value}
                 type="button"
                 className={`btn btn-sm join-item ${range === option.value ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => setRange(option.value)}
+                onClick={() => onRangeChange(option.value)}
               >
                 {option.label}
               </button>
