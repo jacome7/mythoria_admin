@@ -25,14 +25,16 @@ We apply the Diátaxis model so that each document answers a single type of ques
 | ---------------------------------- | ------------------------------------------------------------------- |
 | `docs/api-reference.md`            | REST route map, accepted query params, and response shapes.         |
 | `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).       |
+| `docs/features/*.md`               | Per-page feature deep dives (context, UI workflow, DB structures).  |
 | `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents. |
 
 ## Explanation (deep understanding)
 
-| Doc                    | Scope                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `docs/ARCHITECTURE.md` | Combined architecture + feature overview (runtime slices, data layout, extension checklist).                       |
-| `docs/features.*`      | Replaced by `docs/ARCHITECTURE.md`. Keep this file as the single source; do not resurrect the legacy feature list. |
+| Doc                    | Scope                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `docs/ARCHITECTURE.md` | Combined architecture + feature overview (runtime slices, data layout, extension checklist). |
+| `docs/features.md`     | Legacy pointer retained for compatibility; detailed page docs live in `docs/features/`.      |
+| `docs/features/*.md`   | Feature-by-feature implementation explanations for each `src/app` surface.                   |
 
 ## House rules
 
@@ -56,3 +58,5 @@ We apply the Diátaxis model so that each document answers a single type of ques
 [^2]: https://developers.google.com/tech-writing/one
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
+
+_Index refreshed: 2026-02-08_
