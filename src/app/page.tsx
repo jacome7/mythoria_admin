@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type { RegistrationRange } from '@/lib/analytics/registrations';
 import KPICard from '../components/KPICard';
 import GrossMarginChart from '@/components/charts/GrossMarginChart';
 import NewUsersChart from '@/components/charts/NewUsersChart';
@@ -23,6 +24,7 @@ export default function AdminPortal() {
     serviceUsage: false,
     grossMargin: false,
   });
+  const [chartRange, setChartRange] = useState<RegistrationRange>('7d');
 
   const fetchKPIs = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -172,7 +174,11 @@ export default function AdminPortal() {
 
         <div className="space-y-8">
           {chartVisibility.newUsers ? (
-            <NewUsersChart onReady={handleNewUsersReady} />
+            <NewUsersChart
+              onReady={handleNewUsersReady}
+              range={chartRange}
+              onRangeChange={setChartRange}
+            />
           ) : (
             <ChartPanelSkeleton
               title="New users"
@@ -180,7 +186,11 @@ export default function AdminPortal() {
             />
           )}
           {chartVisibility.serviceUsage ? (
-            <ServiceUsageChart onReady={handleServiceUsageReady} />
+            <ServiceUsageChart
+              onReady={handleServiceUsageReady}
+              range={chartRange}
+              onRangeChange={setChartRange}
+            />
           ) : (
             <ChartPanelSkeleton
               title="Service usage"
@@ -188,7 +198,7 @@ export default function AdminPortal() {
             />
           )}
           {chartVisibility.grossMargin ? (
-            <GrossMarginChart />
+            <GrossMarginChart range={chartRange} onRangeChange={setChartRange} />
           ) : (
             <ChartPanelSkeleton
               title="Revenue vs AI costs"

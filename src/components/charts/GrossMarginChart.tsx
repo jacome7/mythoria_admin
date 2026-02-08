@@ -42,6 +42,7 @@ const RANGE_OPTIONS: { label: string; value: RegistrationRange }[] = [
   { label: 'Last 7 days', value: '7d' },
   { label: 'Last 30 days', value: '30d' },
   { label: 'Last 90 days', value: '90d' },
+  { label: 'Forever', value: 'forever' },
 ];
 
 const COLORS = {
@@ -51,8 +52,13 @@ const COLORS = {
   grid: 'rgba(148, 163, 184, 0.3)',
 };
 
-export default function GrossMarginChart({ onReady }: { onReady?: () => void }) {
-  const [range, setRange] = useState<RegistrationRange>('7d');
+interface GrossMarginChartProps {
+  onReady?: () => void;
+  range: RegistrationRange;
+  onRangeChange: (nextRange: RegistrationRange) => void;
+}
+
+export default function GrossMarginChart({ onReady, range, onRangeChange }: GrossMarginChartProps) {
   const [currencyCode, setCurrencyCode] = useState('EUR');
   const [chartData, setChartData] = useState<ChartDatum[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -126,7 +132,7 @@ export default function GrossMarginChart({ onReady }: { onReady?: () => void }) 
               key={option.value}
               type="button"
               className={`btn btn-sm join-item ${range === option.value ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setRange(option.value)}
+              onClick={() => onRangeChange(option.value)}
             >
               {option.label}
             </button>

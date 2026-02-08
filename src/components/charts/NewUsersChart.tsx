@@ -57,10 +57,11 @@ const formatter = new Intl.NumberFormat('en-US');
 
 interface NewUsersChartProps {
   onReady?: () => void;
+  range: RegistrationRange;
+  onRangeChange: (nextRange: RegistrationRange) => void;
 }
 
-export default function NewUsersChart({ onReady }: NewUsersChartProps = {}) {
-  const [range, setRange] = useState<RegistrationRange>('7d');
+export default function NewUsersChart({ onReady, range, onRangeChange }: NewUsersChartProps) {
   const [mode, setMode] = useState<ForeverMode>('monthly');
   const [data, setData] = useState<NormalizedRegistrationBucket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,7 +180,7 @@ export default function NewUsersChart({ onReady }: NewUsersChartProps = {}) {
                 key={option.value}
                 type="button"
                 className={`btn btn-sm join-item ${range === option.value ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => setRange(option.value)}
+                onClick={() => onRangeChange(option.value)}
               >
                 {option.label}
               </button>
