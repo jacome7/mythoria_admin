@@ -2,20 +2,20 @@
 # This script displays logs from the Cloud Run service
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("staging", "production")]
     [string]$Environment = "production",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ProjectId = "oceanic-beach-460916-n5",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Region = "europe-west9",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Lines = 50,
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Follow
 )
 
@@ -38,12 +38,14 @@ try {
     
     if ($Follow) {
         Write-Host "[INFO] Following logs (Press Ctrl+C to stop)..."
-        gcloud logs tail "projects/$ProjectId/logs/run.googleapis.com%2Fstdout" --filter="resource.labels.service_name=$serviceName AND resource.labels.location=$Region"
-    } else {
-        gcloud logs read "projects/$ProjectId/logs/run.googleapis.com%2Fstdout" --filter="resource.labels.service_name=$serviceName AND resource.labels.location=$Region" --limit=$Lines --format="table(timestamp,severity,textPayload)"
+        gcloud run services logs tail $serviceName --region=$Region --project=$ProjectId
+    }
+    else {
+        gcloud run services logs read $serviceName --region=$Region --project=$ProjectId --limit=$Lines --format="table(timestamp,severity,textPayload)"
     }
 
-} catch {
+}
+catch {
     Write-Host "[ERR] Failed to view logs: $($_.Exception.Message)"
     exit 1
 }

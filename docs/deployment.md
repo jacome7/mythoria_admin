@@ -399,13 +399,13 @@ curl "https://mythoria-admin-oceanic-beach-460916-n5-europe-west9.a.run.app/api/
 
 ```bash
 # Stream logs in real-time
-gcloud run logs tail mythoria-admin --region=europe-west9
+gcloud run services logs tail mythoria-admin --region=europe-west9
 
 # View recent logs
-gcloud run logs read mythoria-admin --region=europe-west9 --limit=50
+gcloud run services logs read mythoria-admin --region=europe-west9 --limit=50
 
 # Filter logs by severity
-gcloud run logs read mythoria-admin --region=europe-west9 --log-filter='severity>=ERROR'
+gcloud run services logs read mythoria-admin --region=europe-west9 --log-filter='severity>=ERROR'
 ```
 
 #### Monitor Service Metrics
@@ -577,7 +577,7 @@ gcloud builds log <BUILD_ID>
 
 ```bash
 # Check service logs
-gcloud run logs read mythoria-admin --region=europe-west9
+gcloud run services logs read mythoria-admin --region=europe-west9
 
 # Common issues:
 # - Database connection failures
@@ -622,5 +622,5 @@ gcloud run services update mythoria-admin \
 ---
 
 **Deployment Guide Version**: 1.0.0  
-**Last Updated**: June 29, 2025  
+**Last Updated**: February 9, 2026  
 **Service**: Mythoria Admin Portal v0.1.0+

@@ -59,4 +59,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-02-08_
+_Index refreshed: 2026-02-09_
