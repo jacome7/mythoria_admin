@@ -1,42 +1,43 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "shell",
-			"label": "Build project",
-			"command": "npm run build",
-			"problemMatcher": [
-				"$tsc"
-			],
-			"group": "build",
-			"isBackground": false
-		},
-		{
-			"label": "Lint project",
-			"type": "shell",
-			"command": "npm run lint",
-			"isBackground": false,
-			"problemMatcher": [
-				"$eslint-stylish"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Lint project",
-			"type": "shell",
-			"command": "npm run lint",
-			"isBackground": false,
-			"problemMatcher": [
-				"$eslint-stylish"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Build project",
-			"type": "shell",
-			"command": "npm run build",
-			"isBackground": false,
-			"group": "build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "Build project",
+      "command": "npm run build",
+      "problemMatcher": ["$tsc"],
+      "group": "build",
+      "isBackground": false
+    },
+    {
+      "label": "Lint project",
+      "type": "shell",
+      "command": "npm run lint",
+      "isBackground": false,
+      "problemMatcher": ["$eslint-stylish"],
+      "group": "build"
+    },
+    {
+      "label": "Lint project",
+      "type": "shell",
+      "command": "npm run lint",
+      "isBackground": false,
+      "problemMatcher": ["$eslint-stylish"],
+      "group": "build"
+    },
+    {
+      "label": "Build project",
+      "type": "shell",
+      "command": "npm run build",
+      "isBackground": false,
+      "group": "build"
+    },
+    {
+      "label": "Quality Gate",
+      "type": "shell",
+      "command": "npm run lint && npm run typecheck && npm run build && npm run test",
+      "isBackground": false,
+      "group": "build"
+    }
+  ]
 }

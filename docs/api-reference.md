@@ -43,6 +43,24 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 | Notifications | `GET /api/mail-marketing/*`                        | Proxy routes for notification-engine APIs (campaign controls, stats).                                     |
 | Postmaster    | `GET /api/postmaster/traffic-stats`                | Google Postmaster telemetry for deliverability dashboards.                                                |
 
+### Email campaigns
+
+| Area      | Method + path                                  | Notes                                                                                                        |
+| --------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Campaigns | `GET /api/email-campaigns`                     | Paginated campaign list. Query params: `page`, `limit`, `status`.                                            |
+| Campaigns | `POST /api/email-campaigns`                    | Create a draft campaign. Body: `{ title, description?, audienceSource, dailySendLimit?, startAt?, endAt? }`. |
+| Campaigns | `GET /api/email-campaigns/[id]`                | Campaign detail with joined assets.                                                                          |
+| Campaigns | `PATCH /api/email-campaigns/[id]`              | Update metadata and/or upsert locale assets via `assets` array in body.                                      |
+| Campaigns | `DELETE /api/email-campaigns/[id]`             | Delete campaign (only `draft` or `cancelled` status).                                                        |
+| Campaigns | `POST /api/email-campaigns/[id]/activate`      | Transition: draft/paused -> active.                                                                          |
+| Campaigns | `POST /api/email-campaigns/[id]/pause`         | Transition: active -> paused.                                                                                |
+| Campaigns | `POST /api/email-campaigns/[id]/cancel`        | Transition: any non-terminal -> cancelled.                                                                   |
+| Campaigns | `POST /api/email-campaigns/[id]/duplicate`     | Create a draft copy of a campaign (settings + assets).                                                       |
+| Campaigns | `POST /api/email-campaigns/[id]/send-batch`    | Trigger manual batch send (proxied to Notification Engine).                                                  |
+| Campaigns | `POST /api/email-campaigns/[id]/send-sample`   | Send test email. Body: `{ locale, email, variables? }`.                                                      |
+| Campaigns | `GET /api/email-campaigns/[id]/audience-count` | Estimated recipient count based on the campaign's current filter tree.                                       |
+| Campaigns | `GET /api/email-campaigns/[id]/progress`       | Sent/failed/skipped counts + batch history.                                                                  |
+
 ### Blog management
 
 | Area | Method + path                 | Notes                                                                                                                                                                                            |
@@ -56,6 +74,7 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 `fieldLimits` mirrors the active PostgreSQL schema (values pulled from `information_schema` at runtime) and exposes `{ slug, title, summary }` maximum lengths. Clients should prefer these numbers over hard-coded limits. When the API returns `warnings` (e.g., "Summary for en-US exceeded 500 characters and was truncated."), keep the editor open, highlight the affected locale, and let the author decide whether to revise or accept the shorter summary.
 
 Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this table when you add or rename routes.
+Cross-service campaign rollout and validation details: `../../docs/EMAIL_CAMPAIGNS.md`.
 
 ### FAQ management
 
@@ -85,4 +104,4 @@ Keep the OpenAPI file (`docs/mythoria-admin-openapi.yaml`) aligned with this tab
 
 ---
 
-_Last updated: January 16, 2026_
+_Last updated: February 8, 2026_

@@ -8,7 +8,7 @@
     }
   ],
   "servers": {
-     "googleDeveloperKnowledge": {
+    "googleDeveloperKnowledge": {
       "type": "http",
       "url": "https://developerknowledge.googleapis.com/mcp",
       "headers": {

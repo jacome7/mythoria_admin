@@ -22,3 +22,4 @@ export * from './relations';
 export * from './shipping';
 export * from './stories';
 export * from './tickets';
+export * from './campaigns';

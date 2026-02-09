@@ -20,6 +20,8 @@ tags:
     description: Debug helpers intended for operations staff.
   - name: Notifications
     description: Admin tooling for notification channels, templates, and automation rules.
+  - name: Email Campaigns
+    description: Multi-campaign email marketing management.
   - name: AI Usage
     description: Token consumption insights for AI-powered workflows.
   - name: Credits
@@ -2209,6 +2211,31 @@ ef: '#/components/responses/InternalError'
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/email-campaigns/{id}/duplicate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Email Campaigns]
+      summary: Duplicate an email campaign
+      description: Creates a new draft campaign with copied settings and assets.
+      responses:
+        '201':
+          description: Draft campaign created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingCampaign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/stories/{storyId}/generate-pdfs:
     parameters:
       - name: storyId
@@ -2366,6 +2393,49 @@ components:
             - type: object
               additionalProperties: true
       required: [error]
+    MarketingCampaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, paused, completed, cancelled]
+        audienceSource:
+          type: string
+          enum: [users, leads, both]
+        filterTree:
+          type: object
+          nullable: true
+          additionalProperties: true
+        dailySendLimit:
+          type: integer
+          nullable: true
+        startAt:
+          type: string
+          format: date-time
+          nullable: true
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
+          type: string
+        updatedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, status, audienceSource, createdBy, updatedBy, createdAt, updatedAt]
     HealthStatus:
       type: object
       properties:

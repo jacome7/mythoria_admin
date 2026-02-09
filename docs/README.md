@@ -51,6 +51,10 @@ We apply the Diátaxis model so that each document answers a single type of ques
 4. Link related docs via relative paths; avoid repeating long explanations.
 5. Run `npm run format:fix` after editing Markdown so Prettier keeps tables aligned.
 
+## Recent behavior notes
+
+- 2026-02-08: Email campaign audience estimation now uses draft filters and metadata from the detail page (see `docs/features/emailMarketing.md`).
+
 ---
 
 [^1]: https://diataxis.fr/
