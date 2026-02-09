@@ -269,8 +269,8 @@ export default function NewUsersChart({ onReady, range, onRangeChange }: NewUser
 }
 
 interface CustomTickProps {
-  x?: number;
-  y?: number;
+  x?: number | string;
+  y?: number | string;
   payload?: {
     value: string;
   };
@@ -281,8 +281,10 @@ function CustomTick({ x = 0, y = 0, payload, meta }: CustomTickProps) {
   const label = payload?.value ?? '';
   const point: ChartDatum | undefined = meta.get(label);
   const color = point?.isWeekend ? COLORS.weekend : COLORS.weekday;
+  const resolvedY = typeof y === 'number' ? y : Number(y ?? 0);
+  const resolvedX = typeof x === 'number' || typeof x === 'string' ? x : 0;
   return (
-    <text x={x} y={y + 10} fill={color} textAnchor="middle" fontSize={12}>
+    <text x={resolvedX} y={resolvedY + 10} fill={color} textAnchor="middle" fontSize={12}>
       {label}
     </text>
   );
