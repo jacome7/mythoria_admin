@@ -487,7 +487,11 @@ export default function CampaignDetailPage() {
 
         {/* Sample Send */}
         {availableLocales.length > 0 && (
-          <SampleSendForm campaignId={campaignId} availableLocales={availableLocales} />
+          <SampleSendForm
+            campaignId={campaignId}
+            availableLocales={availableLocales}
+            assets={campaign.assets}
+          />
         )}
 
         {/* Progress & Batch History */}

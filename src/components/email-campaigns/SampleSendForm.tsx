@@ -2,21 +2,37 @@
 
 import { useState } from 'react';
 import { campaignClient } from '@/lib/campaignClient';
-import { FiSend } from 'react-icons/fi';
+import type { MarketingCampaignAsset } from '@/db/schema/campaigns';
+import { FiSend, FiEye } from 'react-icons/fi';
+import TemplatePreviewModal from './TemplatePreviewModal';
 
 const LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'] as const;
+
+const DEFAULT_VARIABLES_JSON = JSON.stringify(
+  { name: 'John Doe', firstName: 'John', email: 'john@example.com' },
+  null,
+  2,
+);
 
 interface SampleSendFormProps {
   campaignId: string;
   availableLocales: string[];
+  assets: MarketingCampaignAsset[];
 }
 
-export default function SampleSendForm({ campaignId, availableLocales }: SampleSendFormProps) {
+export default function SampleSendForm({
+  campaignId,
+  availableLocales,
+  assets,
+}: SampleSendFormProps) {
   const [locale, setLocale] = useState(availableLocales[0] ?? 'en-US');
   const [email, setEmail] = useState('');
-  const [variablesJson, setVariablesJson] = useState('');
+  const [variablesJson, setVariablesJson] = useState(DEFAULT_VARIABLES_JSON);
   const [isSending, setIsSending] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const currentAsset = assets.find((a) => a.language === locale);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +74,7 @@ export default function SampleSendForm({ campaignId, availableLocales }: SampleS
       <div className="card-body">
         <h3 className="card-title text-sm">
           <FiSend className="text-base-content/60" />
-          Send Sample Email
+          Preview Email
         </h3>
 
         {message && (
@@ -115,13 +131,31 @@ export default function SampleSendForm({ campaignId, availableLocales }: SampleS
             />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline btn-secondary"
+              disabled={!currentAsset}
+              onClick={() => setPreviewOpen(true)}
+            >
+              <FiEye />
+              Preview
+            </button>
             <button type="submit" className="btn btn-sm btn-outline btn-info" disabled={isSending}>
               {isSending ? <span className="loading loading-spinner loading-xs" /> : <FiSend />}
               Send Sample
             </button>
           </div>
         </form>
+
+        <TemplatePreviewModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          subject={currentAsset?.subject ?? ''}
+          htmlBody={currentAsset?.htmlBody ?? ''}
+          locale={locale}
+          variablesJson={variablesJson}
+        />
       </div>
     </div>
   );

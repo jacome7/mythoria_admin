@@ -11,6 +11,7 @@ const TEMPLATE_OPTIONS = [
   { value: 'story-launch', label: 'Story Launch (Hero Banner)' },
   { value: 'enchanted-scroll', label: 'Enchanted Scroll (Literary)' },
   { value: 'minimal-ink', label: 'Minimal Ink (Clean & Modern)' },
+  { value: 'aurora-split', label: 'Aurora Split (Two-Column)' },
 ] as const;
 
 interface GeneratedAssets {

@@ -16,6 +16,7 @@ const TEMPLATE_MAP: Record<string, string> = {
   'story-launch': join(process.cwd(), 'src', 'templates', 'email', 'story-launch.html.hbs'),
   'enchanted-scroll': join(process.cwd(), 'src', 'templates', 'email', 'enchanted-scroll.html.hbs'),
   'minimal-ink': join(process.cwd(), 'src', 'templates', 'email', 'minimal-ink.html.hbs'),
+  'aurora-split': join(process.cwd(), 'src', 'templates', 'email', 'aurora-split.html.hbs'),
 };
 
 /**
