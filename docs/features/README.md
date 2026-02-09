@@ -18,5 +18,6 @@ This folder contains page-level documentation derived from the current `src/app`
 - `notifications.md`
 - `faqAndBlog.md`
 - `servicesAndHealth.md`
+- `emailMarketing.md`
 
 _Last updated: 2026-02-08_

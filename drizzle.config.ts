@@ -14,6 +14,7 @@ export default defineConfig({
     './src/db/schema/tickets.ts',
     './src/db/schema/credits.ts',
     './src/db/schema/managers.ts',
+    './src/db/schema/campaigns.ts',
   ],
   out: './drizzle',
   dialect: 'postgresql',

@@ -38,8 +38,9 @@ export async function GET() {
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const json = await response.json();
+    // Unwrap the notification engine envelope { success, data }
+    return NextResponse.json(json.data ?? json);
   } catch (error) {
     console.error('Error fetching mail marketing config:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -85,8 +86,9 @@ export async function PUT(request: Request) {
       return NextResponse.json(errorData, { status: response.status });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const json = await response.json();
+    // Unwrap the notification engine envelope { success, data }
+    return NextResponse.json(json.data ?? json);
   } catch (error) {
     console.error('Error updating mail marketing config:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

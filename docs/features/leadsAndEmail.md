@@ -32,3 +32,4 @@ Lead acquisition and outbound campaign setup is split between `/leads` (data hyg
   - `leads` (email status, source attribution, campaign eligibility)
 - **backoffice_db**
   - optional audit/operational records for admin actions (service-level)
+  - `marketing_campaigns`, `marketing_campaign_assets`, `marketing_campaign_batches`, `marketing_campaign_recipients` — multi-campaign email marketing tables (see [emailMarketing.md](emailMarketing.md))
