@@ -186,7 +186,13 @@ export const campaignClient = {
   // ---------------------------------------------------------------------------
   async generateAssets(
     id: string,
-    data: { sourceLocale: string; subject: string; bodyDescription: string; templateName: string },
+    data: {
+      sourceLocale: string;
+      subject: string;
+      bodyDescription: string;
+      templateName: string;
+      targetLocales?: string[];
+    },
   ): Promise<{ success: boolean; jobId: string; estimatedDuration: number }> {
     return request<{ success: boolean; jobId: string; estimatedDuration: number }>(
       `${BASE_URL}/${id}/generate-assets`,

@@ -46,7 +46,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if ('error' in result) return result.error;
 
     const { id } = await params;
+    const deleteAssetId = request.nextUrl.searchParams.get('deleteAsset');
     const body = await request.json();
+
+    if (deleteAssetId) {
+      const deleted = await campaignService.deleteCampaignAsset(deleteAssetId);
+      if (!deleted) {
+        return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+      }
+    }
 
     // Handle asset upserts if included
     if (body.assets && Array.isArray(body.assets)) {
