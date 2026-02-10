@@ -51,11 +51,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const deleteAssetId = requestUrl?.searchParams.get('deleteAsset');
     const body = await request.json();
 
+    // Handle asset deletion if requested via query param
     if (deleteAssetId) {
       const deleted = await campaignService.deleteCampaignAsset(deleteAssetId);
       if (!deleted) {
         return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
       }
+      const campaign = await campaignService.getCampaign(id);
+      return NextResponse.json(campaign);
     }
 
     // Handle asset upserts if included

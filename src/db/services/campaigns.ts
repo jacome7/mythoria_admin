@@ -396,8 +396,10 @@ export const campaignService = {
       .limit(1);
 
     if (!campaign) throw new Error('Campaign not found');
-    if (campaign.status !== 'draft') {
-      throw new Error(`Cannot modify assets for campaign in '${campaign.status}' status.`);
+    if (campaign.status !== 'draft' && campaign.status !== 'active') {
+      throw new Error(
+        `Cannot modify assets for campaign in '${campaign.status}' status. Only draft or active campaigns allow asset edits.`,
+      );
     }
 
     // Try to find existing asset for this locale

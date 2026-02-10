@@ -266,6 +266,8 @@ export default function CampaignDetailPage() {
   if (!campaign) return null;
 
   const isDraft = campaign.status === 'draft';
+  const canEditAssets = isDraft || campaign.status === 'active';
+  const canDeleteAssets = isDraft;
   const availableLocales = campaign.assets.map((a) => a.language);
   const audienceDeltaTotal =
     audienceCount && previousAudienceCount
@@ -459,7 +461,7 @@ export default function CampaignDetailPage() {
           <div className="card-body">
             <div className="flex items-center justify-between mb-3">
               <h3 className="card-title text-sm">Email Assets</h3>
-              {isDraft && (
+              {canEditAssets && (
                 <button
                   className="btn btn-sm btn-outline btn-warning gap-1"
                   onClick={() => setGenerateModalOpen(true)}
@@ -472,7 +474,8 @@ export default function CampaignDetailPage() {
               assets={campaign.assets}
               onSave={handleSaveAsset}
               onDelete={handleDeleteAsset}
-              readOnly={!isDraft}
+              readOnly={!canEditAssets}
+              canDelete={canDeleteAssets}
             />
           </div>
         </div>

@@ -13,6 +13,8 @@ interface CampaignAssetEditorProps {
   onSave: (asset: CampaignAssetInput) => Promise<void>;
   onDelete: (assetId: string) => Promise<void>;
   readOnly?: boolean;
+  /** When true the delete button is hidden even if readOnly is false. */
+  canDelete?: boolean;
 }
 
 export default function CampaignAssetEditor({
@@ -20,6 +22,7 @@ export default function CampaignAssetEditor({
   onSave,
   onDelete,
   readOnly = false,
+  canDelete = true,
 }: CampaignAssetEditorProps) {
   const [activeLocale, setActiveLocale] = useState<string>(LOCALES[0]);
   const [isSaving, setIsSaving] = useState(false);
@@ -191,7 +194,7 @@ export default function CampaignAssetEditor({
           {/* Actions */}
           {!readOnly && (
             <div className="flex gap-2 justify-end">
-              {existingAsset && (
+              {existingAsset && canDelete && (
                 <button
                   className="btn btn-sm btn-error btn-outline"
                   onClick={() => handleDelete(activeLocale)}
