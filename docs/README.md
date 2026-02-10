@@ -54,6 +54,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 ## Recent behavior notes
 
 - 2026-02-08: Email campaign audience estimation now uses draft filters and metadata from the detail page (see `docs/features/emailMarketing.md`).
+- 2026-02-09: Added a dependency update prompt for upgrading packages and running quality gates (see `.github/prompts/update-dependencies.prompt.md`).
 
 ---
 

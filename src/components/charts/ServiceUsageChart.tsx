@@ -297,8 +297,8 @@ function LegendPill({ color, label }: { color: string; label: string }) {
 }
 
 interface CustomTickProps {
-  x?: number;
-  y?: number;
+  x?: number | string;
+  y?: number | string;
   payload?: { value: string };
   meta: Map<string, ChartDatum>;
 }
@@ -307,8 +307,10 @@ function CustomTick({ x = 0, y = 0, payload, meta }: CustomTickProps) {
   const label = payload?.value ?? '';
   const point = meta.get(label);
   const color = point?.isWeekend ? '#f59e0b' : '#94a3b8';
+  const resolvedY = typeof y === 'number' ? y : Number(y ?? 0);
+  const resolvedX = typeof x === 'number' || typeof x === 'string' ? x : 0;
   return (
-    <text x={x} y={y + 10} fill={color} textAnchor="middle" fontSize={12}>
+    <text x={resolvedX} y={resolvedY + 10} fill={color} textAnchor="middle" fontSize={12}>
       {label}
     </text>
   );

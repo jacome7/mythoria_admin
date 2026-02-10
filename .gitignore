@@ -42,6 +42,7 @@ drizzle/
 
 # IDE
 .idea/
+.swc/
 
 # OS
 Thumbs.db

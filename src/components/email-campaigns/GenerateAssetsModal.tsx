@@ -37,6 +37,8 @@ export default function GenerateAssetsModal({
 }: GenerateAssetsModalProps) {
   // Form state
   const [sourceLocale, setSourceLocale] = useState<string>('en-US');
+  const [localeMode, setLocaleMode] = useState<'all' | 'custom'>('all');
+  const [targetLocales, setTargetLocales] = useState<string[]>([...SUPPORTED_LOCALES]);
   const [subject, setSubject] = useState('');
   const [bodyDescription, setBodyDescription] = useState('');
   const [templateName, setTemplateName] = useState<string>(TEMPLATE_OPTIONS[0].value);
@@ -69,10 +71,25 @@ export default function GenerateAssetsModal({
       setJobError(null);
       setProgress(0);
       setJobId(null);
+      setLocaleMode('all');
+      setTargetLocales([...SUPPORTED_LOCALES]);
     } else {
       stopPolling();
     }
   }, [open, stopPolling]);
+
+  useEffect(() => {
+    if (localeMode === 'all') {
+      setTargetLocales([...SUPPORTED_LOCALES]);
+      return;
+    }
+
+    setTargetLocales((current) => {
+      const next = new Set(current);
+      next.add(sourceLocale);
+      return Array.from(next);
+    });
+  }, [localeMode, sourceLocale]);
 
   async function handleSubmit() {
     setFormError(null);
@@ -90,6 +107,14 @@ export default function GenerateAssetsModal({
       return;
     }
 
+    const requestedLocales =
+      localeMode === 'all' ? [...SUPPORTED_LOCALES] : Array.from(new Set(targetLocales));
+
+    if (requestedLocales.length === 0) {
+      setFormError('Please select at least one locale to generate.');
+      return;
+    }
+
     try {
       setPhase('generating');
       setProgress(0);
@@ -99,6 +124,7 @@ export default function GenerateAssetsModal({
         subject: subject.trim(),
         bodyDescription: bodyDescription.trim(),
         templateName,
+        ...(localeMode === 'custom' ? { targetLocales: requestedLocales } : {}),
       });
 
       if (!response.success || !response.jobId) {
@@ -151,6 +177,9 @@ export default function GenerateAssetsModal({
 
   if (!open) return null;
 
+  const generationLocales =
+    localeMode === 'all' ? [...SUPPORTED_LOCALES] : Array.from(new Set(targetLocales));
+
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-lg">
@@ -187,7 +216,7 @@ export default function GenerateAssetsModal({
                 ))}
               </select>
               <label className="label py-0.5">
-                <span className="label-text-alt text-base-content/60">
+                <span className="label-text-alt text-xs leading-snug text-base-content/60 whitespace-normal break-words block">
                   The locale of the subject and description you provide. Other locales will be
                   generated via translation.
                 </span>
@@ -246,8 +275,70 @@ export default function GenerateAssetsModal({
                 ))}
               </select>
               <label className="label py-0.5">
-                <span className="label-text-alt text-base-content/60">
+                <span className="label-text-alt text-xs leading-snug text-base-content/60 whitespace-normal break-words block">
                   The HTML structure and styling reference for the generated email.
+                </span>
+              </label>
+            </div>
+
+            {/* Target Locales */}
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-sm font-medium">Target Locales</span>
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="label cursor-pointer justify-start gap-2 py-0">
+                  <input
+                    type="radio"
+                    className="radio radio-sm"
+                    name="locale-mode"
+                    checked={localeMode === 'all'}
+                    onChange={() => setLocaleMode('all')}
+                  />
+                  <span className="label-text text-sm">All locales</span>
+                </label>
+                <label className="label cursor-pointer justify-start gap-2 py-0">
+                  <input
+                    type="radio"
+                    className="radio radio-sm"
+                    name="locale-mode"
+                    checked={localeMode === 'custom'}
+                    onChange={() => setLocaleMode('custom')}
+                  />
+                  <span className="label-text text-sm">Choose locales</span>
+                </label>
+              </div>
+              {localeMode === 'custom' && (
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {SUPPORTED_LOCALES.map((locale) => {
+                    const isSource = locale === sourceLocale;
+                    const isChecked = targetLocales.includes(locale) || isSource;
+                    return (
+                      <label key={locale} className="label cursor-pointer gap-2 py-0">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-sm"
+                          checked={isChecked}
+                          disabled={isSource}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...targetLocales, locale]
+                              : targetLocales.filter((value) => value !== locale);
+                            setTargetLocales(next);
+                          }}
+                        />
+                        <span className="label-text text-sm">
+                          {locale}
+                          {isSource ? ' (source)' : ''}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              <label className="label py-0.5">
+                <span className="label-text-alt text-xs leading-snug text-base-content/60 whitespace-normal break-words block">
+                  Pick the locales to generate. The source locale is always included.
                 </span>
               </label>
             </div>
@@ -257,7 +348,8 @@ export default function GenerateAssetsModal({
                 Cancel
               </button>
               <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
-                <FiZap /> Generate for All Locales
+                <FiZap />
+                {localeMode === 'all' ? 'Generate for All Locales' : 'Generate for Selected Locales'}
               </button>
             </div>
           </div>
@@ -269,8 +361,8 @@ export default function GenerateAssetsModal({
         {phase === 'generating' && (
           <div className="space-y-4">
             <p className="text-sm text-base-content/70">
-              AI is generating email assets for all {SUPPORTED_LOCALES.length} locales. This may
-              take a few minutes...
+              AI is generating email assets for {generationLocales.length} locales. This may take a
+              few minutes...
             </p>
 
             <div className="flex items-center gap-3">
@@ -285,7 +377,7 @@ export default function GenerateAssetsModal({
               <p>
                 Target locales:{' '}
                 <span className="font-medium">
-                  {SUPPORTED_LOCALES.filter((l) => l !== sourceLocale).join(', ')}
+                  {generationLocales.filter((l) => l !== sourceLocale).join(', ') || 'None'}
                 </span>
               </p>
               {jobId && (
@@ -310,8 +402,8 @@ export default function GenerateAssetsModal({
           <div className="space-y-4">
             <div className="alert alert-success">
               <span className="text-sm">
-                Email assets generated for all {SUPPORTED_LOCALES.length} locales. Review the
-                content in each locale tab, then save.
+                Email assets generated for {generationLocales.length} locales. Review the content
+                in each locale tab, then save.
               </span>
             </div>
             <div className="modal-action">

@@ -19,6 +19,8 @@ const TEMPLATE_MAP: Record<string, string> = {
   'aurora-split': join(process.cwd(), 'src', 'templates', 'email', 'aurora-split.html.hbs'),
 };
 
+const SUPPORTED_LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'] as const;
+
 /**
  * POST /api/email-campaigns/[id]/generate-assets
  * Trigger an async email asset generation job on the Story Generation Workflow.
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { id: campaignId } = await params;
     const body = await request.json();
 
-    const { sourceLocale, subject, bodyDescription, templateName } = body;
+    const { sourceLocale, subject, bodyDescription, templateName, targetLocales } = body;
 
     // Validate required fields
     if (!sourceLocale || !subject || !bodyDescription) {
@@ -39,6 +41,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { error: 'sourceLocale, subject, and bodyDescription are required' },
         { status: 400 },
       );
+    }
+
+    if (targetLocales !== undefined) {
+      if (!Array.isArray(targetLocales) || targetLocales.length === 0) {
+        return NextResponse.json(
+          { error: 'targetLocales must be a non-empty array when provided' },
+          { status: 400 },
+        );
+      }
+
+      const invalidLocales = targetLocales.filter(
+        (locale) => !SUPPORTED_LOCALES.includes(locale as (typeof SUPPORTED_LOCALES)[number]),
+      );
+
+      if (invalidLocales.length > 0) {
+        return NextResponse.json(
+          { error: `Unsupported locales: ${invalidLocales.join(', ')}` },
+          { status: 400 },
+        );
+      }
     }
 
     // Resolve the template
@@ -72,6 +94,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         bodyDescription,
         templateHtml,
         campaignId,
+        ...(targetLocales ? { targetLocales } : {}),
       }),
     });
 

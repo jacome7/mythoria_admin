@@ -275,12 +275,14 @@ function CustomTick({
   y = 0,
   payload,
 }: {
-  x?: number;
-  y?: number;
+  x?: number | string;
+  y?: number | string;
   payload?: { value: string };
 }) {
+  const resolvedY = typeof y === 'number' ? y : Number(y ?? 0);
+  const resolvedX = typeof x === 'number' || typeof x === 'string' ? x : 0;
   return (
-    <text x={x} y={y + 10} fill="#64748b" textAnchor="middle" fontSize={12}>
+    <text x={resolvedX} y={resolvedY + 10} fill="#64748b" textAnchor="middle" fontSize={12}>
       {payload?.value ?? ''}
     </text>
   );
