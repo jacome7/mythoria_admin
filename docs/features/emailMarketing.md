@@ -134,7 +134,9 @@ Accessible by clicking a campaign title or the edit action in the list.
 - A change badge appears next to the total after a second estimate to show the delta.
 
 4. **Asset editor** — Locale tabs (en-US, pt-PT, es-ES, fr-FR, de-DE) with subject, HTML body, and text body editors. Includes a collapsible variables reference panel.
-  - **Generate Email Assets** (draft only) — Opens a modal to generate AI-powered email content. The admin provides the source locale, subject, body description, and selects a reference template. The system generates the source locale email body using AI, then translates to the selected target locales (all locales by default). Results are loaded into the asset editor for review before saving.
+
+- **Generate Email Assets** (draft only) — Opens a modal to generate AI-powered email content. The admin provides the source locale, subject, body description, and selects a reference template. The system generates the source locale email body using AI, then translates to the selected target locales (all locales by default). Results are loaded into the asset editor for review before saving.
+
 5. **Sample send** — Test a specific locale's asset by sending to an arbitrary email address with optional variable overrides.
 6. **Progress** (active/paused/completed campaigns) — Stats grid (estimated audience, sent, remaining, failed, skipped), progress bar, and batch history table.
 
