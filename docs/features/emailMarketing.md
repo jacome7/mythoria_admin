@@ -315,7 +315,7 @@ All campaign UI components are in `src/components/email-campaigns/`:
 
 ---
 
-## Compliance (GDPR / CAN-SPAM)
+## Compliance (GDPR / CAN-SPAM / Gmail FBL)
 
 All campaign emails must include:
 
@@ -323,6 +323,43 @@ All campaign emails must include:
 2. **Physical postal address** — configurable company address in the email footer.
 3. **Suppression enforcement** — checked before every send: lead global suppression (`unsub`, `hard_bounce`), user notification preferences, and per-campaign deduplication.
 4. **Unsubscribe processing** — honored immediately; recipient suppressed before the next batch.
+5. **Gmail Feedback Loop (FBL) header** — every campaign email includes a `Feedback-ID` header for spam-rate monitoring via [Gmail Postmaster Tools](https://support.google.com/mail/answer/6254652).
+
+### Gmail Feedback-ID header
+
+The `Feedback-ID` header is automatically injected by the Notification Engine on all campaign emails (including sample sends). It enables Google's Feedback Loop dashboard to surface per-campaign spam complaint rates.
+
+**Header format:**
+
+```
+Feedback-ID: <CampaignHash>:<RecipientType>:mktg:<SenderId>
+```
+
+| Field           | Description                                                                                      | Example    |
+| --------------- | ------------------------------------------------------------------------------------------------ | ---------- |
+| `CampaignHash`  | First 8 hex characters of the SHA-256 hash of the campaign UUID. Unique per campaign.            | `a1b2c3d4` |
+| `RecipientType` | `user` or `lead` — distinguishes audience segments in FBL reports.                               | `lead`     |
+| `MailType`      | Fixed value `mktg` (marketing). Reserved for future expansion (e.g., `txn` for transactional).   | `mktg`     |
+| `SenderId`      | Consistent identifier from `GMAIL_FBL_SENDER_ID` env var (5–15 chars, default: `mythoria`).      | `mythoria` |
+
+**Example:**
+
+```
+Feedback-ID: a1b2c3d4:lead:mktg:mythoria
+```
+
+**Prerequisites:**
+
+- The sending domain must be DKIM-signed and verified in Gmail Postmaster Tools.
+- SPF records must publish the sending IPs.
+- Sending IPs must have valid PTR records resolving to a hostname (preferably one of the DKIM domains).
+- FBL data is only generated for `@gmail.com` recipients and only when a given identifier appears in a sufficient volume of mail and distinct spam reports.
+
+**Configuration:**
+
+| Env var               | Required | Default    | Description                                      |
+| --------------------- | -------- | ---------- | ------------------------------------------------ |
+| `GMAIL_FBL_SENDER_ID` | No       | `mythoria` | Consistent 5–15 char sender ID for all campaigns |
 
 ---
 
