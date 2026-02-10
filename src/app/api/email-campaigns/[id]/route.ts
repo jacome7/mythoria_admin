@@ -46,7 +46,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if ('error' in result) return result.error;
 
     const { id } = await params;
-    const deleteAssetId = request.nextUrl.searchParams.get('deleteAsset');
+    const requestUrl =
+      (request as { nextUrl?: URL }).nextUrl ?? (request.url ? new URL(request.url) : null);
+    const deleteAssetId = requestUrl?.searchParams.get('deleteAsset');
     const body = await request.json();
 
     if (deleteAssetId) {

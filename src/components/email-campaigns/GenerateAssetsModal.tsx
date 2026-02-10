@@ -349,7 +349,9 @@ export default function GenerateAssetsModal({
               </button>
               <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
                 <FiZap />
-                {localeMode === 'all' ? 'Generate for All Locales' : 'Generate for Selected Locales'}
+                {localeMode === 'all'
+                  ? 'Generate for All Locales'
+                  : 'Generate for Selected Locales'}
               </button>
             </div>
           </div>
@@ -402,8 +404,8 @@ export default function GenerateAssetsModal({
           <div className="space-y-4">
             <div className="alert alert-success">
               <span className="text-sm">
-                Email assets generated for {generationLocales.length} locales. Review the content
-                in each locale tab, then save.
+                Email assets generated for {generationLocales.length} locales. Review the content in
+                each locale tab, then save.
               </span>
             </div>
             <div className="modal-action">
