@@ -18,7 +18,7 @@ import CampaignAssetEditor from '@/components/email-campaigns/CampaignAssetEdito
 import CampaignProgress from '@/components/email-campaigns/CampaignProgress';
 import SampleSendForm from '@/components/email-campaigns/SampleSendForm';
 import GenerateAssetsModal from '@/components/email-campaigns/GenerateAssetsModal';
-import { FiSave, FiZap } from 'react-icons/fi';
+import { FiSave, FiZap, FiCopy, FiCheck } from 'react-icons/fi';
 
 type NotificationPreference = (typeof NOTIFICATION_PREFERENCES)[number];
 
@@ -67,6 +67,10 @@ export default function CampaignDetailPage() {
   // Generate assets modal
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
 
+  // Campaign ID / Feedback-ID display
+  const [campaignHash, setCampaignHash] = useState<string>('');
+  const [copiedField, setCopiedField] = useState<'id' | 'fbl' | null>(null);
+
   const fetchCampaign = useCallback(async () => {
     try {
       setError(null);
@@ -100,6 +104,24 @@ export default function CampaignDetailPage() {
     setAudienceCount(null);
     setPreviousAudienceCount(null);
   }, [campaignId]);
+
+  // Compute short SHA-256 hash of campaign ID (mirrors server-side shortCampaignHash)
+  useEffect(() => {
+    async function computeHash() {
+      const data = new TextEncoder().encode(campaignId);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      setCampaignHash(hex.slice(0, 8));
+    }
+    computeHash();
+  }, [campaignId]);
+
+  function handleCopyToClipboard(text: string, field: 'id' | 'fbl') {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  }
 
   // State transitions
   async function handleActivate() {
@@ -298,6 +320,56 @@ export default function CampaignDetailPage() {
       )}
 
       <div className="space-y-6">
+        {/* Campaign ID & Feedback Loop info */}
+        <div className="card bg-base-100 shadow-sm border border-base-200">
+          <div className="card-body py-3 px-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-base-content/50 font-medium">Campaign ID</span>
+                <code className="font-mono bg-base-200 px-2 py-0.5 rounded text-base-content/80">
+                  {campaignId}
+                </code>
+                <button
+                  className="btn btn-ghost btn-xs p-0 h-auto min-h-0"
+                  onClick={() => handleCopyToClipboard(campaignId, 'id')}
+                  title="Copy Campaign ID"
+                >
+                  {copiedField === 'id' ? (
+                    <FiCheck className="w-3.5 h-3.5 text-success" />
+                  ) : (
+                    <FiCopy className="w-3.5 h-3.5 text-base-content/40" />
+                  )}
+                </button>
+              </div>
+              <div className="h-4 w-px bg-base-300 hidden sm:block" />
+              <div className="flex items-center gap-2">
+                <span className="text-base-content/50 font-medium">Feedback-ID</span>
+                <div className="tooltip tooltip-bottom" data-tip="Gmail Feedback Loop header sent with every campaign email. Enables spam-rate tracking in Postmaster Tools.">
+                  <code className="font-mono bg-base-200 px-2 py-0.5 rounded text-base-content/80">
+                    {campaignHash ? `${campaignHash}:<user|lead>:mktg:mythoria` : '...'}
+                  </code>
+                </div>
+                <button
+                  className="btn btn-ghost btn-xs p-0 h-auto min-h-0"
+                  onClick={() =>
+                    handleCopyToClipboard(
+                      `${campaignHash}:<user|lead>:mktg:mythoria`,
+                      'fbl',
+                    )
+                  }
+                  title="Copy Feedback-ID"
+                >
+                  {copiedField === 'fbl' ? (
+                    <FiCheck className="w-3.5 h-3.5 text-success" />
+                  ) : (
+                    <FiCopy className="w-3.5 h-3.5 text-base-content/40" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Metadata section */}
         {isDraft && (
           <div className="card bg-base-100 shadow-sm border border-base-200">
