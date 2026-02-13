@@ -17,6 +17,7 @@ export default function GlobalSettingsPanel() {
   const [batchSize, setBatchSize] = useState(100);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTogglingPause, setIsTogglingPause] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const fetchConfig = useCallback(async () => {
@@ -48,6 +49,28 @@ export default function GlobalSettingsPanel() {
       setMessage(err instanceof Error ? err.message : 'Failed to update batch size');
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleTogglePaused() {
+    if (!config || isTogglingPause) {
+      return;
+    }
+
+    setIsTogglingPause(true);
+    setMessage(null);
+
+    try {
+      const updated = (await campaignClient.updateGlobalConfig({
+        paused: !config.paused,
+      })) as GlobalConfig;
+      setConfig(updated);
+      setMessage(updated.paused ? 'Campaign sending paused' : 'Campaign sending resumed');
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Failed to update paused state');
+    } finally {
+      setIsTogglingPause(false);
     }
   }
 
@@ -102,6 +125,25 @@ export default function GlobalSettingsPanel() {
             <span className="label-text-alt text-base-content/50">10 - 500 emails per cycle</span>
           </label>
         </div>
+
+        {/* Pause / resume */}
+        {config && (
+          <div className="mt-1">
+            <button
+              className={'btn btn-sm w-full ' + (config.paused ? 'btn-success' : 'btn-warning')}
+              onClick={handleTogglePaused}
+              disabled={isTogglingPause}
+            >
+              {isTogglingPause ? (
+                <span className="loading loading-spinner loading-xs" />
+              ) : config.paused ? (
+                'Resume Sending'
+              ) : (
+                'Pause Sending'
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Send window info */}
         {config && (
