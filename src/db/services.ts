@@ -16,6 +16,7 @@ import {
 } from './schema';
 import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
 import { storyGenerationRuns, storyGenerationSteps } from './schema/workflows';
+import { GraphicalStyle, NovelStyle, TargetAudience } from './type/story-enums';
 import type { RegistrationAggregation, RegistrationRange } from '@/lib/analytics/registrations';
 import type { RevenueAggregation } from '@/lib/analytics/revenue';
 import type { ServiceUsageAggregation, ServiceUsageEventType } from '@/lib/analytics/service-usage';
@@ -42,6 +43,81 @@ const startOfUtcMonth = (date: Date) => {
   const copy = startOfUtcDay(date);
   copy.setUTCDate(1);
   return copy;
+};
+
+type StoryListStatus = 'temporary' | 'draft' | 'writing' | 'published';
+
+type StoryFilterArgs = {
+  searchTerm?: string;
+  statusFilter?: string;
+  featuredFilter?: string;
+  targetAudienceFilter?: string;
+  novelStyleFilter?: string;
+  graphicalStyleFilter?: string;
+};
+
+const storyListSelect = {
+  storyId: stories.storyId,
+  title: stories.title,
+  status: stories.status,
+  chapterCount: stories.chapterCount,
+  createdAt: stories.createdAt,
+  updatedAt: stories.updatedAt,
+  isPublic: stories.isPublic,
+  isFeatured: stories.isFeatured,
+  interiorPdfUri: stories.interiorPdfUri,
+  coverPdfUri: stories.coverPdfUri,
+  targetAudience: stories.targetAudience,
+  novelStyle: stories.novelStyle,
+  graphicalStyle: stories.graphicalStyle,
+  author: {
+    authorId: authors.authorId,
+    displayName: authors.displayName,
+    email: authors.email,
+  },
+};
+
+const buildStoryWhereConditions = ({
+  searchTerm,
+  statusFilter,
+  featuredFilter,
+  targetAudienceFilter,
+  novelStyleFilter,
+  graphicalStyleFilter,
+}: StoryFilterArgs) => {
+  const whereConditions = [];
+
+  if (searchTerm && searchTerm.trim()) {
+    const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
+    whereConditions.push(
+      sql`(LOWER(${stories.title}) LIKE ${searchPattern} OR
+           LOWER(${authors.displayName}) LIKE ${searchPattern} OR
+           LOWER(${authors.email}) LIKE ${searchPattern})`,
+    );
+  }
+
+  if (statusFilter && statusFilter !== 'all') {
+    whereConditions.push(eq(stories.status, statusFilter as StoryListStatus));
+  }
+
+  if (featuredFilter && featuredFilter !== 'all') {
+    const isFeatured = featuredFilter === 'featured';
+    whereConditions.push(eq(stories.isFeatured, isFeatured));
+  }
+
+  if (targetAudienceFilter && targetAudienceFilter !== 'all') {
+    whereConditions.push(eq(stories.targetAudience, targetAudienceFilter as TargetAudience));
+  }
+
+  if (novelStyleFilter && novelStyleFilter !== 'all') {
+    whereConditions.push(eq(stories.novelStyle, novelStyleFilter as NovelStyle));
+  }
+
+  if (graphicalStyleFilter && graphicalStyleFilter !== 'all') {
+    whereConditions.push(eq(stories.graphicalStyle, graphicalStyleFilter as GraphicalStyle));
+  }
+
+  return whereConditions;
 };
 
 export const adminService = {
@@ -723,34 +799,22 @@ export const adminService = {
     searchTerm?: string,
     statusFilter?: string,
     featuredFilter?: string,
+    targetAudienceFilter?: string,
+    novelStyleFilter?: string,
+    graphicalStyleFilter?: string,
     sortBy: 'title' | 'createdAt' | 'updatedAt' | 'status' = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const db = getMythoriaDb();
     const offset = (page - 1) * limit;
-
-    const whereConditions = [];
-
-    // Search filter
-    if (searchTerm && searchTerm.trim()) {
-      const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
-      whereConditions.push(
-        sql`(LOWER(${stories.title}) LIKE ${searchPattern} OR 
-             LOWER(${authors.displayName}) LIKE ${searchPattern} OR 
-             LOWER(${authors.email}) LIKE ${searchPattern})`,
-      );
-    }
-
-    // Status filter
-    if (statusFilter && statusFilter !== 'all') {
-      whereConditions.push(eq(stories.status, statusFilter as 'draft' | 'writing' | 'published'));
-    }
-
-    // Featured filter
-    if (featuredFilter && featuredFilter !== 'all') {
-      const isFeatured = featuredFilter === 'featured';
-      whereConditions.push(eq(stories.isFeatured, isFeatured));
-    }
+    const whereConditions = buildStoryWhereConditions({
+      searchTerm,
+      statusFilter,
+      featuredFilter,
+      targetAudienceFilter,
+      novelStyleFilter,
+      graphicalStyleFilter,
+    });
 
     const orderColumn =
       sortBy === 'title'
@@ -761,108 +825,41 @@ export const adminService = {
             ? stories.updatedAt
             : stories.createdAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-    // Build the query with conditional where clause
     const baseQuery = db
-      .select({
-        storyId: stories.storyId,
-        title: stories.title,
-        status: stories.status,
-        chapterCount: stories.chapterCount,
-        createdAt: stories.createdAt,
-        updatedAt: stories.updatedAt,
-        isPublic: stories.isPublic,
-        isFeatured: stories.isFeatured,
-        interiorPdfUri: stories.interiorPdfUri,
-        coverPdfUri: stories.coverPdfUri,
-        // htmlUri/pdfUri removed
-        author: {
-          authorId: authors.authorId,
-          displayName: authors.displayName,
-          email: authors.email,
-        },
-      })
+      .select(storyListSelect)
       .from(stories)
       .innerJoin(authors, eq(stories.authorId, authors.authorId));
+    const filteredQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
 
-    // Execute query with or without where conditions
-    let results;
-    if (whereConditions.length > 0) {
-      let combinedCondition = whereConditions[0];
-      for (let i = 1; i < whereConditions.length; i++) {
-        combinedCondition = sql`${combinedCondition} AND ${whereConditions[i]}`;
-      }
-
-      results = await db
-        .select({
-          storyId: stories.storyId,
-          title: stories.title,
-          status: stories.status,
-          chapterCount: stories.chapterCount,
-          createdAt: stories.createdAt,
-          updatedAt: stories.updatedAt,
-          isPublic: stories.isPublic,
-          isFeatured: stories.isFeatured,
-          interiorPdfUri: stories.interiorPdfUri,
-          coverPdfUri: stories.coverPdfUri,
-          // htmlUri/pdfUri removed
-          author: {
-            authorId: authors.authorId,
-            displayName: authors.displayName,
-            email: authors.email,
-          },
-        })
-        .from(stories)
-        .innerJoin(authors, eq(stories.authorId, authors.authorId))
-        .where(combinedCondition)
-        .orderBy(orderDirection)
-        .limit(limit)
-        .offset(offset);
-    } else {
-      results = await baseQuery.orderBy(orderDirection).limit(limit).offset(offset);
-    }
-
-    return results;
+    return filteredQuery.orderBy(orderDirection).limit(limit).offset(offset);
   },
 
   async countStoriesWithAuthors(
     searchTerm?: string,
     statusFilter?: string,
     featuredFilter?: string,
+    targetAudienceFilter?: string,
+    novelStyleFilter?: string,
+    graphicalStyleFilter?: string,
   ) {
     const db = getMythoriaDb();
-
-    const whereConditions = [];
-
-    if (searchTerm && searchTerm.trim()) {
-      const searchPattern = `%${searchTerm.trim().toLowerCase()}%`;
-      whereConditions.push(
-        sql`(LOWER(${stories.title}) LIKE ${searchPattern} OR 
-             LOWER(${authors.displayName}) LIKE ${searchPattern} OR 
-             LOWER(${authors.email}) LIKE ${searchPattern})`,
-      );
-    }
-
-    if (statusFilter && statusFilter !== 'all') {
-      whereConditions.push(eq(stories.status, statusFilter as 'draft' | 'writing' | 'published'));
-    }
-
-    if (featuredFilter && featuredFilter !== 'all') {
-      const isFeatured = featuredFilter === 'featured';
-      whereConditions.push(eq(stories.isFeatured, isFeatured));
-    }
+    const whereConditions = buildStoryWhereConditions({
+      searchTerm,
+      statusFilter,
+      featuredFilter,
+      targetAudienceFilter,
+      novelStyleFilter,
+      graphicalStyleFilter,
+    });
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
     const baseCountQuery = db
       .select({ value: count() })
       .from(stories)
       .innerJoin(authors, eq(stories.authorId, authors.authorId));
-
-    let combinedCondition = whereConditions[0];
-    for (let i = 1; i < whereConditions.length; i++) {
-      combinedCondition = sql`${combinedCondition} AND ${whereConditions[i]}`;
-    }
-
-    const countQuery = combinedCondition ? baseCountQuery.where(combinedCondition) : baseCountQuery;
+    const countQuery = whereClause ? baseCountQuery.where(whereClause) : baseCountQuery;
 
     const [result] = await countQuery;
     return Number(result?.value ?? 0);

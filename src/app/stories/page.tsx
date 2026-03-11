@@ -4,6 +4,17 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
+import {
+  getAllGraphicalStyles,
+  getAllNovelStyles,
+  getAllTargetAudiences,
+  getGraphicalStyleLabel,
+  getNovelStyleLabel,
+  getTargetAudienceLabel,
+  GraphicalStyle,
+  NovelStyle,
+  TargetAudience,
+} from '@/types/story-enums';
 
 interface Story {
   storyId: string;
@@ -13,7 +24,7 @@ interface Story {
     displayName: string;
     email: string;
   };
-  status: 'draft' | 'writing' | 'published';
+  status: 'temporary' | 'draft' | 'writing' | 'published';
   chapterCount: number;
   createdAt: string;
   updatedAt: string;
@@ -21,6 +32,9 @@ interface Story {
   isFeatured: boolean;
   interiorPdfUri?: string | null;
   coverPdfUri?: string | null;
+  targetAudience: TargetAudience | null;
+  novelStyle: NovelStyle | null;
+  graphicalStyle: GraphicalStyle | null;
 }
 
 interface PaginationData {
@@ -37,6 +51,10 @@ interface StoriesResponse {
   pagination: PaginationData;
 }
 
+const targetAudienceOptions = getAllTargetAudiences();
+const novelStyleOptions = getAllNovelStyles();
+const graphicalStyleOptions = getAllGraphicalStyles();
+
 export default function StoriesPage() {
   const { session, loading } = useAdminAuth();
   const [stories, setStories] = useState<Story[]>([]);
@@ -46,6 +64,9 @@ export default function StoriesPage() {
   const [pageSize, setPageSize] = useState<50 | 100 | 200>(50);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterFeatured, setFilterFeatured] = useState<string>('all');
+  const [filterTargetAudience, setFilterTargetAudience] = useState<string>('all');
+  const [filterNovelStyle, setFilterNovelStyle] = useState<string>('all');
+  const [filterGraphicalStyle, setFilterGraphicalStyle] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [sortBy, setSortBy] = useState<'title' | 'createdAt' | 'updatedAt' | 'status'>('createdAt');
@@ -70,6 +91,9 @@ export default function StoriesPage() {
           ...(searchTerm && { search: searchTerm }),
           ...(filterStatus !== 'all' && { status: filterStatus }),
           ...(filterFeatured !== 'all' && { featured: filterFeatured }),
+          ...(filterTargetAudience !== 'all' && { target_audience: filterTargetAudience }),
+          ...(filterNovelStyle !== 'all' && { novel_style: filterNovelStyle }),
+          ...(filterGraphicalStyle !== 'all' && { graphical_style: filterGraphicalStyle }),
           sortBy: sortBy,
           sortOrder: sortOrder,
         });
@@ -88,7 +112,17 @@ export default function StoriesPage() {
         setIsLoading(false);
       }
     },
-    [searchTerm, filterStatus, filterFeatured, sortBy, sortOrder, pageSize],
+    [
+      searchTerm,
+      filterStatus,
+      filterFeatured,
+      filterTargetAudience,
+      filterNovelStyle,
+      filterGraphicalStyle,
+      sortBy,
+      sortOrder,
+      pageSize,
+    ],
   );
 
   useEffect(() => {
@@ -126,6 +160,21 @@ export default function StoriesPage() {
     setCurrentPage(1);
   };
 
+  const handleTargetAudienceFilter = (targetAudience: string) => {
+    setFilterTargetAudience(targetAudience);
+    setCurrentPage(1);
+  };
+
+  const handleNovelStyleFilter = (novelStyle: string) => {
+    setFilterNovelStyle(novelStyle);
+    setCurrentPage(1);
+  };
+
+  const handleGraphicalStyleFilter = (graphicalStyle: string) => {
+    setFilterGraphicalStyle(graphicalStyle);
+    setCurrentPage(1);
+  };
+
   const handleSort = (column: 'title' | 'createdAt' | 'updatedAt' | 'status') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -145,6 +194,8 @@ export default function StoriesPage() {
     switch (status) {
       case 'draft':
         return 'badge-neutral';
+      case 'temporary':
+        return 'badge-ghost';
       case 'writing':
         return 'badge-warning';
       case 'published':
@@ -232,6 +283,60 @@ export default function StoriesPage() {
 
               <div className="form-control">
                 <label className="label">
+                  <span className="label-text">Target Audience</span>
+                </label>
+                <select
+                  className="select select-bordered w-full max-w-xs"
+                  value={filterTargetAudience}
+                  onChange={(e) => handleTargetAudienceFilter(e.target.value)}
+                >
+                  <option value="all">All Audiences</option>
+                  {targetAudienceOptions.map((audience) => (
+                    <option key={audience} value={audience}>
+                      {getTargetAudienceLabel(audience)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Novel Style</span>
+                </label>
+                <select
+                  className="select select-bordered w-full max-w-xs"
+                  value={filterNovelStyle}
+                  onChange={(e) => handleNovelStyleFilter(e.target.value)}
+                >
+                  <option value="all">All Novel Styles</option>
+                  {novelStyleOptions.map((style) => (
+                    <option key={style} value={style}>
+                      {getNovelStyleLabel(style)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Graphical Style</span>
+                </label>
+                <select
+                  className="select select-bordered w-full max-w-xs"
+                  value={filterGraphicalStyle}
+                  onChange={(e) => handleGraphicalStyleFilter(e.target.value)}
+                >
+                  <option value="all">All Graphical Styles</option>
+                  {graphicalStyleOptions.map((style) => (
+                    <option key={style} value={style}>
+                      {getGraphicalStyleLabel(style)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
                   <span className="label-text">Rows per page</span>
                 </label>
                 <select
@@ -298,6 +403,9 @@ export default function StoriesPage() {
                         Status {getSortIcon('status')}
                       </button>
                     </th>
+                    <th>Target Audience</th>
+                    <th>Novel Style</th>
+                    <th>Graphical Style</th>
                     <th>Chapters</th>
                     <th>
                       <button
@@ -344,6 +452,33 @@ export default function StoriesPage() {
                         <span className={`badge ${getStatusColor(story.status)} capitalize`}>
                           {story.status}
                         </span>
+                      </td>
+                      <td>
+                        <div className="text-sm">
+                          {story.targetAudience ? (
+                            getTargetAudienceLabel(story.targetAudience)
+                          ) : (
+                            <span className="opacity-50">Not set</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-sm">
+                          {story.novelStyle ? (
+                            getNovelStyleLabel(story.novelStyle)
+                          ) : (
+                            <span className="opacity-50">Not set</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-sm">
+                          {story.graphicalStyle ? (
+                            getGraphicalStyleLabel(story.graphicalStyle)
+                          ) : (
+                            <span className="opacity-50">Not set</span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <div className="text-sm">

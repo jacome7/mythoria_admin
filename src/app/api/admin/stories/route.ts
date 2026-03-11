@@ -25,6 +25,9 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const featured = searchParams.get('featured') || '';
+    const targetAudience = searchParams.get('target_audience') || '';
+    const novelStyle = searchParams.get('novel_style') || '';
+    const graphicalStyle = searchParams.get('graphical_style') || '';
     const sortBy = (searchParams.get('sortBy') || 'createdAt') as
       | 'title'
       | 'createdAt'
@@ -34,8 +37,26 @@ export async function GET(request: Request) {
 
     // Get stories data with author information
     const [stories, totalCount] = await Promise.all([
-      adminService.getStoriesWithAuthors(page, limit, search, status, featured, sortBy, sortOrder),
-      adminService.countStoriesWithAuthors(search, status, featured),
+      adminService.getStoriesWithAuthors(
+        page,
+        limit,
+        search,
+        status,
+        featured,
+        targetAudience,
+        novelStyle,
+        graphicalStyle,
+        sortBy,
+        sortOrder,
+      ),
+      adminService.countStoriesWithAuthors(
+        search,
+        status,
+        featured,
+        targetAudience,
+        novelStyle,
+        graphicalStyle,
+      ),
     ]);
 
     const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);

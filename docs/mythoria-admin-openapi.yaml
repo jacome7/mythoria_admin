@@ -1635,12 +1635,68 @@ ef: '#/components/responses/InternalError'
           in: query
           schema:
             type: string
-            enum: [featured, not_featured, all]
+            enum: [featured, clean, all]
+        - name: target_audience
+          in: query
+          schema:
+            type: string
+            enum:
+              - children_0-2
+              - children_3-6
+              - children_7-10
+              - children_11-14
+              - young_adult_15-17
+              - adult_18+
+              - all_ages
+              - all
+        - name: novel_style
+          in: query
+          schema:
+            type: string
+            enum:
+              - adventure
+              - fantasy
+              - mystery
+              - romance
+              - science_fiction
+              - historical
+              - contemporary
+              - fairy_tale
+              - comedy
+              - drama
+              - horror
+              - thriller
+              - biography
+              - educational
+              - poetry
+              - sports_adventure
+              - all
+        - name: graphical_style
+          in: query
+          schema:
+            type: string
+            enum:
+              - cartoon
+              - realistic
+              - watercolor
+              - digital_art
+              - hand_drawn
+              - minimalist
+              - vintage
+              - comic_book
+              - euro_comic_book
+              - anime
+              - pixar_style
+              - disney_style
+              - sketch
+              - oil_painting
+              - colored_pencil
+              - all
         - name: sortBy
           in: query
           schema:
             type: string
-            enum: [title, createdAt, status]
+            enum: [title, createdAt, updatedAt, status]
             default: createdAt
         - name: sortOrder
           in: query
@@ -3460,10 +3516,46 @@ components:
           type: string
         status:
           type: string
+        chapterCount:
+          type: integer
         createdAt:
           type: string
           format: date-time
-      required: [storyId, title, status, createdAt]
+        updatedAt:
+          type: string
+          format: date-time
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        interiorPdfUri:
+          type: string
+          nullable: true
+        coverPdfUri:
+          type: string
+          nullable: true
+        targetAudience:
+          type: string
+          nullable: true
+        novelStyle:
+          type: string
+          nullable: true
+        graphicalStyle:
+          type: string
+          nullable: true
+        author:
+          type: object
+          properties:
+            authorId:
+              type: string
+              format: uuid
+            displayName:
+              type: string
+            email:
+              type: string
+              format: email
+          required: [authorId, displayName, email]
+      required: [storyId, title, status, chapterCount, createdAt, updatedAt, isPublic, isFeatured, author]
     StoryListResponse:
       type: object
       properties:
@@ -3503,6 +3595,9 @@ components:
           type: string
           format: date-time
         targetAudience:
+          type: string
+          nullable: true
+        novelStyle:
           type: string
           nullable: true
         graphicalStyle:

@@ -1,6 +1,6 @@
 # Stories management
 
-_Last updated: 2026-02-08_
+_Last updated: 2026-03-11_
 
 ## Context
 
@@ -8,7 +8,7 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 
 ## UI workflow
 
-1. `/stories` lists stories with filters (status, search, pagination).
+1. `/stories` lists stories with filters for status, featured state, target audience, novel style, graphical style, search, and pagination.
 2. Selecting a story opens `/stories/[storyId]` for deep operations.
 3. Detail screen shows metadata, chapter table, feature/restart actions, PDF generation, and audiobook generation.
 4. Read-only flows (`/stories/[storyId]/read`, `/read/chapter/[chapterNumber]`) help verify generated content chapter-by-chapter.
@@ -37,3 +37,8 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 - **workflows_db**
   - `story_generation_runs`
   - `story_generation_steps`
+
+## Notes
+
+- `GET /api/admin/stories` now accepts `target_audience`, `novel_style`, and `graphical_style` query params in addition to the existing status, featured, search, sort, and pagination controls.
+- The stories list now surfaces those three story attributes directly in the moderation table so operators can scan and narrow catalog slices without opening the detail page.

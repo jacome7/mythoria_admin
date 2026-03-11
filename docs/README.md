@@ -55,6 +55,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 - 2026-02-08: Email campaign audience estimation now uses draft filters and metadata from the detail page (see `docs/features/emailMarketing.md`).
 - 2026-02-09: Added a dependency update prompt for upgrading packages and running quality gates (see `.github/prompts/update-dependencies.prompt.md`).
+- 2026-03-11: Stories management now supports filtering by target audience, novel style, and graphical style, and exposes those attributes in the admin table (see `docs/features/storiesManagement.md`).
 
 ---
 
@@ -64,4 +65,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-02-09_
+_Index refreshed: 2026-03-11_
