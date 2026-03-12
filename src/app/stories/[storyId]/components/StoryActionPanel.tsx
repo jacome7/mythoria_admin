@@ -36,6 +36,63 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
 
+  // Print modal states
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printShops, setPrintShops] = useState<{ id: string; name: string }[]>([]);
+  const [selectedPrintShopId, setSelectedPrintShopId] = useState<string>('');
+  const [printSubject, setPrintSubject] = useState(`Livro para impressão - ${story.title}`);
+  const [printBody, setPrintBody] = useState(`Boa tarde,\n\nVenho solicitar a impressão do livro que envio em anexo.\n\nComo habitual, solicito que o livro seja impresso, em formato A5 vertical, com o "vinca estética" para garantir que as páginas não se soltam.\n\nAgradeço confirmação de quando a impressão estará disponível para levantamento.\n\nEm caso de qualquer dúvida, não hesitem em me contactar.\n\nObrigado,`);
+  const [isSendingPrint, setIsSendingPrint] = useState(false);
+  const [printMessage, setPrintMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isPrintModalOpen && printShops.length === 0) {
+      fetch('/api/admin/partners')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.data)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const printers = data.data.filter((p: any) => p.type === 'printer');
+            setPrintShops(printers);
+            if (printers.length > 0) {
+              setSelectedPrintShopId(printers[0].id);
+            }
+          }
+        })
+        .catch((err) => console.error('Failed to load partners', err));
+    }
+  }, [isPrintModalOpen, printShops.length]);
+
+  const handleSendPrintRequest = async () => {
+    setIsSendingPrint(true);
+    setPrintMessage(null);
+    try {
+      const response = await fetch(`/api/admin/stories/${storyId}/request-print`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          partnerId: selectedPrintShopId,
+          subject: printSubject,
+          bodyText: printBody,
+          coverPdfUri: story.coverPdfUri,
+          interiorPdfUri: story.interiorPdfUri,
+        }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        setPrintMessage('Print request sent successfully!');
+        setTimeout(() => setIsPrintModalOpen(false), 2000);
+      } else {
+        setPrintMessage(result.error || 'Failed to send print request.');
+      }
+    } catch (error) {
+      console.error('Print request error', error);
+      setPrintMessage('Unexpected error sending print request.');
+    } finally {
+      setIsSendingPrint(false);
+    }
+  };
+
   const audioAvailable = hasAudiobook(story.audiobookUri) || story.hasAudio;
   const [narrationPanelOpen, setNarrationPanelOpen] = useState(!audioAvailable);
   const [listenPanelOpen, setListenPanelOpen] = useState(audioAvailable);
@@ -265,6 +322,16 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
               </div>
             </div>
           )}
+          {story.interiorPdfUri && story.coverPdfUri && (
+            <div className="mt-4 pt-2 border-t border-base-300">
+              <button 
+                className="btn btn-primary btn-sm"
+                onClick={() => setIsPrintModalOpen(true)}
+              >
+                Request Print
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="divider" />
@@ -399,6 +466,83 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
             </div>
           )}
         </section>
+
+        {isPrintModalOpen && (
+          <div className="modal modal-open">
+            <div className="modal-box w-11/12 max-w-2xl">
+              <h3 className="font-bold text-lg border-b pb-2 mb-4">Request Print</h3>
+              
+              <div className="flex flex-col gap-4">
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-bold text-base-content">Print Shop</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={selectedPrintShopId}
+                    onChange={(e) => setSelectedPrintShopId(e.target.value)}
+                    disabled={printShops.length === 0}
+                  >
+                    <option value="" disabled>Select a print shop...</option>
+                    {printShops.map((shop) => (
+                      <option key={shop.id} value={shop.id}>{shop.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-bold text-base-content">Subject</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={printSubject}
+                    onChange={(e) => setPrintSubject(e.target.value)}
+                    placeholder="Enter email subject"
+                  />
+                </div>
+
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-bold text-base-content">Message Body</span>
+                  </label>
+                  <textarea
+                    className="textarea textarea-bordered w-full h-64 leading-relaxed"
+                    value={printBody}
+                    onChange={(e) => setPrintBody(e.target.value)}
+                    placeholder="Enter your message to the print shop"
+                  />
+                </div>
+
+                {printMessage && (
+                  <div className={`alert ${printMessage.includes('success') ? 'alert-success' : 'alert-error'} mt-2`}>
+                    <div className="flex-1">
+                      <label>{printMessage}</label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-action mt-8">
+                <button 
+                  className="btn btn-ghost" 
+                  onClick={() => setIsPrintModalOpen(false)}
+                  disabled={isSendingPrint}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={`btn btn-primary px-8 ${isSendingPrint ? 'loading' : ''}`}
+                  onClick={handleSendPrintRequest}
+                  disabled={isSendingPrint || !selectedPrintShopId || !printSubject || !printBody}
+                >
+                  {isSendingPrint ? 'Sending...' : 'Send Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
