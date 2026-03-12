@@ -15,7 +15,10 @@ const requestPrintSchema = z.object({
   interiorPdfUri: z.string().url('Invalid Interior PDF URI'),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ storyId: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ storyId: string }> },
+) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -73,9 +76,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return response;
   } catch (error) {
     console.error('Error in request-print route:', error);
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

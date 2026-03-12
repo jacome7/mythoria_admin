@@ -344,7 +344,10 @@ export default function CampaignDetailPage() {
               <div className="h-4 w-px bg-base-300 hidden sm:block" />
               <div className="flex items-center gap-2">
                 <span className="text-base-content/50 font-medium">Feedback-ID</span>
-                <div className="tooltip tooltip-bottom" data-tip="Gmail Feedback Loop header sent with every campaign email. Enables spam-rate tracking in Postmaster Tools.">
+                <div
+                  className="tooltip tooltip-bottom"
+                  data-tip="Gmail Feedback Loop header sent with every campaign email. Enables spam-rate tracking in Postmaster Tools."
+                >
                   <code className="font-mono bg-base-200 px-2 py-0.5 rounded text-base-content/80">
                     {campaignHash ? `${campaignHash}:<user|lead>:mktg:mythoria` : '...'}
                   </code>
@@ -352,10 +355,7 @@ export default function CampaignDetailPage() {
                 <button
                   className="btn btn-ghost btn-xs p-0 h-auto min-h-0"
                   onClick={() =>
-                    handleCopyToClipboard(
-                      `${campaignHash}:<user|lead>:mktg:mythoria`,
-                      'fbl',
-                    )
+                    handleCopyToClipboard(`${campaignHash}:<user|lead>:mktg:mythoria`, 'fbl')
                   }
                   title="Copy Feedback-ID"
                 >

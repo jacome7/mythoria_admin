@@ -337,12 +337,12 @@ The `Feedback-ID` header is automatically injected by the Notification Engine on
 Feedback-ID: <CampaignHash>:<RecipientType>:mktg:<SenderId>
 ```
 
-| Field           | Description                                                                                      | Example    |
-| --------------- | ------------------------------------------------------------------------------------------------ | ---------- |
-| `CampaignHash`  | First 8 hex characters of the SHA-256 hash of the campaign UUID. Unique per campaign.            | `a1b2c3d4` |
-| `RecipientType` | `user` or `lead` — distinguishes audience segments in FBL reports.                               | `lead`     |
-| `MailType`      | Fixed value `mktg` (marketing). Reserved for future expansion (e.g., `txn` for transactional).   | `mktg`     |
-| `SenderId`      | Consistent identifier from `GMAIL_FBL_SENDER_ID` env var (5–15 chars, default: `mythoria`).      | `mythoria` |
+| Field           | Description                                                                                    | Example    |
+| --------------- | ---------------------------------------------------------------------------------------------- | ---------- |
+| `CampaignHash`  | First 8 hex characters of the SHA-256 hash of the campaign UUID. Unique per campaign.          | `a1b2c3d4` |
+| `RecipientType` | `user` or `lead` — distinguishes audience segments in FBL reports.                             | `lead`     |
+| `MailType`      | Fixed value `mktg` (marketing). Reserved for future expansion (e.g., `txn` for transactional). | `mktg`     |
+| `SenderId`      | Consistent identifier from `GMAIL_FBL_SENDER_ID` env var (5–15 chars, default: `mythoria`).    | `mythoria` |
 
 **Example:**
 

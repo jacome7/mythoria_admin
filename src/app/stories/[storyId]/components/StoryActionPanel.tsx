@@ -41,7 +41,9 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
   const [printShops, setPrintShops] = useState<{ id: string; name: string }[]>([]);
   const [selectedPrintShopId, setSelectedPrintShopId] = useState<string>('');
   const [printSubject, setPrintSubject] = useState(`Livro para impressão - ${story.title}`);
-  const [printBody, setPrintBody] = useState(`Boa tarde,\n\nVenho solicitar a impressão do livro que envio em anexo.\n\nComo habitual, solicito que o livro seja impresso, em formato A5 vertical, com o "vinca estética" para garantir que as páginas não se soltam.\n\nAgradeço confirmação de quando a impressão estará disponível para levantamento.\n\nEm caso de qualquer dúvida, não hesitem em me contactar.\n\nObrigado,`);
+  const [printBody, setPrintBody] = useState(
+    `Boa tarde,\n\nVenho solicitar a impressão do livro que envio em anexo.\n\nComo habitual, solicito que o livro seja impresso, em formato A5 vertical, com o "vinca estética" para garantir que as páginas não se soltam.\n\nAgradeço confirmação de quando a impressão estará disponível para levantamento.\n\nEm caso de qualquer dúvida, não hesitem em me contactar.\n\nObrigado,`,
+  );
   const [isSendingPrint, setIsSendingPrint] = useState(false);
   const [printMessage, setPrintMessage] = useState<string | null>(null);
 
@@ -324,10 +326,7 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
           )}
           {story.interiorPdfUri && story.coverPdfUri && (
             <div className="mt-4 pt-2 border-t border-base-300">
-              <button 
-                className="btn btn-primary btn-sm"
-                onClick={() => setIsPrintModalOpen(true)}
-              >
+              <button className="btn btn-primary btn-sm" onClick={() => setIsPrintModalOpen(true)}>
                 Request Print
               </button>
             </div>
@@ -471,7 +470,7 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
           <div className="modal modal-open">
             <div className="modal-box w-11/12 max-w-2xl">
               <h3 className="font-bold text-lg border-b pb-2 mb-4">Request Print</h3>
-              
+
               <div className="flex flex-col gap-4">
                 <div className="form-control w-full">
                   <label className="label">
@@ -483,9 +482,13 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
                     onChange={(e) => setSelectedPrintShopId(e.target.value)}
                     disabled={printShops.length === 0}
                   >
-                    <option value="" disabled>Select a print shop...</option>
+                    <option value="" disabled>
+                      Select a print shop...
+                    </option>
                     {printShops.map((shop) => (
-                      <option key={shop.id} value={shop.id}>{shop.name}</option>
+                      <option key={shop.id} value={shop.id}>
+                        {shop.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -516,7 +519,9 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
                 </div>
 
                 {printMessage && (
-                  <div className={`alert ${printMessage.includes('success') ? 'alert-success' : 'alert-error'} mt-2`}>
+                  <div
+                    className={`alert ${printMessage.includes('success') ? 'alert-success' : 'alert-error'} mt-2`}
+                  >
                     <div className="flex-1">
                       <label>{printMessage}</label>
                     </div>
@@ -525,14 +530,14 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
               </div>
 
               <div className="modal-action mt-8">
-                <button 
-                  className="btn btn-ghost" 
+                <button
+                  className="btn btn-ghost"
                   onClick={() => setIsPrintModalOpen(false)}
                   disabled={isSendingPrint}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   className={`btn btn-primary px-8 ${isSendingPrint ? 'loading' : ''}`}
                   onClick={handleSendPrintRequest}
                   disabled={isSendingPrint || !selectedPrintShopId || !printSubject || !printBody}
