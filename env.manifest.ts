@@ -230,6 +230,14 @@ export const envManifest: EnvVarDescriptor[] = [
     source: 'secret-manager',
     note: 'Internal API access protection.',
   },
+  {
+    name: 'MCP_SECRET_KEY',
+    required: true,
+    scopes: ['prod', 'runtime', 'dev'],
+    secret: true,
+    source: 'secret-manager',
+    note: 'Secret key required by the local and prod MCP server endpoints.',
+  },
 
   // Pub/Sub topics
   {
