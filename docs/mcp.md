@@ -4,7 +4,7 @@ The Mythoria Admin application exposes a fully functional **Model Context Protoc
 
 ## Integration Architecture
 
-We implement the official `@modelcontextprotocol/sdk` using a custom HTTP Server-Sent Events (SSE) transport wrapper built on Next.js edge streams. Standard desktop AI assistants seamlessly translate JSON-RPC protocols through HTTP endpoints seamlessly natively.
+We implement the official `@modelcontextprotocol/sdk` using a custom HTTP Server-Sent Events (SSE) transport wrapper on Next.js App Router route handlers (`ReadableStream`). Each SSE session constructs its own `McpServer` so concurrent connections on the same instance are supported. Standard clients send JSON-RPC over the MCP HTTP+SSE flow.
 
 ## Endpoints
 
@@ -17,15 +17,16 @@ We implement the official `@modelcontextprotocol/sdk` using a custom HTTP Server
 Due to the highly sensitive domain of admin tools, the MCP server forces strict authorization rules automatically on every connection and message attempt:
 
 1. **API Key Generation Requirement**: The system expects a secure passkey to be defined using the `.env` variable `MCP_SECRET_KEY`.
-2. **Bearer Verification**: All connections specify headers using `Authorization: Bearer <your-secret-key>`.
+2. **Bearer Verification**: SSE `GET` and message `POST` must send `Authorization: Bearer <your-secret-key>` (same value as `MCP_SECRET_KEY`).
 3. **Timing-Safe Evaluation**: Verification utilizes constant-time string comparisons (`crypto.timingSafeEqual`) to prevent brute-force timing attacks against the secret configuration length.
 4. **Audit Trails**: Mutative execution tasks are heavily logged. Tools stream structured logs prefixed with `[MCP AUDIT] Session <id> executing payload:` for external tracing within Google Cloud Logging.
 
 ### OpenClaw and other remote MCP clients
 
 - Transport is **SSE**: connect with `GET /api/mcp` and header `Authorization: Bearer <MCP_SECRET_KEY>`.
+- **URL shape**: Use exactly `/api/mcp` with **no trailing slash**. A request to `/api/mcp/` receives **308** to `/api/mcp`; many HTTP stacks drop or alter `Authorization` on redirect, which shows up as **401 Unauthorized** on the follow-up request.
 - The bearer value must match **`MCP_SECRET_KEY` configured on the Cloud Run (or hosting) environment** for this admin deployment. Store the same value in Google Secret Manager and inject it into OpenClaw (for example `MYTHORIA_ADMIN_MCP_SECRET` on the OpenClaw VM). A mismatch produces **401 Unauthorized**.
-- The `/api/mcp/messages` endpoint is tied to the session established on the SSE connection; clients must follow the MCP SSE flow end to end.
+- The `/api/mcp/messages` endpoint is tied to the session established on the SSE connection; clients must follow the MCP SSE flow end to end and include the **same Bearer token** on every `POST`.
 
 ## Supplied Services
 
@@ -41,7 +42,7 @@ The MCP Server implements 9 main business domain groups directly mapped into our
     If `workflows_db` is unavailable, `warnings` may include a note and AI fields will be zeroed.
 - `get_server_status`: Query active instances for Mythoria health metrics.
 
-_Last updated: 2026-04-04 — extended `get_project_statistics` with date windows and merged daily/monthly series._
+_Last updated: 2026-04-05 — per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization). Prior: 2026-04-04 — extended `get_project_statistics` with date windows and merged daily/monthly series._
 
 ### C. User Management
 

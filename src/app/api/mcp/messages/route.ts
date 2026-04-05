@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateMcpAuth } from '@/lib/mcp/auth';
 import { activeTransports } from '@/lib/mcp/server';
 
 export async function POST(request: NextRequest) {
+  if (!validateMcpAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
