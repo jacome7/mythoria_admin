@@ -1,5 +1,5 @@
 import { getMythoriaDb, getWorkflowsDb } from './index';
-import { count, desc, eq, like, asc, sql, or, inArray, and, gte, lt } from 'drizzle-orm';
+import { count, desc, eq, like, asc, sql, or, inArray, and, gte, lte, lt, gt } from 'drizzle-orm';
 import {
   authors,
   stories,
@@ -17,19 +17,24 @@ import {
 import { promotionCodes, promotionCodeRedemptions } from './schema/promotion-codes';
 import { storyGenerationRuns, storyGenerationSteps } from './schema/workflows';
 import { GraphicalStyle, NovelStyle, TargetAudience } from './type/story-enums';
-import type { RegistrationAggregation, RegistrationRange } from '@/lib/analytics/registrations';
+import type {
+  AnalyticsAggregationRange,
+  CreditGrantsAggregation,
+  RegistrationAggregation,
+  RegistrationRange,
+  StoriesCreatedAggregation,
+} from '@/lib/analytics/registrations';
 import type { RevenueAggregation } from '@/lib/analytics/revenue';
 import type { ServiceUsageAggregation, ServiceUsageEventType } from '@/lib/analytics/service-usage';
 import { SERVICE_USAGE_EVENT_TYPES } from '@/lib/analytics/service-usage';
+import {
+  endOfUtcDayInclusive,
+  resolveStatisticsWindow,
+  type ResolvedStatisticsWindow,
+} from '@/lib/analytics/statisticsWindow';
 export { adminBlogService } from './services/blog';
 
 type EmailStatus = (typeof emailStatusEnum.enumValues)[number];
-
-const REGISTRATION_RANGE_TO_DAYS: Record<Exclude<RegistrationRange, 'forever'>, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-};
 
 const toIsoString = (value: string | Date) => new Date(value).toISOString();
 
@@ -393,10 +398,18 @@ export const adminService = {
   },
 
   async getAuthorRegistrations(range: RegistrationRange): Promise<RegistrationAggregation> {
+    const window = resolveStatisticsWindow({ range });
+    return this.getAuthorRegistrationsForWindow(window, range);
+  },
+
+  async getAuthorRegistrationsForWindow(
+    window: ResolvedStatisticsWindow,
+    rangeLabel: AnalyticsAggregationRange,
+  ): Promise<RegistrationAggregation> {
     const db = getMythoriaDb();
     const today = startOfUtcDay(new Date());
 
-    if (range === 'forever') {
+    if (window.kind === 'forever') {
       const rows = await db
         .select({
           bucketStart: sql<string>`date_trunc('month', ${authors.createdAt})`,
@@ -418,7 +431,7 @@ export const adminService = {
         : defaultMonth;
 
       return {
-        range,
+        range: rangeLabel,
         granularity: 'month',
         startDate,
         endDate,
@@ -426,17 +439,14 @@ export const adminService = {
       };
     }
 
-    const days = REGISTRATION_RANGE_TO_DAYS[range];
-    const startDate = startOfUtcDay(new Date(today));
-    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
-
+    const endBound = endOfUtcDayInclusive(window.end);
     const rows = await db
       .select({
         bucketStart: sql<string>`date_trunc('day', ${authors.createdAt})`,
         registrations: count(authors.authorId),
       })
       .from(authors)
-      .where(gte(authors.createdAt, startDate))
+      .where(and(gte(authors.createdAt, window.start), lte(authors.createdAt, endBound)))
       .groupBy(sql`date_trunc('day', ${authors.createdAt})`)
       .orderBy(sql`date_trunc('day', ${authors.createdAt})`);
 
@@ -446,19 +456,27 @@ export const adminService = {
     }));
 
     return {
-      range,
+      range: rangeLabel,
       granularity: 'day',
-      startDate: startDate.toISOString(),
-      endDate: today.toISOString(),
+      startDate: window.start.toISOString(),
+      endDate: window.end.toISOString(),
       buckets: normalizedBuckets,
     };
   },
 
   async getServiceUsage(range: RegistrationRange): Promise<ServiceUsageAggregation> {
+    const window = resolveStatisticsWindow({ range });
+    return this.getServiceUsageForWindow(window, range);
+  },
+
+  async getServiceUsageForWindow(
+    window: ResolvedStatisticsWindow,
+    rangeLabel: AnalyticsAggregationRange,
+  ): Promise<ServiceUsageAggregation> {
     const db = getMythoriaDb();
     const today = startOfUtcDay(new Date());
 
-    if (range === 'forever') {
+    if (window.kind === 'forever') {
       const rows = await db
         .select({
           bucketStart: sql<string>`date_trunc('month', ${creditLedger.createdAt})`,
@@ -490,7 +508,7 @@ export const adminService = {
         : defaultMonth;
 
       return {
-        range,
+        range: rangeLabel,
         granularity: 'month',
         startDate,
         endDate,
@@ -498,10 +516,7 @@ export const adminService = {
       };
     }
 
-    const days = REGISTRATION_RANGE_TO_DAYS[range];
-    const startDate = startOfUtcDay(new Date(today));
-    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
-
+    const endBound = endOfUtcDayInclusive(window.end);
     const rows = await db
       .select({
         bucketStart: sql<string>`date_trunc('day', ${creditLedger.createdAt})`,
@@ -512,7 +527,8 @@ export const adminService = {
       .from(creditLedger)
       .where(
         and(
-          gte(creditLedger.createdAt, startDate),
+          gte(creditLedger.createdAt, window.start),
+          lte(creditLedger.createdAt, endBound),
           lt(creditLedger.amount, 0),
           inArray(creditLedger.creditEventType, SERVICE_USAGE_EVENT_TYPES),
         ),
@@ -528,19 +544,27 @@ export const adminService = {
     }));
 
     return {
-      range,
+      range: rangeLabel,
       granularity: 'day',
-      startDate: startDate.toISOString(),
-      endDate: today.toISOString(),
+      startDate: window.start.toISOString(),
+      endDate: window.end.toISOString(),
       rows: normalizedRows,
     };
   },
 
   async getRevenueSnapshot(range: RegistrationRange): Promise<RevenueAggregation> {
+    const window = resolveStatisticsWindow({ range });
+    return this.getRevenueSnapshotForWindow(window, range);
+  },
+
+  async getRevenueSnapshotForWindow(
+    window: ResolvedStatisticsWindow,
+    rangeLabel: AnalyticsAggregationRange,
+  ): Promise<RevenueAggregation> {
     const db = getMythoriaDb();
     const today = startOfUtcDay(new Date());
 
-    if (range === 'forever') {
+    if (window.kind === 'forever') {
       const rows = await db
         .select({
           bucketStart: sql<string>`date_trunc('month', ${paymentOrders.createdAt})`,
@@ -565,7 +589,7 @@ export const adminService = {
         : defaultMonth;
 
       return {
-        range,
+        range: rangeLabel,
         granularity: 'month',
         startDate,
         endDate,
@@ -573,10 +597,7 @@ export const adminService = {
       };
     }
 
-    const days = REGISTRATION_RANGE_TO_DAYS[range];
-    const startDate = startOfUtcDay(new Date(today));
-    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
-
+    const endBound = endOfUtcDayInclusive(window.end);
     const rows = await db
       .select({
         bucketStart: sql<string>`date_trunc('day', ${paymentOrders.createdAt})`,
@@ -584,7 +605,13 @@ export const adminService = {
         transactions: count(paymentOrders.orderId),
       })
       .from(paymentOrders)
-      .where(and(gte(paymentOrders.createdAt, startDate), eq(paymentOrders.status, 'completed')))
+      .where(
+        and(
+          gte(paymentOrders.createdAt, window.start),
+          lte(paymentOrders.createdAt, endBound),
+          eq(paymentOrders.status, 'completed'),
+        ),
+      )
       .groupBy(sql`date_trunc('day', ${paymentOrders.createdAt})`)
       .orderBy(sql`date_trunc('day', ${paymentOrders.createdAt})`);
 
@@ -595,11 +622,142 @@ export const adminService = {
     }));
 
     return {
-      range,
+      range: rangeLabel,
       granularity: 'day',
-      startDate: startDate.toISOString(),
-      endDate: today.toISOString(),
+      startDate: window.start.toISOString(),
+      endDate: window.end.toISOString(),
       buckets: normalizedRows,
+    };
+  },
+
+  async getStoriesCreatedForWindow(
+    window: ResolvedStatisticsWindow,
+    rangeLabel: AnalyticsAggregationRange,
+  ): Promise<StoriesCreatedAggregation> {
+    const db = getMythoriaDb();
+    const today = startOfUtcDay(new Date());
+
+    if (window.kind === 'forever') {
+      const rows = await db
+        .select({
+          bucketStart: sql<string>`date_trunc('month', ${stories.createdAt})`,
+          storiesCreated: count(),
+        })
+        .from(stories)
+        .groupBy(sql`date_trunc('month', ${stories.createdAt})`)
+        .orderBy(sql`date_trunc('month', ${stories.createdAt})`);
+
+      const normalizedBuckets = rows.map((row) => ({
+        bucketStart: toIsoString(row.bucketStart),
+        storiesCreated: Number(row.storiesCreated) || 0,
+      }));
+
+      const defaultMonth = startOfUtcMonth(today).toISOString();
+      const startDate = normalizedBuckets.length ? normalizedBuckets[0].bucketStart : defaultMonth;
+      const endDate = normalizedBuckets.length
+        ? normalizedBuckets[normalizedBuckets.length - 1].bucketStart
+        : defaultMonth;
+
+      return {
+        range: rangeLabel,
+        granularity: 'month',
+        startDate,
+        endDate,
+        buckets: normalizedBuckets,
+      };
+    }
+
+    const endBound = endOfUtcDayInclusive(window.end);
+    const rows = await db
+      .select({
+        bucketStart: sql<string>`date_trunc('day', ${stories.createdAt})`,
+        storiesCreated: count(),
+      })
+      .from(stories)
+      .where(and(gte(stories.createdAt, window.start), lte(stories.createdAt, endBound)))
+      .groupBy(sql`date_trunc('day', ${stories.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${stories.createdAt})`);
+
+    const normalizedBuckets = rows.map((row) => ({
+      bucketStart: toIsoString(row.bucketStart),
+      storiesCreated: Number(row.storiesCreated) || 0,
+    }));
+
+    return {
+      range: rangeLabel,
+      granularity: 'day',
+      startDate: window.start.toISOString(),
+      endDate: window.end.toISOString(),
+      buckets: normalizedBuckets,
+    };
+  },
+
+  async getCreditGrantsForWindow(
+    window: ResolvedStatisticsWindow,
+    rangeLabel: AnalyticsAggregationRange,
+  ): Promise<CreditGrantsAggregation> {
+    const db = getMythoriaDb();
+    const today = startOfUtcDay(new Date());
+
+    if (window.kind === 'forever') {
+      const rows = await db
+        .select({
+          bucketStart: sql<string>`date_trunc('month', ${creditLedger.createdAt})`,
+          creditsGranted: sql<number>`COALESCE(SUM(${creditLedger.amount}), 0)`,
+        })
+        .from(creditLedger)
+        .where(gt(creditLedger.amount, 0))
+        .groupBy(sql`date_trunc('month', ${creditLedger.createdAt})`)
+        .orderBy(sql`date_trunc('month', ${creditLedger.createdAt})`);
+
+      const normalizedBuckets = rows.map((row) => ({
+        bucketStart: toIsoString(row.bucketStart),
+        creditsGranted: Number(row.creditsGranted) || 0,
+      }));
+
+      const defaultMonth = startOfUtcMonth(today).toISOString();
+      const startDate = normalizedBuckets.length ? normalizedBuckets[0].bucketStart : defaultMonth;
+      const endDate = normalizedBuckets.length
+        ? normalizedBuckets[normalizedBuckets.length - 1].bucketStart
+        : defaultMonth;
+
+      return {
+        range: rangeLabel,
+        granularity: 'month',
+        startDate,
+        endDate,
+        buckets: normalizedBuckets,
+      };
+    }
+
+    const endBound = endOfUtcDayInclusive(window.end);
+    const rows = await db
+      .select({
+        bucketStart: sql<string>`date_trunc('day', ${creditLedger.createdAt})`,
+        creditsGranted: sql<number>`COALESCE(SUM(${creditLedger.amount}), 0)`,
+      })
+      .from(creditLedger)
+      .where(
+        and(
+          gte(creditLedger.createdAt, window.start),
+          lte(creditLedger.createdAt, endBound),
+          gt(creditLedger.amount, 0),
+        ),
+      )
+      .groupBy(sql`date_trunc('day', ${creditLedger.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${creditLedger.createdAt})`);
+
+    const normalizedBuckets = rows.map((row) => ({
+      bucketStart: toIsoString(row.bucketStart),
+      creditsGranted: Number(row.creditsGranted) || 0,
+    }));
+
+    return {
+      range: rangeLabel,
+      granularity: 'day',
+      startDate: window.start.toISOString(),
+      endDate: window.end.toISOString(),
+      buckets: normalizedBuckets,
     };
   },
 

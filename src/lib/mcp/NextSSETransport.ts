@@ -1,5 +1,5 @@
-import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 export class NextSSETransport implements Transport {
   public onmessage?: (message: JSONRPCMessage) => void;
@@ -18,10 +18,12 @@ export class NextSSETransport implements Transport {
       start: (controller) => {
         this._controller = controller;
         // Send the endpoint event as per MCP SSE spec
-        const endpointUrl = new URL(this._endpoint, "http://localhost");
-        endpointUrl.searchParams.set("sessionId", this.sessionId);
+        const endpointUrl = new URL(this._endpoint, 'http://localhost');
+        endpointUrl.searchParams.set('sessionId', this.sessionId);
         const relativeOrAbsoluteUrl = `${endpointUrl.pathname}${endpointUrl.search}`;
-        controller.enqueue(new TextEncoder().encode(`event: endpoint\ndata: ${relativeOrAbsoluteUrl}\n\n`));
+        controller.enqueue(
+          new TextEncoder().encode(`event: endpoint\ndata: ${relativeOrAbsoluteUrl}\n\n`),
+        );
       },
       cancel: () => {
         if (this.onclose) this.onclose();
@@ -44,7 +46,7 @@ export class NextSSETransport implements Transport {
 
   async send(message: JSONRPCMessage): Promise<void> {
     if (!this._controller) {
-      throw new Error("Cannot send on closed stream");
+      throw new Error('Cannot send on closed stream');
     }
     const data = JSON.stringify(message);
     this._controller.enqueue(new TextEncoder().encode(`event: message\ndata: ${data}\n\n`));

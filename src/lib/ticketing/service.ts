@@ -10,10 +10,27 @@ import {
   type TicketStatus,
   type TicketPriority,
 } from '@/db/schema/tickets';
-import { eq, desc, sql, and, or, ilike } from 'drizzle-orm';
+import { eq, desc, sql, and, or, ilike, gte, lte, count } from 'drizzle-orm';
+import type { AnalyticsAggregationRange } from '@/lib/analytics/registrations';
+import { startOfUtcDay, startOfUtcMonth } from '@/lib/analytics/registrations';
+import type { ResolvedStatisticsWindow } from '@/lib/analytics/statisticsWindow';
+import { endOfUtcDayInclusive } from '@/lib/analytics/statisticsWindow';
 import { notificationClient } from '@/lib/notifications/client';
 import type { TicketMetadata } from './types';
 export type { TicketMetadata } from './types';
+
+export interface TicketsCreatedBucket {
+  bucketStart: string;
+  ticketsCreated: number;
+}
+
+export interface TicketsCreatedAggregation {
+  range: AnalyticsAggregationRange;
+  granularity: 'day' | 'month';
+  startDate: string;
+  endDate: string;
+  buckets: TicketsCreatedBucket[];
+}
 
 // Types for service methods
 export interface PaymentRequestMetadata extends TicketMetadata {
@@ -579,6 +596,69 @@ export class TicketService {
       inProgressTickets: statusMap.in_progress || 0,
       resolvedTickets: statusMap.resolved || 0,
       urgentTickets: urgentResult[0]?.count || 0,
+    };
+  }
+
+  static async getTicketsCreatedForWindow(
+    window: ResolvedStatisticsWindow,
+    rangeLabel: AnalyticsAggregationRange,
+  ): Promise<TicketsCreatedAggregation> {
+    const db = getBackofficeDb();
+    const today = startOfUtcDay(new Date());
+    const toIso = (value: string | Date) => new Date(value).toISOString();
+
+    if (window.kind === 'forever') {
+      const rows = await db
+        .select({
+          bucketStart: sql<string>`date_trunc('month', ${tickets.createdAt})`,
+          ticketsCreated: count(),
+        })
+        .from(tickets)
+        .groupBy(sql`date_trunc('month', ${tickets.createdAt})`)
+        .orderBy(sql`date_trunc('month', ${tickets.createdAt})`);
+
+      const normalizedBuckets = rows.map((row) => ({
+        bucketStart: toIso(row.bucketStart),
+        ticketsCreated: Number(row.ticketsCreated) || 0,
+      }));
+
+      const defaultMonth = startOfUtcMonth(today).toISOString();
+      const startDate = normalizedBuckets.length ? normalizedBuckets[0].bucketStart : defaultMonth;
+      const endDate = normalizedBuckets.length
+        ? normalizedBuckets[normalizedBuckets.length - 1].bucketStart
+        : defaultMonth;
+
+      return {
+        range: rangeLabel,
+        granularity: 'month',
+        startDate,
+        endDate,
+        buckets: normalizedBuckets,
+      };
+    }
+
+    const endBound = endOfUtcDayInclusive(window.end);
+    const rows = await db
+      .select({
+        bucketStart: sql<string>`date_trunc('day', ${tickets.createdAt})`,
+        ticketsCreated: count(),
+      })
+      .from(tickets)
+      .where(and(gte(tickets.createdAt, window.start), lte(tickets.createdAt, endBound)))
+      .groupBy(sql`date_trunc('day', ${tickets.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${tickets.createdAt})`);
+
+    const normalizedBuckets = rows.map((row) => ({
+      bucketStart: toIso(row.bucketStart),
+      ticketsCreated: Number(row.ticketsCreated) || 0,
+    }));
+
+    return {
+      range: rangeLabel,
+      granularity: 'day',
+      startDate: window.start.toISOString(),
+      endDate: window.end.toISOString(),
+      buckets: normalizedBuckets,
     };
   }
 

@@ -1,4 +1,4 @@
-import type { RegistrationGranularity, RegistrationRange } from './registrations';
+import type { AnalyticsAggregationRange, RegistrationGranularity } from './registrations';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CENTS_IN_UNIT = 100;
@@ -10,7 +10,7 @@ export interface RawRevenueBucket {
 }
 
 export interface RevenueAggregation {
-  range: RegistrationRange;
+  range: AnalyticsAggregationRange;
   granularity: RegistrationGranularity;
   startDate: string;
   endDate: string;

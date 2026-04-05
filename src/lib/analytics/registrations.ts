@@ -4,17 +4,46 @@ export const REGISTRATION_RANGES = ['7d', '30d', '90d', 'forever'] as const;
 export type RegistrationRange = (typeof REGISTRATION_RANGES)[number];
 export type RegistrationGranularity = 'day' | 'month';
 
+/** Preset ranges plus arbitrary MCP date windows. */
+export type AnalyticsAggregationRange = RegistrationRange | 'custom';
+
 export interface RawRegistrationBucket {
   bucketStart: string;
   registrations: number;
 }
 
 export interface RegistrationAggregation {
-  range: RegistrationRange;
+  range: AnalyticsAggregationRange;
   granularity: RegistrationGranularity;
   startDate: string;
   endDate: string;
   buckets: RawRegistrationBucket[];
+}
+
+export interface StoriesCreatedBucket {
+  bucketStart: string;
+  storiesCreated: number;
+}
+
+export interface StoriesCreatedAggregation {
+  range: AnalyticsAggregationRange;
+  granularity: RegistrationGranularity;
+  startDate: string;
+  endDate: string;
+  buckets: StoriesCreatedBucket[];
+}
+
+export interface CreditGrantsBucket {
+  bucketStart: string;
+  creditsGranted: number;
+}
+
+export interface CreditGrantsAggregation {
+  range: AnalyticsAggregationRange;
+  granularity: RegistrationGranularity;
+  startDate: string;
+  endDate: string;
+  buckets: CreditGrantsBucket[];
 }
 
 export interface NormalizedRegistrationBucket {
@@ -126,13 +155,13 @@ function normalizeMonthlyAggregation(
   return points;
 }
 
-function startOfUtcDay(input: Date): Date {
+export function startOfUtcDay(input: Date): Date {
   const date = new Date(input);
   date.setUTCHours(0, 0, 0, 0);
   return date;
 }
 
-function startOfUtcMonth(input: Date): Date {
+export function startOfUtcMonth(input: Date): Date {
   const date = startOfUtcDay(input);
   date.setUTCDate(1);
   return date;

@@ -24,6 +24,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 | Doc                                | Scope                                                               |
 | ---------------------------------- | ------------------------------------------------------------------- |
 | `docs/api-reference.md`            | REST route map, accepted query params, and response shapes.         |
+| `docs/mcp.md`                      | Model Context Protocol server (SSE), auth, tools, and statistics.   |
 | `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).       |
 | `docs/features/*.md`               | Per-page feature deep dives (context, UI workflow, DB structures).  |
 | `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents. |
@@ -56,6 +57,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-02-08: Email campaign audience estimation now uses draft filters and metadata from the detail page (see `docs/features/emailMarketing.md`).
 - 2026-02-09: Added a dependency update prompt for upgrading packages and running quality gates (see `.github/prompts/update-dependencies.prompt.md`).
 - 2026-03-11: Stories management now supports filtering by target audience, novel style, and graphical style, and exposes those attributes in the admin table (see `docs/features/storiesManagement.md`).
+- 2026-04-04: MCP `get_project_statistics` supports date windows and merged daily or monthly buckets (see `docs/mcp.md`).
 
 ---
 
@@ -65,4 +67,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-03-11_
+_Index refreshed: 2026-04-04_
