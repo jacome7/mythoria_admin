@@ -50,10 +50,15 @@ class NotificationClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Notification engine error:', errorText);
+        const errorPreview = errorText.slice(0, 300);
+        console.error('Notification engine error', {
+          status: response.status,
+          statusText: response.statusText,
+          errorPreview,
+        });
         return {
           success: false,
-          error: `Notification engine returned ${response.status}: ${errorText}`,
+          error: `Notification engine returned ${response.status} ${response.statusText}${errorPreview ? `: ${errorPreview}` : ''}`,
         };
       }
 
@@ -107,7 +112,16 @@ class NotificationClient {
       });
       if (!response.ok) {
         const errorText = await response.text();
-        return { success: false, error: `Template send failed ${response.status}: ${errorText}` };
+        const errorPreview = errorText.slice(0, 300);
+        console.error('Template send failed', {
+          status: response.status,
+          statusText: response.statusText,
+          errorPreview,
+        });
+        return {
+          success: false,
+          error: `Template send failed ${response.status} ${response.statusText}${errorPreview ? `: ${errorPreview}` : ''}`,
+        };
       }
       const json = await response.json();
       return { success: true, messageId: (json as { data?: { id?: string } }).data?.id };
