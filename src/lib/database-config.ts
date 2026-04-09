@@ -31,6 +31,7 @@ export function isVpcDirectEgress(): boolean {
 function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
   const isVpcConnection = isVpcDirectEgress();
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+  const dbPassword = process.env.DB_PASSWORD;
 
   // During build time, provide default values to prevent build failures
   if (isBuildTime) {
@@ -38,14 +39,14 @@ function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
       user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'build-time-placeholder',
+      password: dbPassword || 'build-time-placeholder',
       ssl: false,
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
     };
   }
 
   // Validate required environment variables for runtime
-  if (!process.env.DB_PASSWORD) {
+  if (!dbPassword) {
     throw new Error('DB_PASSWORD is required at runtime');
   }
 
@@ -53,7 +54,7 @@ function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD,
+    password: dbPassword,
     ssl: isVpcConnection ? false : { rejectUnauthorized: false },
     maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
   };
