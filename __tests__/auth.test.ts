@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { ALLOWED_DOMAINS } from '@/config/auth';
+import { ALLOWED_DOMAINS, isAllowedEmailDomain } from '@/config/auth';
 
 // Mock environment variables for testing
 process.env.GOOGLE_CLIENT_ID = 'test-client-id';
@@ -42,28 +42,18 @@ describe('Authentication Configuration', () => {
   });
 
   it('should validate authentication flow logic', async () => {
-    // Test the authentication logic without importing the actual module
-    // This simulates the signIn callback behavior
-
     const mockAccount = { provider: 'google' };
     const mockProfile = {
       email: 'test@mythoria.pt',
       email_verified: true,
     };
 
-    // Simulate the signIn callback logic
-    const isGoogleProvider = mockAccount.provider === 'google';
-    const isEmailVerified = mockProfile.email_verified;
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => mockProfile.email.endsWith(domain));
+    expect(mockAccount.provider === 'google').toBe(true);
+    expect(mockProfile.email_verified).toBe(true);
+    expect(isAllowedEmailDomain(mockProfile.email)).toBe(true);
 
-    expect(isGoogleProvider).toBe(true);
-    expect(isEmailVerified).toBe(true);
-    expect(isAllowedDomain).toBe(true);
-
-    // Test non-Google provider rejection
     const nonGoogleAccount = { provider: 'facebook' };
-    const shouldRejectNonGoogle = nonGoogleAccount.provider !== 'google';
-    expect(shouldRejectNonGoogle).toBe(true);
+    expect(nonGoogleAccount.provider !== 'google').toBe(true);
   });
 
   it('should validate email domains correctly', () => {
@@ -83,13 +73,11 @@ describe('Authentication Configuration', () => {
     ];
 
     validEmails.forEach((email) => {
-      const isValid = ALLOWED_DOMAINS.some((domain) => email.endsWith(domain));
-      expect(isValid).toBe(true);
+      expect(isAllowedEmailDomain(email)).toBe(true);
     });
 
     invalidEmails.forEach((email) => {
-      const isValid = ALLOWED_DOMAINS.some((domain) => email.endsWith(domain));
-      expect(isValid).toBe(false);
+      expect(isAllowedEmailDomain(email)).toBe(false);
     });
   });
 
@@ -107,10 +95,8 @@ describe('Authentication Configuration', () => {
     expect(verifiedProfiles).toHaveLength(2);
     expect(unverifiedProfiles).toHaveLength(2);
 
-    // All verified profiles should have valid domains
     verifiedProfiles.forEach((profile) => {
-      const hasValidDomain = ALLOWED_DOMAINS.some((domain) => profile.email.endsWith(domain));
-      expect(hasValidDomain).toBe(true);
+      expect(isAllowedEmailDomain(profile.email)).toBe(true);
     });
   });
 });

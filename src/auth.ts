@@ -1,8 +1,8 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { ALLOWED_DOMAINS } from '@/config/auth';
+import { ALLOWED_DOMAINS, getHostedDomain, isAllowedEmailDomain } from '@/config/auth';
 
-const GOOGLE_HOSTED_DOMAIN = ALLOWED_DOMAINS[0]?.slice(1);
+const GOOGLE_HOSTED_DOMAIN = getHostedDomain();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Use JWT strategy instead of database for now to avoid initialization issues
@@ -37,7 +37,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // Check if email belongs to an allowed domain
       const email = profile.email?.toLowerCase();
-      const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => email?.endsWith(domain.toLowerCase()));
+      const isAllowedDomain = isAllowedEmailDomain(email);
 
       if (!isAllowedDomain) {
         console.log(`Sign-in rejected: Domain not allowed for ${profile.email}`);
