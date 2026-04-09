@@ -90,17 +90,25 @@ export class WorkflowMonitorService {
     const statusResults: WorkflowExecutionStatus[] = [];
 
     try {
-      // Get all workflow runs that are marked as running in the database
-      const runningRuns = await db
-        .select()
-        .from(storyGenerationRuns)
-        .where(eq(storyGenerationRuns.status, 'running'));
+      // Get workflow runs that may need reconciliation.
+      // Include queued runs without a GCP execution and stale terminal mismatches,
+      // not just actively running runs.
+      const candidateRuns = await db.select().from(storyGenerationRuns);
 
-      console.log('Checking status of running workflow runs', {
-        count: runningRuns.length,
+      const runsToCheck = candidateRuns.filter((run) => {
+        if (run.status === 'running') return true;
+        if (run.status === 'queued') return true;
+        if (run.status === 'completed' || run.status === 'failed' || run.status === 'cancelled') {
+          return Boolean(run.gcpWorkflowExecution);
+        }
+        return false;
       });
 
-      for (const run of runningRuns) {
+      console.log('Checking status of workflow runs needing reconciliation', {
+        count: runsToCheck.length,
+      });
+
+      for (const run of runsToCheck) {
         const status = await this.checkWorkflowRunStatus(run.runId);
         statusResults.push(status);
       }
