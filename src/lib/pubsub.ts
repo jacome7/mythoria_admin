@@ -4,6 +4,8 @@ const pubsub = new PubSub({
   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
 });
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // picks creds from metadata
 const storyTopic = process.env.PUBSUB_TOPIC || 'mythoria-story-requests';
 const audiobookTopic = process.env.PUBSUB_AUDIOBOOK_TOPIC || 'mythoria-audiobook-requests';
@@ -21,11 +23,24 @@ async function publishMessage(topic: string, message: unknown, type: string) {
     throw new Error(`PUBSUB topic for ${type} is not set`);
   }
 
-  console.log(`[pubsub] Publishing ${type} request`, { topic });
+  if (!isProduction) {
+    console.log(`[pubsub] Publishing ${type} request`, { topic });
+  }
 
-  const dataBuffer = Buffer.from(JSON.stringify(message));
-  const messageId = await pubsub.topic(topic).publishMessage({ data: dataBuffer });
+  try {
+    const dataBuffer = Buffer.from(JSON.stringify(message));
+    const messageId = await pubsub.topic(topic).publishMessage({ data: dataBuffer });
 
-  console.log(`[pubsub] Published ${type} request`, { topic, messageId });
-  return messageId;
+    if (!isProduction) {
+      console.log(`[pubsub] Published ${type} request`, { topic, messageId });
+    }
+
+    return messageId;
+  } catch (error) {
+    console.warn(`[pubsub] Failed to publish ${type} request`, {
+      topic,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
