@@ -89,6 +89,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Health check failed:', error);
 
+    const authResult = validateAuthConfiguration();
+
     const errorResponse: HealthStatus = {
       status: 'unhealthy',
       databases: {
