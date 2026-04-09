@@ -637,14 +637,15 @@ export const campaignService = {
       if (preferences.length === 0) {
         userCount = 0;
       } else {
-        const preferenceList = preferences.map((value) => `'${value}'`).join(', ');
         // Default suppression: only users with allowed notification preferences
-        let userQuery = `SELECT COUNT(*) as cnt FROM authors WHERE notification_preference IN (${preferenceList})`;
+        const userConditions: string[] = [
+          `notification_preference IN (${preferences.map((value) => `'${String(value).replace(/'/g, "''")}'`).join(', ')})`,
+        ];
 
         // Apply filter tree
         const filterSql = buildFilterSql(filterTree, 'users');
         if (filterSql) {
-          userQuery += ` AND ${filterSql}`;
+          userConditions.push(filterSql);
         }
 
         // Exclude already-sent recipients for this campaign
@@ -662,11 +663,15 @@ export const campaignService = {
             );
 
           if (sentRecipients.length > 0) {
-            const ids = sentRecipients.map((r) => `'${r.recipientId}'`).join(', ');
-            userQuery += ` AND author_id NOT IN (${ids})`;
+            userConditions.push(
+              `author_id NOT IN (${sentRecipients
+                .map((r) => `'${String(r.recipientId).replace(/'/g, "''")}'`)
+                .join(', ')})`,
+            );
           }
         }
 
+        const userQuery = `SELECT COUNT(*) as cnt FROM authors WHERE ${userConditions.join(' AND ')}`;
         const result = await mythoriaDb.execute(sql.raw(userQuery));
         userCount = Number(
           (result as unknown as { rows: Array<{ cnt: string }> }).rows?.[0]?.cnt ?? 0,
@@ -676,12 +681,12 @@ export const campaignService = {
 
     if (audienceSource === 'leads' || audienceSource === 'both') {
       // Default suppression: exclude unsub and hard_bounce
-      let leadQuery = `SELECT COUNT(*) as cnt FROM leads WHERE email_status NOT IN ('unsub', 'hard_bounce')`;
+      const leadConditions: string[] = [`email_status NOT IN ('unsub', 'hard_bounce')`];
 
       // Apply filter tree
       const filterSql = buildFilterSql(filterTree, 'leads');
       if (filterSql) {
-        leadQuery += ` AND ${filterSql}`;
+        leadConditions.push(filterSql);
       }
 
       // Exclude already-sent recipients for this campaign
@@ -699,11 +704,15 @@ export const campaignService = {
           );
 
         if (sentRecipients.length > 0) {
-          const ids = sentRecipients.map((r) => `'${r.recipientId}'`).join(', ');
-          leadQuery += ` AND id NOT IN (${ids})`;
+          leadConditions.push(
+            `id NOT IN (${sentRecipients
+              .map((r) => `'${String(r.recipientId).replace(/'/g, "''")}'`)
+              .join(', ')})`,
+          );
         }
       }
 
+      const leadQuery = `SELECT COUNT(*) as cnt FROM leads WHERE ${leadConditions.join(' AND ')}`;
       const result = await mythoriaDb.execute(sql.raw(leadQuery));
       leadCount = Number(
         (result as unknown as { rows: Array<{ cnt: string }> }).rows?.[0]?.cnt ?? 0,
