@@ -108,8 +108,8 @@ export default function ServerStatusPage() {
         setServices(updatedServices);
       } else {
         // If API call fails, mark all services as unknown
-        setServices(
-          services.map((service) => ({
+        setServices((current) =>
+          current.map((service) => ({
             ...service,
             status: 'unknown' as const,
             error: 'Failed to fetch status from backend',
@@ -119,8 +119,8 @@ export default function ServerStatusPage() {
       }
     } catch (error) {
       // If API call fails, mark all services as unknown
-      setServices(
-        services.map((service) => ({
+      setServices((current) =>
+        current.map((service) => ({
           ...service,
           status: 'unknown' as const,
           error: error instanceof Error ? error.message : 'Network error',
