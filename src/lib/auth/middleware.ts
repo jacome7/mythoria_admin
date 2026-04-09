@@ -32,7 +32,9 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
     // Fall back to session authentication
     return await authenticateSession();
   } catch (error) {
-    console.error('Authentication error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Authentication error:', error);
+    }
     return {
       success: false,
       error: 'Authentication failed',
@@ -55,7 +57,9 @@ async function authenticateApiKey(apiKey: string): Promise<AuthResult> {
   }
 
   if (apiKey !== validApiKey) {
-    console.warn('Invalid API key attempt');
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Invalid API key attempt');
+    }
     return {
       success: false,
       error: 'Invalid API key',
@@ -90,7 +94,9 @@ async function authenticateSession(): Promise<AuthResult> {
       userId: session.user.email,
     };
   } catch (error) {
-    console.error('Session authentication error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Session authentication error:', error);
+    }
     return {
       success: false,
       error: 'Session authentication failed',
