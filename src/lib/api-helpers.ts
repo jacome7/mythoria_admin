@@ -57,7 +57,15 @@ export async function proxyToNotificationEngine(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    console.error(`Notification engine error [${path}]:`, data);
+    const responseSummary =
+      data && typeof data === 'object'
+        ? {
+            error: 'error' in data ? data.error : undefined,
+            message: 'message' in data ? data.message : undefined,
+          }
+        : { error: typeof data === 'string' ? data : undefined };
+
+    console.error(`Notification engine error [${path}] status=${response.status}`, responseSummary);
     return NextResponse.json(data ?? { error: 'Notification engine request failed' }, {
       status: response.status,
     });
