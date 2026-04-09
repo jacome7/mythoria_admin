@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
   const debug = searchParams.get('debug') === 'true' || searchParams.get('debug') === '1';
 
   try {
-    console.log('Admin portal health check starting...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Admin portal health check starting...');
+    }
 
     // Test database connections
     const databaseResults = await Promise.allSettled([
@@ -76,10 +78,6 @@ export async function GET(request: NextRequest) {
         debug: {
           connectionType,
           environment: process.env.NODE_ENV,
-          dbHost: process.env.DB_HOST,
-          mythoriaDbName: process.env.MYTHORIA_DB || 'mythoria_db',
-          workflowsDbName: process.env.WORKFLOWS_DB || 'workflows_db',
-          backofficeDbName: process.env.BACKOFFICE_DB || 'backoffice_db',
           isVpcConnection: isVpcDirectEgress(),
         },
       });
@@ -116,7 +114,6 @@ export async function GET(request: NextRequest) {
             connectionType,
             error: error instanceof Error ? error.message : 'Unknown error',
             environment: process.env.NODE_ENV,
-            dbHost: process.env.DB_HOST,
           },
         },
         { status: 500 },
@@ -135,9 +132,13 @@ async function testDatabase(
     throw new Error(`${name} database not initialized`);
   }
 
-  console.log(`Testing ${name} database connection...`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Testing ${name} database connection...`);
+  }
   const result = await dbInstance.execute(sql`SELECT 1 as test, NOW() as timestamp`);
-  console.log(`${name} database connection test successful:`, result.rows?.[0]);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`${name} database connection test successful`);
+  }
   return { name, result };
 }
 
@@ -169,7 +170,9 @@ async function testNetworkConnectivity(): Promise<{
   error?: string;
 }> {
   try {
-    console.log('Testing network connectivity...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Testing network connectivity...');
+    }
 
     const testDomain = 'https://www.google.com';
     const controller = new AbortController();
@@ -183,7 +186,9 @@ async function testNetworkConnectivity(): Promise<{
     clearTimeout(timeoutId);
 
     if (response.ok) {
-      console.log('Network connectivity test successful');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Network connectivity test successful');
+      }
       return {
         status: 'connected',
         publicDomain: testDomain,
