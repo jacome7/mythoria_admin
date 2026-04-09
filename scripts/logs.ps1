@@ -28,6 +28,10 @@ Write-Host "[INFO] Region: $Region"
 
 try {
     # Set the project
+    if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
+        throw "gcloud is not installed or not available on PATH"
+    }
+
     gcloud config set project $ProjectId --quiet
 
     # Determine service name
