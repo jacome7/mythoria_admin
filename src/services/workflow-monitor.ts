@@ -387,6 +387,10 @@ export class WorkflowMonitorService {
         name: run.gcpWorkflowExecution,
       });
 
+      if (!execution) {
+        throw new Error(`Workflow execution not found: ${run.gcpWorkflowExecution}`);
+      }
+
       return {
         executionName: run.gcpWorkflowExecution,
         state: String(execution.state || 'UNKNOWN'),
