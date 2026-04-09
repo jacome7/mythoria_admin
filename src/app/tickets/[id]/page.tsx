@@ -63,7 +63,6 @@ export default function TicketDetailPage() {
       const response = await fetch(`/api/tickets/${ticketId}`);
       if (response.ok) {
         const apiData = await response.json();
-        console.log('Individual Ticket API Response:', apiData); // Debug log
 
         // Transform the ticket data if needed
         if (apiData && apiData.id) {
@@ -131,7 +130,6 @@ export default function TicketDetailPage() {
 
       if (response.ok) {
         const apiData = await response.json();
-        console.log('Update Ticket API Response:', apiData); // Debug log
 
         // Transform the updated ticket data
         const transformedTicket = {

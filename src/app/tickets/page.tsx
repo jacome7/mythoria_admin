@@ -46,7 +46,6 @@ export default function TicketsPage() {
       const response = await fetch(`/api/tickets?${params.toString()}`);
       if (response.ok) {
         const apiData = await response.json();
-        console.log('API Response:', apiData); // Debug log
 
         // Transform API data to match frontend interface
         const transformedTickets = (apiData.data || []).map(
@@ -74,7 +73,6 @@ export default function TicketsPage() {
           }),
         );
 
-        console.log('Transformed Tickets:', transformedTickets); // Debug log
         setTickets(transformedTickets);
       } else {
         console.error('Failed to fetch tickets:', response.status, response.statusText);
@@ -91,7 +89,6 @@ export default function TicketsPage() {
       const response = await fetch('/api/tickets/metrics');
       if (response.ok) {
         const apiMetrics = await response.json();
-        console.log('API Metrics Response:', apiMetrics); // Debug log
 
         // Transform API metrics to match updated frontend interface (no urgent card)
         const transformedMetrics: TicketMetrics = {
@@ -101,7 +98,6 @@ export default function TicketsPage() {
           resolvedTickets: apiMetrics.resolvedTickets || apiMetrics.resolved || 0,
         };
 
-        console.log('Transformed Metrics:', transformedMetrics); // Debug log
         setMetrics(transformedMetrics);
       }
     } catch (error) {
