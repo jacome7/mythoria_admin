@@ -414,7 +414,7 @@ export class WorkflowMonitorService {
     const cutoffTime = new Date(Date.now() - this.STALE_TIMEOUT_HOURS * 60 * 60 * 1000);
 
     try {
-      // Find stale running workflows
+      // Find stale running workflows. Queued runs are handled by reconciliation elsewhere.
       const staleRuns = await db
         .select()
         .from(storyGenerationRuns)
