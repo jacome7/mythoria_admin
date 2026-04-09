@@ -35,8 +35,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return false;
       }
 
-      // Check if email ends with allowed domains
-      const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => profile.email?.endsWith(domain));
+      // Check if email belongs to an allowed domain
+      const email = profile.email?.toLowerCase();
+      const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => email?.endsWith(domain.toLowerCase()));
 
       if (!isAllowedDomain) {
         console.log(`Sign-in rejected: Domain not allowed for ${profile.email}`);
