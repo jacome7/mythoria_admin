@@ -490,6 +490,25 @@ export function registerMcpTools(server: McpServer) {
     },
   );
 
+  server.tool(
+    'resume_campaign',
+    'Resume a paused email campaign (transition to active).',
+    { id: z.string(), adminEmail: z.string() },
+    async ({ id, adminEmail }) => {
+      try {
+        const { campaignService } = await import('@/db/services/campaigns');
+        const transitioned = await campaignService.transitionCampaignStatus(
+          id,
+          'active',
+          adminEmail,
+        );
+        return { content: [{ type: 'text', text: JSON.stringify(transitioned) }] };
+      } catch (e: unknown) {
+        return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
+      }
+    },
+  );
+
   // -----------------------------------------------------
   // Group H: FAQs
   // -----------------------------------------------------
