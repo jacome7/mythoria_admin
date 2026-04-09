@@ -16,7 +16,10 @@ param(
     [int]$Lines = 50,
     
     [Parameter(Mandatory = $false)]
-    [switch]$Follow
+    [switch]$Follow,
+
+    [Parameter(Mandatory = $false)]
+    [int]$Hours = 24
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,14 +41,16 @@ try {
     $serviceName = if ($Environment -eq "staging") { "mythoria-admin-staging" } else { "mythoria-admin" }
     
     Write-Host "[INFO] Viewing logs for service: $serviceName"
-    Write-Host "[INFO] Last $Lines lines"
+    Write-Host "[INFO] Last $Hours hours"
+    Write-Host "[INFO] Limit: $Lines entries"
     
     if ($Follow) {
         Write-Host "[INFO] Following logs (Press Ctrl+C to stop)..."
-        gcloud run services logs tail $serviceName --region=$Region --project=$ProjectId
+        gcloud beta logging tail "resource.type=cloud_run_revision AND resource.labels.service_name=$serviceName AND resource.labels.location=$Region" --project=$ProjectId
     }
     else {
-        gcloud run services logs read $serviceName --region=$Region --project=$ProjectId --limit=$Lines --format="table(timestamp,severity,textPayload)"
+        $startTime = (Get-Date).AddHours(-1 * $Hours).ToString("o")
+        gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$serviceName AND resource.labels.location=$Region AND timestamp>=\"$startTime\"" --project=$ProjectId --limit=$Lines --format="table(timestamp,severity,textPayload)"
     }
 
 }
