@@ -53,7 +53,7 @@ try {
     }
     else {
         $startTime = (Get-Date).AddHours(-1 * $Hours).ToString("o")
-        gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$serviceName AND resource.labels.location=$Region AND timestamp>=\"$startTime\"" --project=$ProjectId --limit=$Lines --format="table(timestamp,severity,textPayload)"
+        gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$serviceName AND resource.labels.location=$Region AND timestamp>=\"$startTime\"" --project=$ProjectId --limit=$Lines --format="$Format"
     }
 
 }
