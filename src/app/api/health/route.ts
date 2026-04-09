@@ -50,8 +50,10 @@ export async function GET(request: NextRequest) {
       backoffice: getStatusFromResult(databaseResults[2]),
     };
 
-    // Test network connectivity to a public domain
-    const networkResult = await testNetworkConnectivity();
+    // Test network connectivity to a public domain only in debug mode.
+    // A hard dependency on external egress can make Cloud Run flap healthy/unhealthy
+    // even when the app and databases are fine.
+    const networkResult = debug ? await testNetworkConnectivity() : { status: 'connected' as const };
     const authResult = validateAuthConfiguration();
 
     // Determine overall health
