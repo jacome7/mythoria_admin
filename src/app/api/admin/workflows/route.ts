@@ -35,13 +35,21 @@ export async function GET(req: NextRequest) {
 
     if (action === 'health') {
       const statuses = await workflowMonitor.checkAllRunningWorkflows();
+      const stale = statuses.filter((s) => s.isStale).length;
+      const mismatches = statuses.filter((s) => !s.statusMatch).length;
+      const healthy = stale === 0 && mismatches === 0;
 
-      return NextResponse.json({
-        success: true,
-        healthy: true,
-        timestamp: new Date().toISOString(),
-        runningWorkflows: statuses.length,
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          healthy,
+          timestamp: new Date().toISOString(),
+          runningWorkflows: statuses.length,
+          stale,
+          mismatches,
+        },
+        { status: healthy ? 200 : 503 },
+      );
     }
 
     return NextResponse.json(
