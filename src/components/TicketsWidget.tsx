@@ -19,10 +19,6 @@ export default function TicketsWidget({ className = '' }: TicketsWidgetProps) {
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchMetrics();
-  }, []);
-
   const fetchMetrics = async () => {
     try {
       const response = await fetch('/api/tickets/metrics');
@@ -51,6 +47,10 @@ export default function TicketsWidget({ className = '' }: TicketsWidgetProps) {
       </div>
     );
   }
+
+  useEffect(() => {
+    void fetchMetrics();
+  }, []);
 
   if (!metrics) {
     return (
