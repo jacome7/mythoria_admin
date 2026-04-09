@@ -109,11 +109,15 @@ async function checkServiceHealth(service: ServiceConfiguration) {
       // Response might not be JSON
     }
 
-    // Check HTTP status, and only require a body status when the service actually returns one
+    // Check HTTP status, and only treat an explicit body status as authoritative when present.
     const bodyStatus = responseData && typeof responseData === 'object' ? (responseData as { status?: string }).status : undefined;
     const isHealthy =
       response.ok &&
-      (bodyStatus == null || bodyStatus === 'healthy' || bodyStatus === 'connected' || bodyStatus === 'ok');
+      (bodyStatus == null ||
+        bodyStatus === 'healthy' ||
+        bodyStatus === 'connected' ||
+        bodyStatus === 'ok' ||
+        bodyStatus === 'up');
 
     return {
       service: service.name,
