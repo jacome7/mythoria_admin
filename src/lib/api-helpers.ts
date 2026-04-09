@@ -40,7 +40,14 @@ export async function proxyToNotificationEngine(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${process.env.NOTIFICATION_ENGINE_URL}${path}`, {
+  const notificationEngineUrl = process.env.NOTIFICATION_ENGINE_URL;
+  if (!notificationEngineUrl) {
+    return NextResponse.json({ error: 'Notification engine is not configured' }, {
+      status: 503,
+    });
+  }
+
+  const response = await fetch(`${notificationEngineUrl}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
