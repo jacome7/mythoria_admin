@@ -19,7 +19,10 @@ param(
     [switch]$Follow,
 
     [Parameter(Mandatory = $false)]
-    [int]$Hours = 24
+    [int]$Hours = 24,
+
+    [Parameter(Mandatory = $false)]
+    [string]$Format = "table(timestamp,severity,textPayload)"
 )
 
 $ErrorActionPreference = "Stop"
