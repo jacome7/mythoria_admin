@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { ALLOWED_DOMAINS } from '@/config/auth';
+import { isAllowedEmailDomain } from '@/config/auth';
 
 /**
  * Authenticate an admin API request.
@@ -12,7 +12,8 @@ export async function authenticateAdmin(): Promise<{ email: string } | { error: 
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
-  const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
+  const email = session.user.email.toLowerCase();
+  const isAllowedDomain = isAllowedEmailDomain(email);
   if (!isAllowedDomain) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
