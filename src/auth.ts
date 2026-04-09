@@ -1,8 +1,16 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { ALLOWED_DOMAINS, getHostedDomain, isAllowedEmailDomain } from '@/config/auth';
+import { getHostedDomain, isAllowedEmailDomain } from '@/config/auth';
 
 const GOOGLE_HOSTED_DOMAIN = getHostedDomain();
+
+function maskEmail(email?: string | null): string {
+  if (!email) return 'unknown';
+  const [localPart = '', domain = ''] = email.split('@');
+  const visibleLocal = localPart.slice(0, 2);
+  const maskedLocal = `${visibleLocal}${'*'.repeat(Math.max(localPart.length - visibleLocal.length, 0))}`;
+  return domain ? `${maskedLocal}@${domain}` : maskedLocal;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Use JWT strategy instead of database for now to avoid initialization issues
@@ -31,7 +39,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // Check if email is verified
       if (!profile?.email_verified) {
-        console.log('Sign-in rejected: Email not verified');
+        console.warn('Sign-in rejected: email not verified');
         return false;
       }
 
@@ -40,11 +48,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const isAllowedDomain = isAllowedEmailDomain(email);
 
       if (!isAllowedDomain) {
-        console.log(`Sign-in rejected: Domain not allowed for ${profile.email}`);
+        console.warn(`Sign-in rejected: domain not allowed for ${maskEmail(profile.email)}`);
         return false;
       }
 
-      console.log(`Sign-in approved for ${profile.email}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Sign-in approved for ${maskEmail(profile.email)}`);
+      }
       return true;
     },
     async jwt({ token, account, profile }) {
@@ -73,10 +83,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   events: {
     async signIn({ user, account }) {
-      console.log(`User signed in: ${user.email} via ${account?.provider}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`User signed in: ${maskEmail(user.email)} via ${account?.provider}`);
+      }
     },
-    async signOut(message) {
-      console.log(`User signed out:`, message);
+    async signOut() {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('User signed out');
+      }
     },
   },
 });
