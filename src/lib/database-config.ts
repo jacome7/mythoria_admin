@@ -46,14 +46,14 @@ function getBaseDatabaseConfig(): Omit<DatabaseConfig, 'database'> {
 
   // Validate required environment variables for runtime
   if (!process.env.DB_PASSWORD) {
-    //throw new Error('Database password is required');
+    throw new Error('DB_PASSWORD is required at runtime');
   }
 
   return {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'Mythoria1GCould',
+    password: process.env.DB_PASSWORD,
     ssl: isVpcConnection ? false : { rejectUnauthorized: false },
     maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
   };
