@@ -51,16 +51,14 @@ export async function GET(request: NextRequest) {
     };
 
     // Test network connectivity to a public domain only in debug mode.
-    // A hard dependency on external egress can make Cloud Run flap healthy/unhealthy
-    // even when the app and databases are fine.
+    // External egress is informative, but it should not gate core health.
     const networkResult = debug ? await testNetworkConnectivity() : { status: 'connected' as const };
     const authResult = validateAuthConfiguration();
 
     // Determine overall health
     const allDatabasesHealthy = Object.values(databases).every((db) => db.status === 'connected');
-    const networkHealthy = networkResult.status === 'connected';
     const authHealthy = authResult.status === 'configured';
-    const overallHealthy = allDatabasesHealthy && networkHealthy && authHealthy;
+    const overallHealthy = allDatabasesHealthy && authHealthy;
 
     const basicInfo: HealthStatus = {
       status: overallHealthy ? 'healthy' : 'unhealthy',
