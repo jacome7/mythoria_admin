@@ -52,22 +52,19 @@ export async function GET(request: NextRequest) {
 
     // Test network connectivity to a public domain
     const networkResult = await testNetworkConnectivity();
+    const authResult = validateAuthConfiguration();
 
     // Determine overall health
     const allDatabasesHealthy = Object.values(databases).every((db) => db.status === 'connected');
     const networkHealthy = networkResult.status === 'connected';
-    const overallHealthy = allDatabasesHealthy && networkHealthy;
+    const authHealthy = authResult.status === 'configured';
+    const overallHealthy = allDatabasesHealthy && networkHealthy && authHealthy;
 
     const basicInfo: HealthStatus = {
       status: overallHealthy ? 'healthy' : 'unhealthy',
       databases,
       network: networkResult,
-      auth: {
-        googleClientId: process.env.GOOGLE_CLIENT_ID ? 'configured' : 'missing',
-        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'configured' : 'missing',
-        authSecret: process.env.AUTH_SECRET ? 'configured' : 'missing',
-        nextAuthUrl: process.env.NEXTAUTH_URL || 'not set',
-      },
+      auth: authResult,
       timestamp: new Date().toISOString(),
     };
 
@@ -103,12 +100,7 @@ export async function GET(request: NextRequest) {
         status: 'disconnected',
         error: 'Health check failed',
       },
-      auth: {
-        googleClientId: process.env.GOOGLE_CLIENT_ID ? 'configured' : 'missing',
-        googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'configured' : 'missing',
-        authSecret: process.env.AUTH_SECRET ? 'configured' : 'missing',
-        nextAuthUrl: process.env.NEXTAUTH_URL || 'not set',
-      },
+      auth: authResult,
       timestamp: new Date().toISOString(),
     };
 
@@ -145,6 +137,15 @@ async function testDatabase(
   const result = await dbInstance.execute(sql`SELECT 1 as test, NOW() as timestamp`);
   console.log(`${name} database connection test successful:`, result.rows?.[0]);
   return { name, result };
+}
+
+function validateAuthConfiguration(): HealthStatus['auth'] {
+  return {
+    googleClientId: process.env.GOOGLE_CLIENT_ID ? 'configured' : 'missing',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'configured' : 'missing',
+    authSecret: process.env.AUTH_SECRET ? 'configured' : 'missing',
+    nextAuthUrl: process.env.NEXTAUTH_URL || 'not set',
+  };
 }
 
 function getStatusFromResult(
