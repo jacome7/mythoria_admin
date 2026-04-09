@@ -20,14 +20,6 @@ interface NotificationTemplate {
   updatedAt?: string;
 }
 
-function sanitizeHtml(input: string) {
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export default function NotificationTemplatePage() {
   const { status } = useSession();
@@ -428,9 +420,11 @@ Created on: {{ticket.createdAt}}`,
                     {template.htmlContent && (
                       <div>
                         <h4 className="font-bold mb-2">HTML Content:</h4>
-                        <div
-                          className="bg-white p-4 rounded border border-base-300"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderPreview(template.htmlContent)) }}
+                        <iframe
+                          title="Notification template HTML preview"
+                          className="w-full min-h-96 bg-white rounded border border-base-300"
+                          sandbox=""
+                          srcDoc={renderPreview(template.htmlContent)}
                         />
                       </div>
                     )}
