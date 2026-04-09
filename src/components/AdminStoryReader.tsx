@@ -31,6 +31,15 @@ interface AdminStoryReaderProps {
   currentChapter?: number;
 }
 
+function sanitizeHtml(input: string) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default function AdminStoryReader({
   storyId,
   story,
@@ -197,7 +206,7 @@ export default function AdminStoryReader({
           {/* Chapter Content */}
           <div
             className="prose prose-lg max-w-none text-black"
-            dangerouslySetInnerHTML={{ __html: currentChapterData.htmlContent }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentChapterData.htmlContent) }}
           />
         </div>
 

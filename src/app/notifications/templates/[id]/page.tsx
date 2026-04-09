@@ -20,6 +20,15 @@ interface NotificationTemplate {
   updatedAt?: string;
 }
 
+function sanitizeHtml(input: string) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default function NotificationTemplatePage() {
   const { status } = useSession();
   const router = useRouter();
@@ -421,7 +430,7 @@ Created on: {{ticket.createdAt}}`,
                         <h4 className="font-bold mb-2">HTML Content:</h4>
                         <div
                           className="bg-white p-4 rounded border border-base-300"
-                          dangerouslySetInnerHTML={{ __html: renderPreview(template.htmlContent) }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderPreview(template.htmlContent)) }}
                         />
                       </div>
                     )}

@@ -27,6 +27,15 @@ const DEFAULT_FIELD_LIMITS: BlogFieldLimits = {
   summary: 1000,
 };
 
+function sanitizeHtml(input: string) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default function EditBlogPostPage() {
   const { session, loading } = useAdminAuth();
   const router = useRouter();
@@ -915,7 +924,7 @@ function LocaleEditor({
         <div className="card bg-base-50">
           <div className="card-body">
             <h4 className="card-title text-lg">Preview</h4>
-            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }} />
           </div>
         </div>
       )}
