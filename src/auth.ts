@@ -2,6 +2,8 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
+const GOOGLE_HOSTED_DOMAIN = ALLOWED_DOMAINS[0]?.slice(1);
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Use JWT strategy instead of database for now to avoid initialization issues
   session: {
@@ -14,7 +16,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorization: {
         params: {
           prompt: 'select_account',
-          hd: 'mythoria.pt', // optimize for mythoria.pt domain
+          ...(GOOGLE_HOSTED_DOMAIN ? { hd: GOOGLE_HOSTED_DOMAIN } : {}),
         },
       },
     }),
