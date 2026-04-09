@@ -2,6 +2,22 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
+const getNotificationEngineUrl = () => {
+  const url = process.env.NOTIFICATION_ENGINE_URL;
+  if (!url) {
+    throw new Error('NOTIFICATION_ENGINE_URL is not configured');
+  }
+  return url;
+};
+
+const getNotificationEngineApiKey = () => {
+  const apiKey = process.env.NOTIFICATION_ENGINE_API_KEY;
+  if (!apiKey) {
+    throw new Error('NOTIFICATION_ENGINE_API_KEY is not configured');
+  }
+  return apiKey;
+};
+
 /**
  * GET /api/mail-marketing/status
  * Fetch simplified mail marketing status from notification engine
@@ -21,10 +37,10 @@ export async function GET() {
 
     // Make request to notification engine
     const response = await fetch(
-      `${process.env.NOTIFICATION_ENGINE_URL}/internal/mail-marketing/status`,
+      `${getNotificationEngineUrl()}/internal/mail-marketing/status`,
       {
         headers: {
-          'x-api-key': process.env.NOTIFICATION_ENGINE_API_KEY || '',
+          'x-api-key': getNotificationEngineApiKey(),
         },
       },
     );
