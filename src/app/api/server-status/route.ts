@@ -109,10 +109,11 @@ async function checkServiceHealth(service: ServiceConfiguration) {
       // Response might not be JSON
     }
 
-    // Check both HTTP status and response data status
+    // Check HTTP status, and only require a body status when the service actually returns one
+    const bodyStatus = responseData && typeof responseData === 'object' ? (responseData as { status?: string }).status : undefined;
     const isHealthy =
       response.ok &&
-      (!responseData || responseData.status === 'healthy' || responseData.status === 'connected');
+      (bodyStatus == null || bodyStatus === 'healthy' || bodyStatus === 'connected' || bodyStatus === 'ok');
 
     return {
       service: service.name,
