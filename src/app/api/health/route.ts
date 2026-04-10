@@ -3,15 +3,21 @@ import { db } from '@/db/index';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { isVpcDirectEgress } from '@/lib/database-config';
+import { auth } from '@/auth';
 
 interface DatabaseStatus {
   status: 'connected' | 'disconnected';
   error?: string;
 }
 
-function isDebugEnabled(request: NextRequest) {
+async function isDebugEnabled(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  return searchParams.get('debug') === 'true' || searchParams.get('debug') === '1';
+  const debugRequested = searchParams.get('debug') === 'true' || searchParams.get('debug') === '1';
+
+  if (!debugRequested) return false;
+
+  const session = await auth();
+  return Boolean(session?.user?.email);
 }
 
 interface HealthStatus {
@@ -36,7 +42,7 @@ interface HealthStatus {
 }
 
 export async function GET(request: NextRequest) {
-  const debug = isDebugEnabled(request);
+  const debug = await isDebugEnabled(request);
 
   try {
     if (process.env.NODE_ENV !== 'production') {
