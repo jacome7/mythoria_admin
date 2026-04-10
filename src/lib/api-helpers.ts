@@ -54,7 +54,16 @@ export async function proxyToNotificationEngine(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  const data = await response.json().catch(() => null);
+  const rawBody = await response.text();
+  let data: unknown = null;
+
+  if (rawBody) {
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      data = null;
+    }
+  }
 
   if (!response.ok) {
     const responseSummary =
@@ -63,13 +72,18 @@ export async function proxyToNotificationEngine(
             error: 'error' in data ? data.error : undefined,
             message: 'message' in data ? data.message : undefined,
           }
-        : { error: typeof data === 'string' ? data : undefined };
+        : {
+            error: rawBody ? rawBody.slice(0, 300) : undefined,
+          };
 
     console.error(`Notification engine error [${path}] status=${response.status}`, responseSummary);
-    return NextResponse.json(data ?? { error: 'Notification engine request failed' }, {
-      status: response.status,
-    });
+    return NextResponse.json(
+      data ?? { error: rawBody || 'Notification engine request failed' },
+      {
+        status: response.status,
+      },
+    );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data ?? { success: true });
 }
