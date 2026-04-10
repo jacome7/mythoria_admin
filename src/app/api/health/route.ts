@@ -147,10 +147,12 @@ async function testDatabase(
 }
 
 function validateAuthConfiguration(debug = false): HealthStatus['auth'] {
+  const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+
   return {
     googleClientId: process.env.GOOGLE_CLIENT_ID ? 'configured' : 'missing',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'configured' : 'missing',
-    authSecret: process.env.AUTH_SECRET ? 'configured' : 'missing',
+    authSecret: authSecret ? 'configured' : 'missing',
     ...(debug ? { nextAuthUrl: process.env.NEXTAUTH_URL || 'not set' } : {}),
   };
 }
