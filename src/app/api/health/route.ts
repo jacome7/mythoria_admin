@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { isVpcDirectEgress } from '@/lib/database-config';
 import { auth } from '@/auth';
+import { isAllowedEmailDomain } from '@/config/auth';
 
 interface DatabaseStatus {
   status: 'connected' | 'disconnected';
@@ -17,7 +18,9 @@ async function isDebugEnabled(request: NextRequest) {
   if (!debugRequested) return false;
 
   const session = await auth();
-  return Boolean(session?.user?.email);
+  const email = session?.user?.email;
+
+  return Boolean(email && isAllowedEmailDomain(email));
 }
 
 interface HealthStatus {
