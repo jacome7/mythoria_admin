@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { publishStoryRequest } from '@/lib/pubsub';
-import { ALLOWED_DOMAINS } from '@/config/auth';
+import { isAllowedEmailDomain } from '@/config/auth';
 
 // POST /api/admin/stories/[storyId]/restart - Restart story generation workflow
 export async function POST(
@@ -15,10 +15,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
-
-    if (!isAllowedDomain) {
+    if (!isAllowedEmailDomain(session.user.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
