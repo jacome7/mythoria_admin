@@ -19,59 +19,10 @@ interface NotificationRule {
   updatedAt: string;
 }
 
-// Mock data - In a real implementation, this would come from a database
-const mockRules: NotificationRule[] = [
-  {
-    id: '1',
-    name: 'New Ticket Created',
-    eventType: 'ticket.created',
-    channels: ['email'],
-    templateId: 'ticket-created',
-    enabled: true,
-    conditions: {},
-    recipients: {
-      includeAdmins: true,
-      includeCustomers: false,
-      customEmails: [],
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Ticket Status Updated',
-    eventType: 'ticket.status_updated',
-    channels: ['email'],
-    templateId: 'ticket-status-updated',
-    enabled: true,
-    conditions: {
-      priority: ['high', 'urgent'],
-    },
-    recipients: {
-      includeAdmins: true,
-      includeCustomers: true,
-      customEmails: [],
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'New Comment Added',
-    eventType: 'ticket.comment_added',
-    channels: ['email'],
-    templateId: 'ticket-comment-added',
-    enabled: true,
-    conditions: {},
-    recipients: {
-      includeAdmins: false,
-      includeCustomers: true,
-      customEmails: [],
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+async function getRules(): Promise<NotificationRule[]> {
+  console.warn('Notification rules read is disabled until real persistence is implemented.');
+  return [];
+}
 
 export async function GET() {
   try {
@@ -88,11 +39,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Implement database query to fetch notification rules
-    // For now, return mock data
+    const rules = await getRules();
+
     return NextResponse.json({
       success: true,
-      data: mockRules,
+      data: rules,
+      readOnly: true,
+      warning: 'Notification rules are unavailable until real persistence is implemented.',
     });
   } catch (error) {
     console.error('Error fetching notification rules:', error);

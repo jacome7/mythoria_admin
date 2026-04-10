@@ -12,61 +12,10 @@ interface NotificationChannel {
   updatedAt: string;
 }
 
-// Mock data - In a real implementation, this would come from a database
-const mockChannels: NotificationChannel[] = [
-  {
-    id: 'email',
-    name: 'Email',
-    type: 'email',
-    enabled: true,
-    config: {
-      provider: 'smtp',
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'sms',
-    name: 'SMS',
-    type: 'sms',
-    enabled: false,
-    config: {
-      provider: 'twilio',
-      accountSid: '',
-      authToken: '',
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'push',
-    name: 'Push Notifications',
-    type: 'push',
-    enabled: false,
-    config: {
-      provider: 'firebase',
-      serverKey: '',
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'webhook',
-    name: 'Webhook',
-    type: 'webhook',
-    enabled: false,
-    config: {
-      url: '',
-      method: 'POST',
-      headers: {},
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+async function getChannels(): Promise<NotificationChannel[]> {
+  console.warn('Notification channels read is disabled until real persistence is implemented.');
+  return [];
+}
 
 export async function GET() {
   try {
@@ -83,10 +32,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Implement database query to fetch notification channels
+    const channels = await getChannels();
+
     return NextResponse.json({
       success: true,
-      data: mockChannels,
+      data: channels,
+      readOnly: true,
+      warning: 'Notification channels are unavailable until real persistence is implemented.',
     });
   } catch (error) {
     console.error('Error fetching notification channels:', error);

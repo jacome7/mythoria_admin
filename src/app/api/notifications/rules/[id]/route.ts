@@ -19,43 +19,10 @@ interface NotificationRule {
   updatedAt: string;
 }
 
-// Mock data - In a real implementation, this would come from a database
-const mockRules: NotificationRule[] = [
-  {
-    id: '1',
-    name: 'New Ticket Created',
-    eventType: 'ticket.created',
-    channels: ['email'],
-    templateId: 'ticket-created',
-    enabled: true,
-    conditions: {},
-    recipients: {
-      includeAdmins: true,
-      includeCustomers: false,
-      customEmails: [],
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Ticket Status Updated',
-    eventType: 'ticket.status_updated',
-    channels: ['email'],
-    templateId: 'ticket-status-updated',
-    enabled: true,
-    conditions: {
-      priority: ['high', 'urgent'],
-    },
-    recipients: {
-      includeAdmins: true,
-      includeCustomers: true,
-      customEmails: [],
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+async function getRuleById(_id: string): Promise<NotificationRule | null> {
+  console.warn('Notification rule detail read is disabled until real persistence is implemented.');
+  return null;
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -74,16 +41,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
 
-    // TODO: Implement database query to fetch specific notification rule
-    const rule = mockRules.find((r) => r.id === id);
+    const rule = await getRuleById(id);
 
     if (!rule) {
-      return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Notification rule details are unavailable until real persistence is implemented.' },
+        { status: 501 },
+      );
     }
 
     return NextResponse.json({
       success: true,
       data: rule,
+      readOnly: true,
     });
   } catch (error) {
     console.error('Error fetching notification rule:', error);

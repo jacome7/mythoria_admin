@@ -17,61 +17,10 @@ interface NotificationTemplate {
   updatedAt: string;
 }
 
-// Mock data - In a real implementation, this would come from a database
-const mockTemplates: NotificationTemplate[] = [
-  {
-    id: 'ticket-created',
-    name: 'Ticket Created',
-    type: 'email',
-    language: 'en',
-    eventType: 'ticket.created',
-    subject: 'New Ticket Created: {{ticket.subject}}',
-    htmlContent:
-      '<h2>New Ticket Created</h2><p>A new ticket has been created: {{ticket.subject}}</p>',
-    textContent: 'New Ticket Created\n\nA new ticket has been created: {{ticket.subject}}',
-    variables: [
-      'ticket.id',
-      'ticket.subject',
-      'ticket.description',
-      'customer.name',
-      'customer.email',
-    ],
-    enabled: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'ticket-status-updated',
-    name: 'Ticket Status Updated',
-    type: 'email',
-    language: 'en',
-    eventType: 'ticket.status_updated',
-    subject: 'Ticket Status Updated: {{ticket.subject}}',
-    htmlContent:
-      '<h2>Ticket Status Updated</h2><p>Ticket {{ticket.id}} status changed to {{ticket.status}}</p>',
-    textContent:
-      'Ticket Status Updated\n\nTicket {{ticket.id}} status changed to {{ticket.status}}',
-    variables: ['ticket.id', 'ticket.subject', 'ticket.status', 'customer.name'],
-    enabled: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'ticket-comment-added',
-    name: 'Ticket Comment Added',
-    type: 'email',
-    language: 'en',
-    eventType: 'ticket.comment_added',
-    subject: 'New Comment on Ticket: {{ticket.subject}}',
-    htmlContent:
-      '<h2>New Comment Added</h2><p>A new comment has been added to ticket {{ticket.id}}</p>',
-    textContent: 'New Comment Added\n\nA new comment has been added to ticket {{ticket.id}}',
-    variables: ['ticket.id', 'ticket.subject', 'comment.content', 'comment.author'],
-    enabled: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+async function getTemplates(): Promise<NotificationTemplate[]> {
+  console.warn('Notification templates read is disabled until real persistence is implemented.');
+  return [];
+}
 
 export async function GET() {
   try {
@@ -88,10 +37,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Implement database query to fetch notification templates
+    const templates = await getTemplates();
+
     return NextResponse.json({
       success: true,
-      data: mockTemplates,
+      data: templates,
+      readOnly: true,
+      warning: 'Notification templates are unavailable until real persistence is implemented.',
     });
   } catch (error) {
     console.error('Error fetching notification templates:', error);
