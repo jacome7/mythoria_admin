@@ -1,14 +1,27 @@
 import { PubSub } from '@google-cloud/pubsub';
 
-const pubsub = new PubSub({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-});
+let pubsub: PubSub | null = null;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
 // picks creds from metadata
 const storyTopic = process.env.PUBSUB_TOPIC || 'mythoria-story-requests';
 const audiobookTopic = process.env.PUBSUB_AUDIOBOOK_TOPIC || 'mythoria-audiobook-requests';
+
+function getPubSubClient(): PubSub {
+  if (pubsub) {
+    return pubsub;
+  }
+
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID?.trim();
+
+  if (!projectId) {
+    throw new Error('GOOGLE_CLOUD_PROJECT_ID is not configured');
+  }
+
+  pubsub = new PubSub({ projectId });
+  return pubsub;
+}
 
 export async function publishStoryRequest(message: unknown) {
   return publishMessage(storyTopic, message, 'story generation');
@@ -28,8 +41,9 @@ async function publishMessage(topic: string, message: unknown, type: string) {
   }
 
   try {
+    const client = getPubSubClient();
     const dataBuffer = Buffer.from(JSON.stringify(message));
-    const messageId = await pubsub.topic(topic).publishMessage({ data: dataBuffer });
+    const messageId = await client.topic(topic).publishMessage({ data: dataBuffer });
 
     if (!isProduction) {
       console.log(`[pubsub] Published ${type} request`, { topic, messageId });
