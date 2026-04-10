@@ -139,7 +139,7 @@ export async function GET(request: Request) {
       {
         success: false,
         error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        message: 'Failed to fetch Postmaster traffic stats.',
       },
       { status: 500 },
     );
