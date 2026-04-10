@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { publishStoryRequest } from '@/lib/pubsub';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 
 // POST /api/workflows/[runId]/retry - Retry a failed workflow
 export async function POST(
@@ -10,8 +11,14 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user.email?.endsWith(domain));
+
+    if (!isAllowedDomain) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { runId } = await params;
