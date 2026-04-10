@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // Determine overall health
     const allDatabasesHealthy = Object.values(databases).every((db) => db.status === 'connected');
-    const authHealthy = authResult.status === 'configured';
+    const authHealthy = authResult.authSecret === 'configured';
     const overallHealthy = allDatabasesHealthy && authHealthy;
 
     const basicInfo: HealthStatus = {
