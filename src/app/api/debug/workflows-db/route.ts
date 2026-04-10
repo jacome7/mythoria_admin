@@ -1,13 +1,24 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { isAllowedEmailDomain } from '@/config/auth';
 import { getWorkflowsDb } from '@/db';
 import { tokenUsageTracking } from '@/db/schema/workflows/token-usage';
 import { sql } from 'drizzle-orm';
 
 export async function GET() {
+  const session = await auth();
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!isAllowedEmailDomain(session.user.email)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const db = getWorkflowsDb();
 
-    // Simple test query to check if we can connect and get data
     const result = await db
       .select({
         count: sql<number>`COUNT(*)`,
@@ -29,7 +40,6 @@ export async function GET() {
       {
         status: 'error',
         message: 'Database connection failed',
-        error: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     );
