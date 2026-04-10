@@ -4,7 +4,25 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { ALLOWED_DOMAINS } from '@/config/auth';
 import { workflowMonitor } from '@/services/workflow-monitor';
+
+async function requireAdminAccess() {
+  const session = await auth();
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
+
+  if (!isAllowedDomain) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  return null;
+}
 
 /**
  * GET /api/admin/workflows
@@ -12,6 +30,11 @@ import { workflowMonitor } from '@/services/workflow-monitor';
  */
 export async function GET(req: NextRequest) {
   try {
+    const authError = await requireAdminAccess();
+    if (authError) {
+      return authError;
+    }
+
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
 
@@ -78,6 +101,11 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
+    const authError = await requireAdminAccess();
+    if (authError) {
+      return authError;
+    }
+
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
 
