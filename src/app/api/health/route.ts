@@ -96,13 +96,13 @@ export async function GET(request: NextRequest) {
     const errorResponse: HealthStatus = {
       status: 'unhealthy',
       databases: {
-        mythoria: { status: 'disconnected', error: 'Health check failed' },
-        workflows: { status: 'disconnected', error: 'Health check failed' },
-        backoffice: { status: 'disconnected', error: 'Health check failed' },
+        mythoria: { status: 'disconnected', ...(debug ? { error: 'Health check failed' } : {}) },
+        workflows: { status: 'disconnected', ...(debug ? { error: 'Health check failed' } : {}) },
+        backoffice: { status: 'disconnected', ...(debug ? { error: 'Health check failed' } : {}) },
       },
       network: {
         status: 'disconnected',
-        error: 'Health check failed',
+        ...(debug ? { error: 'Health check failed' } : {}),
       },
       auth: authResult,
       timestamp: new Date().toISOString(),
