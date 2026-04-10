@@ -9,6 +9,11 @@ interface DatabaseStatus {
   error?: string;
 }
 
+function isDebugEnabled(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  return searchParams.get('debug') === 'true' || searchParams.get('debug') === '1';
+}
+
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';
   databases: {
@@ -31,8 +36,7 @@ interface HealthStatus {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const debug = searchParams.get('debug') === 'true' || searchParams.get('debug') === '1';
+  const debug = isDebugEnabled(request);
 
   try {
     if (process.env.NODE_ENV !== 'production') {
@@ -47,9 +51,9 @@ export async function GET(request: NextRequest) {
     ]);
 
     const databases = {
-      mythoria: getStatusFromResult(databaseResults[0]),
-      workflows: getStatusFromResult(databaseResults[1]),
-      backoffice: getStatusFromResult(databaseResults[2]),
+      mythoria: getStatusFromResult(databaseResults[0], debug),
+      workflows: getStatusFromResult(databaseResults[1], debug),
+      backoffice: getStatusFromResult(databaseResults[2], debug),
     };
 
     // Test network connectivity to a public domain only in debug mode.
@@ -153,15 +157,18 @@ function validateAuthConfiguration(): HealthStatus['auth'] {
 
 function getStatusFromResult(
   result: PromiseSettledResult<{ name: string; result: { rows?: unknown[] } }>,
+  debug = false,
 ): DatabaseStatus {
   if (result.status === 'fulfilled') {
     return { status: 'connected' };
-  } else {
-    return {
-      status: 'disconnected',
-      error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
-    };
   }
+
+  return {
+    status: 'disconnected',
+    ...(debug
+      ? { error: result.reason instanceof Error ? result.reason.message : 'Unknown error' }
+      : {}),
+  };
 }
 
 async function testNetworkConnectivity(): Promise<{
