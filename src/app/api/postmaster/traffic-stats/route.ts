@@ -85,7 +85,7 @@ export async function GET(request: Request) {
           message:
             'No traffic statistics available. This may happen if the domain is not verified in Postmaster Tools or if email volume is too low.',
         },
-        { status: 204 },
+        { status: 404 },
       );
     }
 
