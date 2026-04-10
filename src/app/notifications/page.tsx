@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -44,6 +44,7 @@ export default function NotificationsPage() {
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const channelUpdatesAvailable = useMemo(() => false, []);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -108,6 +109,11 @@ export default function NotificationsPage() {
   };
 
   const toggleChannel = async (channelId: string, enabled: boolean) => {
+    if (!channelUpdatesAvailable) {
+      console.error('Notification channel updates are disabled until a real persistence endpoint is implemented.');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/notifications/channels/${channelId}`, {
         method: 'PUT',
@@ -299,8 +305,11 @@ export default function NotificationsPage() {
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title">Notification Channels</h2>
-              <p className="text-base-content/70 mb-4">
+              <p className="text-base-content/70 mb-2">
                 Configure and manage notification delivery channels.
+              </p>
+              <p className="text-warning text-sm mb-4">
+                Channel enable or disable is currently read-only until the real persistence endpoint is implemented.
               </p>
 
               <div className="grid gap-4">
@@ -319,9 +328,13 @@ export default function NotificationsPage() {
                             type="checkbox"
                             className="toggle toggle-primary"
                             checked={channel.enabled}
+                            disabled={!channelUpdatesAvailable}
+                            title="Read-only until notification channel persistence is implemented"
                             onChange={(e) => toggleChannel(channel.id, e.target.checked)}
                           />
-                          <button className="btn btn-ghost btn-sm">Configure</button>
+                          <button className="btn btn-ghost btn-sm" disabled>
+                            Configure
+                          </button>
                         </div>
                       </div>
                     </div>
