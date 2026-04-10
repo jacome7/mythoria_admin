@@ -162,9 +162,13 @@ export class WorkflowMonitorService {
 
         // Check if statuses match
         status.statusMatch = this.doStatusesMatch(status.currentDbStatus, status.workflowStatus);
+      } else if (run.status === 'queued') {
+        // Queued jobs may legitimately exist before a GCP execution is created.
+        status.workflowStatus = 'UNKNOWN';
+        status.statusMatch = true;
       } else {
-        // No GCP execution name - this is problematic for running workflows
-        console.warn('Running workflow has no GCP execution name', { runId });
+        // No GCP execution name is only problematic for actively running or terminal runs
+        console.warn('Workflow run missing GCP execution name', { runId, status: run.status });
         status.workflowStatus = 'UNKNOWN';
         status.statusMatch = false;
       }
