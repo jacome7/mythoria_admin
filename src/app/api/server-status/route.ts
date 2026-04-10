@@ -75,6 +75,9 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       totalServices: services.length,
       healthyServices: serviceStatuses.filter((s) => s.status === 'healthy').length,
+      degradedServices: serviceStatuses.filter((s) => s.status === 'degraded').length,
+      unhealthyServices: serviceStatuses.filter((s) => s.status === 'unhealthy').length,
+      unknownServices: serviceStatuses.filter((s) => s.status === 'unknown').length,
     });
   } catch (error) {
     console.error('Server status check failed:', error);
