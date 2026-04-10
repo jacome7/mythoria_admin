@@ -63,69 +63,33 @@ export default function NotificationTemplatePage() {
     try {
       setIsLoading(true);
 
-      if (isEditing && params?.id) {
-        // TODO: Replace with actual API call
-        const mockTemplate: NotificationTemplate = {
-          id: params.id as string,
-          name: 'Ticket Created Notification',
-          type: 'email',
-          language: 'en',
-          eventType: 'ticket.created',
-          subject: 'New Ticket Created: {{ticket.subject}}',
-          htmlContent: `<h2>New Ticket Created</h2>
-<p>A new ticket has been created in the Mythoria support system.</p>
-<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-  <h3>Ticket Details</h3>
-  <p><strong>ID:</strong> {{ticket.id}}</p>
-  <p><strong>Subject:</strong> {{ticket.subject}}</p>
-  <p><strong>Priority:</strong> {{ticket.priority}}</p>
-  <p><strong>Type:</strong> {{ticket.type}}</p>
-  <p><strong>Description:</strong> {{ticket.description}}</p>
-</div>
-<div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 15px 0;">
-  <h3>Customer Information</h3>
-  <p><strong>Name:</strong> {{customer.name}}</p>
-  <p><strong>Email:</strong> {{customer.email}}</p>
-</div>
-<p>Created on: {{ticket.createdAt}}</p>`,
-          textContent: `New Ticket Created
-
-A new ticket has been created in the Mythoria support system.
-
-Ticket Details:
-- ID: {{ticket.id}}
-- Subject: {{ticket.subject}}
-- Priority: {{ticket.priority}}
-- Type: {{ticket.type}}
-- Description: {{ticket.description}}
-
-Customer Information:
-- Name: {{customer.name}}
-- Email: {{customer.email}}
-
-Created on: {{ticket.createdAt}}`,
-          variables: [
-            'ticket.id',
-            'ticket.subject',
-            'ticket.priority',
-            'ticket.type',
-            'ticket.description',
-            'customer.name',
-            'customer.email',
-            'ticket.createdAt',
-          ],
-          enabled: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setTemplate(mockTemplate);
+      if (!isEditing || !params?.id) {
+        return;
       }
+
+      const response = await fetch('/api/notifications/templates');
+      if (!response.ok) {
+        throw new Error(`Failed to load notification templates (${response.status})`);
+      }
+
+      const payload = await response.json();
+      const existingTemplate = (payload?.data || []).find(
+        (candidate: NotificationTemplate) => candidate.id === params.id,
+      );
+
+      if (!existingTemplate) {
+        router.push('/notifications');
+        return;
+      }
+
+      setTemplate(existingTemplate);
     } catch (error) {
       console.error('Error loading template:', error);
+      router.push('/notifications');
     } finally {
       setIsLoading(false);
     }
-  }, [isEditing, params?.id]);
+  }, [isEditing, params?.id, router]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -139,21 +103,7 @@ Created on: {{ticket.createdAt}}`,
   }, [status, router, loadTemplate]);
 
   const handleSave = async () => {
-    try {
-      setIsSaving(true);
-
-      // TODO: Implement actual API call
-      console.log('Saving template:', template);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      router.push('/notifications');
-    } catch (error) {
-      console.error('Error saving template:', error);
-    } finally {
-      setIsSaving(false);
-    }
+    console.error('Notification template save is disabled until the real persistence API is implemented.');
   };
 
   const renderPreview = (content: string) => {
@@ -455,17 +405,19 @@ Created on: {{ticket.createdAt}}`,
                   </label>
                 </div>
 
+                <div className="alert alert-warning mt-6">
+                  <span>
+                    Template editing is temporarily read-only here because the persistence API is not
+                    implemented yet. This avoids showing false successful saves in production.
+                  </span>
+                </div>
+
                 {/* Actions */}
                 <div className="card-actions justify-end mt-6">
                   <Link href="/notifications" className="btn btn-ghost">
-                    Cancel
+                    Back
                   </Link>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleSave}
-                    disabled={isSaving || !template.name}
-                  >
-                    {isSaving && <span className="loading loading-spinner loading-sm"></span>}
+                  <button className="btn btn-primary" onClick={handleSave} disabled>
                     {isEditing ? 'Update Template' : 'Create Template'}
                   </button>
                 </div>
