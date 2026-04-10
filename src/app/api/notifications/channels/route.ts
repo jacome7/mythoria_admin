@@ -122,7 +122,11 @@ export async function POST(request: NextRequest) {
     };
 
     // TODO: Implement database insert
-    console.log('Creating notification channel:', newChannel);
+    console.log('Creating notification channel', {
+      id: newChannel.id,
+      type: newChannel.type,
+      enabled: newChannel.enabled,
+    });
 
     return NextResponse.json(
       {

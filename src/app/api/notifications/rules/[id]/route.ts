@@ -127,7 +127,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updatedAt: new Date().toISOString(),
     };
 
-    console.log('Updating notification rule:', updatedRule);
+    console.log('Updating notification rule', {
+      id: updatedRule.id,
+      eventType: updatedRule.eventType,
+      enabled: updatedRule.enabled,
+      channelCount: updatedRule.channels.length,
+    });
 
     return NextResponse.json({
       success: true,
@@ -160,7 +165,7 @@ export async function DELETE(
     const { id } = await params;
 
     // TODO: Implement database deletion
-    console.log('Deleting notification rule:', id);
+    console.log('Deleting notification rule', { id });
 
     return NextResponse.json({
       success: true,

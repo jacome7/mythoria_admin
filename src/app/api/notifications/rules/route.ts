@@ -137,7 +137,12 @@ export async function POST(request: NextRequest) {
 
     // TODO: Implement database insert
     // For now, just return the created rule
-    console.log('Creating notification rule:', newRule);
+    console.log('Creating notification rule', {
+      id: newRule.id,
+      eventType: newRule.eventType,
+      enabled: newRule.enabled,
+      channelCount: newRule.channels.length,
+    });
 
     return NextResponse.json(
       {

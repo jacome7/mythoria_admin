@@ -132,7 +132,14 @@ export async function POST(request: NextRequest) {
     };
 
     // TODO: Implement database insert
-    console.log('Creating notification template:', newTemplate);
+    console.log('Creating notification template', {
+      id: newTemplate.id,
+      type: newTemplate.type,
+      language: newTemplate.language,
+      eventType: newTemplate.eventType,
+      enabled: newTemplate.enabled,
+      variableCount: newTemplate.variables.length,
+    });
 
     return NextResponse.json(
       {
