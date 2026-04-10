@@ -109,21 +109,29 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
         method: 'POST',
       });
 
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      const payload = isJson ? await response.json() : null;
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to retry workflow');
+        const errorMessage =
+          payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+            ? payload.error
+            : 'Failed to retry workflow';
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      const successMessage =
+        payload && typeof payload === 'object' && 'message' in payload && typeof payload.message === 'string'
+          ? payload.message
+          : 'Workflow retry requested successfully';
 
-      // Show success message
-      console.log('Workflow retry successful:', result.message);
+      console.log('Workflow retry successful:', successMessage);
 
       // Refresh the list after successful retry
       loadWorkflows(currentPage, searchTerm);
     } catch (err) {
       console.error('Error retrying workflow:', err);
-      // You might want to show a toast notification here
       alert(`Failed to retry workflow: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
