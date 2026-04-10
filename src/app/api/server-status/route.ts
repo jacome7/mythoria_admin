@@ -88,11 +88,10 @@ export async function GET(request: NextRequest) {
 async function checkServiceHealth(service: ServiceConfiguration) {
   const healthUrl = `${service.baseUrl}${service.healthPath}`;
   const startTime = Date.now();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
     const response = await fetch(healthUrl, {
       method: 'GET',
       signal: controller.signal,
@@ -102,7 +101,6 @@ async function checkServiceHealth(service: ServiceConfiguration) {
       },
     });
 
-    clearTimeout(timeoutId);
     const responseTime = Date.now() - startTime;
 
     let responseData = null;
@@ -149,5 +147,7 @@ async function checkServiceHealth(service: ServiceConfiguration) {
       lastChecked: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
