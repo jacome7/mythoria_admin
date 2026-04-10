@@ -40,40 +40,39 @@ export async function POST(
       );
     }
 
-    // Generate a new runId for workflow tracking
+    // Generate a new runId for workflow tracking.
+    // Only persist the retry run after Pub/Sub publish succeeds, to avoid orphan queued runs.
     const { randomUUID } = await import('crypto');
     const newRunId = randomUUID();
 
-    // Create a new workflow run record with the new runId
-    const workflowRun = await adminService.createWorkflowRun(
-      originalRun.storyId,
-      undefined,
-      newRunId,
-    );
-
-    // Publish the Pub/Sub message to trigger the workflow
     try {
       await publishStoryRequest({
         storyId: originalRun.storyId,
-        runId: workflowRun.runId,
+        runId: newRunId,
         timestamp: new Date().toISOString(),
       });
 
-      console.log(
-        `Workflow retry request published for story ${originalRun.storyId}, run ${workflowRun.runId}`,
+      const workflowRun = await adminService.createWorkflowRun(
+        originalRun.storyId,
+        undefined,
+        newRunId,
       );
+
+      console.log(
+        `Workflow retry request published for story ${originalRun.storyId}, run ${newRunId}`,
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Workflow retry initiated',
+        newRunId: workflowRun.runId,
+        originalRunId: runId,
+      });
     } catch (pubsubError) {
       console.error('Failed to publish workflow retry request:', pubsubError);
 
       return NextResponse.json({ error: 'Failed to retry workflow' }, { status: 500 });
     }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Workflow retry initiated',
-      newRunId: workflowRun.runId,
-      originalRunId: runId,
-    });
   } catch (error) {
     console.error('Error retrying workflow:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

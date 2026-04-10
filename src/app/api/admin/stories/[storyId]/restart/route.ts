@@ -39,24 +39,29 @@ export async function POST(
       );
     }
 
-    // Generate a new runId for workflow tracking
+    // Generate a new runId for workflow tracking.
+    // Only persist the run after Pub/Sub publish succeeds, to avoid orphan queued runs.
     const { randomUUID } = await import('crypto');
     const runId = randomUUID();
 
-    // Create a new workflow run record with the same runId
-    const workflowRun = await adminService.createWorkflowRun(storyId, undefined, runId);
-
-    // Publish the Pub/Sub message to trigger the workflow
     try {
       await publishStoryRequest({
-        storyId: storyId,
-        runId: workflowRun.runId,
+        storyId,
+        runId,
         timestamp: new Date().toISOString(),
       });
 
-      console.log(
-        `Story generation restart request published for story ${storyId}, run ${workflowRun.runId}`,
-      );
+      const workflowRun = await adminService.createWorkflowRun(storyId, undefined, runId);
+
+      console.log(`Story generation restart request published for story ${storyId}, run ${runId}`);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Story generation restarted successfully',
+        storyId,
+        runId: workflowRun.runId,
+        status: workflowRun.status,
+      });
     } catch (pubsubError) {
       console.error('Failed to publish story restart request:', pubsubError);
 
@@ -65,14 +70,6 @@ export async function POST(
         { status: 500 },
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Story generation restarted successfully',
-      storyId: storyId,
-      runId: workflowRun.runId,
-      status: 'queued',
-    });
   } catch (error) {
     console.error('Error restarting story generation:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
