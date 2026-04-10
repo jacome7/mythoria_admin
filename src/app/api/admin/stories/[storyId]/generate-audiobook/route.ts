@@ -44,10 +44,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
 
     const runId = uuidv4();
 
-    await adminService.updateStory(storyId, {
-      audiobookStatus: 'generating',
-    });
-
     try {
       await publishAudiobookRequest({
         storyId,
@@ -58,11 +54,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
         requestedAt: new Date().toISOString(),
         source: 'admin-portal',
       });
+
+      await adminService.updateStory(storyId, {
+        audiobookStatus: 'generating',
+      });
     } catch (error) {
       console.error('Failed to publish audiobook request from admin portal', error);
-      await adminService.updateStory(storyId, {
-        audiobookStatus: story.audiobookStatus ?? null,
-      });
       return NextResponse.json(
         { error: 'Failed to enqueue audiobook generation request' },
         { status: 500 },
