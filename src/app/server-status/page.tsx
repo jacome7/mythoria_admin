@@ -9,7 +9,7 @@ interface ServiceStatus {
   displayName: string;
   url: string;
   healthEndpoint: string;
-  status: 'healthy' | 'unhealthy' | 'unknown' | 'loading';
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown' | 'loading';
   responseTime?: number;
   lastChecked?: string;
   error?: string;
@@ -22,7 +22,7 @@ interface ServerStatusResponse {
     displayName: string;
     url: string;
     healthEndpoint: string;
-    status: 'healthy' | 'unhealthy' | 'unknown';
+    status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
     responseTime?: number;
     lastChecked?: string;
     error?: string;
@@ -30,6 +30,9 @@ interface ServerStatusResponse {
   timestamp: string;
   totalServices: number;
   healthyServices: number;
+  degradedServices?: number;
+  unhealthyServices?: number;
+  unknownServices?: number;
 }
 
 export default function ServerStatusPage() {
@@ -156,6 +159,8 @@ export default function ServerStatusPage() {
     switch (status) {
       case 'healthy':
         return <div className="w-3 h-3 bg-success rounded-full"></div>;
+      case 'degraded':
+        return <div className="w-3 h-3 bg-warning rounded-full"></div>;
       case 'unhealthy':
         return <div className="w-3 h-3 bg-error rounded-full"></div>;
       case 'loading':
@@ -169,6 +174,8 @@ export default function ServerStatusPage() {
     switch (status) {
       case 'healthy':
         return 'Healthy';
+      case 'degraded':
+        return 'Degraded';
       case 'unhealthy':
         return 'Unhealthy';
       case 'loading':
@@ -182,6 +189,8 @@ export default function ServerStatusPage() {
     switch (status) {
       case 'healthy':
         return 'badge-success';
+      case 'degraded':
+        return 'badge-warning';
       case 'unhealthy':
         return 'badge-error';
       case 'loading':
