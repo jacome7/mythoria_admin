@@ -7,6 +7,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 // picks creds from metadata
 const storyTopic = process.env.PUBSUB_TOPIC || 'mythoria-story-requests';
 const audiobookTopic = process.env.PUBSUB_AUDIOBOOK_TOPIC || 'mythoria-audiobook-requests';
+const printTopic = process.env.PUBSUB_TOPIC_PRINT || 'mythoria-print-requests';
 
 function getPubSubClient(): PubSub {
   if (pubsub) {
@@ -29,6 +30,10 @@ export async function publishStoryRequest(message: unknown) {
 
 export async function publishAudiobookRequest(message: unknown) {
   return publishMessage(audiobookTopic, message, 'audiobook generation');
+}
+
+export async function publishPrintRequest(message: unknown) {
+  return publishMessage(printTopic, message, 'print generation');
 }
 
 async function publishMessage(topic: string, message: unknown, type: string) {
