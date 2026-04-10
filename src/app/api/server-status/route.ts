@@ -111,23 +111,26 @@ async function checkServiceHealth(service: ServiceConfiguration) {
 
     // Check HTTP status, and only treat an explicit body status as authoritative when present.
     const bodyStatus = responseData && typeof responseData === 'object' ? (responseData as { status?: string }).status : undefined;
+    const normalizedBodyStatus = typeof bodyStatus === 'string' ? bodyStatus.toLowerCase() : undefined;
     const isHealthy =
       response.ok &&
-      (bodyStatus == null ||
-        bodyStatus === 'healthy' ||
-        bodyStatus === 'connected' ||
-        bodyStatus === 'ok' ||
-        bodyStatus === 'up');
+      (normalizedBodyStatus == null ||
+        normalizedBodyStatus === 'healthy' ||
+        normalizedBodyStatus === 'connected' ||
+        normalizedBodyStatus === 'ok' ||
+        normalizedBodyStatus === 'up');
+    const isDegraded = normalizedBodyStatus === 'degraded';
 
     return {
       service: service.name,
       displayName: service.displayName,
-      status: isHealthy ? 'healthy' : 'unhealthy',
+      status: isHealthy ? 'healthy' : isDegraded ? 'degraded' : 'unhealthy',
       url: service.baseUrl,
       healthEndpoint: healthUrl,
       responseTime,
       lastChecked: new Date().toISOString(),
-      error: !isHealthy ? `HTTP ${response.status}: ${response.statusText}` : undefined,
+      error:
+        !isHealthy && !isDegraded ? `HTTP ${response.status}: ${response.statusText}` : undefined,
       data: responseData,
     };
   } catch (error) {
