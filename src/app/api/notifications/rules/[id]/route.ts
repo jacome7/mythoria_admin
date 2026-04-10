@@ -91,88 +91,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const session = await auth();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
-
-    if (!isAllowedDomain) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const { id } = await params;
-    const body = await request.json();
-
-    // TODO: Implement database update
-    const updatedRule: NotificationRule = {
-      id,
-      name: body.name,
-      eventType: body.eventType,
-      channels: body.channels || ['email'],
-      templateId: body.templateId,
-      enabled: body.enabled ?? true,
-      conditions: body.conditions || {},
-      recipients: body.recipients || {
-        includeAdmins: true,
-        includeCustomers: false,
-        customEmails: [],
-      },
-      createdAt: body.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    console.log('Updating notification rule', {
-      id: updatedRule.id,
-      eventType: updatedRule.eventType,
-      enabled: updatedRule.enabled,
-      channelCount: updatedRule.channels.length,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: updatedRule,
-    });
-  } catch (error) {
-    console.error('Error updating notification rule:', error);
-    return NextResponse.json({ error: 'Failed to update notification rule' }, { status: 500 });
-  }
+export async function PUT() {
+  return NextResponse.json(
+    { error: 'Notification rule updates are not implemented yet.' },
+    { status: 501 },
+  );
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const session = await auth();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has admin access
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
-
-    if (!isAllowedDomain) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const { id } = await params;
-
-    // TODO: Implement database deletion
-    console.log('Deleting notification rule', { id });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Rule deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting notification rule:', error);
-    return NextResponse.json({ error: 'Failed to delete notification rule' }, { status: 500 });
-  }
+export async function DELETE() {
+  return NextResponse.json(
+    { error: 'Notification rule deletion is not implemented yet.' },
+    { status: 501 },
+  );
 }
