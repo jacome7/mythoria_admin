@@ -26,6 +26,8 @@ class NotificationClient {
    */
   async sendEmail(payload: NotificationPayload): Promise<NotificationResponse> {
     try {
+      const correlationId = `ticket-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
       const response = await fetch(`${this.baseUrl}/webhook/email`, {
         method: 'POST',
         headers: {
@@ -34,9 +36,9 @@ class NotificationClient {
           'X-API-Key': this.apiKey, // Some implementations use this header
         },
         body: JSON.stringify({
-          correlationId: `ticket-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          correlationId,
           data: {
-            correlationId: `ticket-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            correlationId,
             recipients: payload.recipients,
             template: payload.template,
             type: 'email',
