@@ -99,7 +99,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await auth();
 
@@ -114,39 +114,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-
-    const newTemplate: NotificationTemplate = {
-      id: body.id || Date.now().toString(),
-      name: body.name,
-      type: body.type,
-      language: body.language || 'en',
-      eventType: body.eventType,
-      subject: body.subject,
-      htmlContent: body.htmlContent,
-      textContent: body.textContent,
-      variables: body.variables || [],
-      enabled: body.enabled ?? true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // TODO: Implement database insert
-    console.log('Creating notification template', {
-      id: newTemplate.id,
-      type: newTemplate.type,
-      language: newTemplate.language,
-      eventType: newTemplate.eventType,
-      enabled: newTemplate.enabled,
-      variableCount: newTemplate.variables.length,
-    });
+    console.warn('Notification template creation is disabled until real persistence is implemented.');
 
     return NextResponse.json(
       {
-        success: true,
-        data: newTemplate,
+        error: 'Notification template creation is not available yet',
       },
-      { status: 201 },
+      { status: 501 },
     );
   } catch (error) {
     console.error('Error creating notification template:', error);

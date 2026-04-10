@@ -100,7 +100,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await auth();
 
@@ -115,41 +115,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-
-    // TODO: Validate the request body
-    const newRule: NotificationRule = {
-      id: Date.now().toString(), // In real implementation, use proper ID generation
-      name: body.name,
-      eventType: body.eventType,
-      channels: body.channels || ['email'],
-      templateId: body.templateId,
-      enabled: body.enabled ?? true,
-      conditions: body.conditions || {},
-      recipients: body.recipients || {
-        includeAdmins: true,
-        includeCustomers: false,
-        customEmails: [],
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // TODO: Implement database insert
-    // For now, just return the created rule
-    console.log('Creating notification rule', {
-      id: newRule.id,
-      eventType: newRule.eventType,
-      enabled: newRule.enabled,
-      channelCount: newRule.channels.length,
-    });
+    console.warn('Notification rule creation is disabled until real persistence is implemented.');
 
     return NextResponse.json(
       {
-        success: true,
-        data: newRule,
+        error: 'Notification rule creation is not available yet',
       },
-      { status: 201 },
+      { status: 501 },
     );
   } catch (error) {
     console.error('Error creating notification rule:', error);

@@ -94,7 +94,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await auth();
 
@@ -109,31 +109,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-
-    const newChannel: NotificationChannel = {
-      id: body.id || Date.now().toString(),
-      name: body.name,
-      type: body.type,
-      enabled: body.enabled ?? true,
-      config: body.config || {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // TODO: Implement database insert
-    console.log('Creating notification channel', {
-      id: newChannel.id,
-      type: newChannel.type,
-      enabled: newChannel.enabled,
-    });
+    console.warn('Notification channel creation is disabled until real persistence is implemented.');
 
     return NextResponse.json(
       {
-        success: true,
-        data: newChannel,
+        error: 'Notification channel creation is not available yet',
       },
-      { status: 201 },
+      { status: 501 },
     );
   } catch (error) {
     console.error('Error creating notification channel:', error);
