@@ -28,18 +28,16 @@ export async function GET() {
 
     return NextResponse.json({
       status: 'success',
-      message: 'Database connection working',
       data: {
         totalRecords: Number(result[0]?.count) || 0,
         latestRecord: result[0]?.latestRecord || null,
       },
     });
   } catch (error) {
-    console.error('Database test error:', error);
+    console.error('[WORKFLOWS DB DEBUG] Database probe failed');
     return NextResponse.json(
       {
         status: 'error',
-        message: 'Database connection failed',
       },
       { status: 500 },
     );
