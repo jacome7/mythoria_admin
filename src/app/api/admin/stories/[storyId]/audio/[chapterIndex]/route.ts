@@ -68,7 +68,17 @@ export async function GET(
 
     const upstreamResponse = await fetch(finalAudioUri);
     if (!upstreamResponse.ok) {
-      console.error('Failed to fetch proxied audio', upstreamResponse.status, finalAudioUri);
+      const upstreamHost = (() => {
+        try {
+          return new URL(finalAudioUri).host;
+        } catch {
+          return 'invalid-url';
+        }
+      })();
+      console.error('Failed to fetch proxied audio', {
+        status: upstreamResponse.status,
+        upstreamHost,
+      });
       return NextResponse.json({ error: 'Failed to fetch audio file' }, { status: 502 });
     }
 

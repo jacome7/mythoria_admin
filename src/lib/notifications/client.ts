@@ -60,7 +60,7 @@ class NotificationClient {
         });
         return {
           success: false,
-          error: `Notification engine returned ${response.status} ${response.statusText}${errorPreview ? `: ${errorPreview}` : ''}`,
+          error: `Notification engine returned ${response.status} ${response.statusText}`,
         };
       }
 
@@ -122,7 +122,7 @@ class NotificationClient {
         });
         return {
           success: false,
-          error: `Template send failed ${response.status} ${response.statusText}${errorPreview ? `: ${errorPreview}` : ''}`,
+          error: `Template send failed ${response.status} ${response.statusText}`,
         };
       }
       const json = await response.json();
