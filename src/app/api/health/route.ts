@@ -30,7 +30,7 @@ interface HealthStatus {
     googleClientId: 'configured' | 'missing';
     googleClientSecret: 'configured' | 'missing';
     authSecret: 'configured' | 'missing';
-    nextAuthUrl: string;
+    nextAuthUrl?: string;
   };
   timestamp: string;
 }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     // Test network connectivity to a public domain only in debug mode.
     // External egress is informative, but it should not gate core health.
     const networkResult = debug ? await testNetworkConnectivity() : { status: 'connected' as const };
-    const authResult = validateAuthConfiguration();
+    const authResult = validateAuthConfiguration(debug);
 
     // Determine overall health
     const allDatabasesHealthy = Object.values(databases).every((db) => db.status === 'connected');
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Health check failed:', error);
 
-    const authResult = validateAuthConfiguration();
+    const authResult = validateAuthConfiguration(debug);
 
     const errorResponse: HealthStatus = {
       status: 'unhealthy',
@@ -146,12 +146,12 @@ async function testDatabase(
   return { name, result };
 }
 
-function validateAuthConfiguration(): HealthStatus['auth'] {
+function validateAuthConfiguration(debug = false): HealthStatus['auth'] {
   return {
     googleClientId: process.env.GOOGLE_CLIENT_ID ? 'configured' : 'missing',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'configured' : 'missing',
     authSecret: process.env.AUTH_SECRET ? 'configured' : 'missing',
-    nextAuthUrl: process.env.NEXTAUTH_URL || 'not set',
+    ...(debug ? { nextAuthUrl: process.env.NEXTAUTH_URL || 'not set' } : {}),
   };
 }
 
