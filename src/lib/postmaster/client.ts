@@ -100,7 +100,9 @@ export class PostmasterClient {
         subject: impersonateEmail, // Domain-wide delegation
       });
 
-      console.log('[PostmasterClient] Initialized with domain:', this.config.domain);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[PostmasterClient] Initialized with domain:', this.config.domain);
+      }
     } catch (error) {
       console.error('[PostmasterClient] Failed to initialize:', error);
       throw new Error(

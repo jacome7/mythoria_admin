@@ -23,8 +23,11 @@ function createPool(poolConfig: ReturnType<typeof getPoolConfig>, poolName: stri
     console.error(`Unexpected error on idle client (${poolName}):`, err);
   });
 
+  let vpcConnectionLogged = false;
+
   pool.on('connect', () => {
-    if (isVpcDirectEgress()) {
+    if (isVpcDirectEgress() && !vpcConnectionLogged) {
+      vpcConnectionLogged = true;
       console.log(`Using VPC Direct Egress connection to Cloud SQL (${poolName})`);
     }
   });
