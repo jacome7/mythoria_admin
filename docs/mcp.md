@@ -73,6 +73,7 @@ _Last updated: 2026-04-05 — per-session MCP server for concurrent SSE; Bearer 
 - `list_campaigns`: Track bulk email lifecycles.
 - `create_campaign` / `edit_campaign` / `get_campaign_details`: Directly manage Handlebars templates inside DB layers.
 - `pause_campaign`: Securely dispatch "paused" lifecycle transitions explicitly halting notification service aggregations.
+- `resume_campaign`: Transition a **paused** campaign back to **active** (same `id` + `adminEmail` audit fields as `pause_campaign`).
 
 ### H. FAQs
 
