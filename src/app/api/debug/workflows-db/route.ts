@@ -33,7 +33,7 @@ export async function GET() {
         latestRecord: result[0]?.latestRecord || null,
       },
     });
-  } catch (error) {
+  } catch {
     console.error('[WORKFLOWS DB DEBUG] Database probe failed');
     return NextResponse.json(
       {

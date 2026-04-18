@@ -140,7 +140,7 @@ export default function ServerStatusPage() {
     if (!loading && session?.user && services.length > 0) {
       checkAllServices();
     }
-  }, [services.length, loading, session]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [services.length, loading, session]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -152,7 +152,7 @@ export default function ServerStatusPage() {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [autoRefresh, session]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoRefresh, session]);
 
   // Get status icon and color
   const getStatusIcon = (status: ServiceStatus['status']) => {

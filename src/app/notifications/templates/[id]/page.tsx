@@ -27,7 +27,6 @@ export default function NotificationTemplatePage() {
   const params = useParams();
   const isEditing = params?.id !== 'new';
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'subject' | 'html' | 'text' | 'preview'>('subject');
 
   const [template, setTemplate] = useState<NotificationTemplate>({

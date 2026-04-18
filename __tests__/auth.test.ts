@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { ALLOWED_DOMAINS, isAllowedEmailDomain } from '@/config/auth';
+import { isAllowedEmailDomain } from '@/config/auth';
 
 // Mock environment variables for testing
 process.env.GOOGLE_CLIENT_ID = 'test-client-id';

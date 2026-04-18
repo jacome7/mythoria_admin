@@ -15,7 +15,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user.email?.endsWith(domain));
+    const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user!.email!.endsWith(domain));
 
     if (!isAllowedDomain) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

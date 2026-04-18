@@ -35,6 +35,10 @@ export default function TicketsWidget({ className = '' }: TicketsWidgetProps) {
     }
   };
 
+  useEffect(() => {
+    void fetchMetrics();
+  }, []);
+
   if (isLoading) {
     return (
       <div className={`card bg-base-100 shadow-xl ${className}`}>
@@ -47,10 +51,6 @@ export default function TicketsWidget({ className = '' }: TicketsWidgetProps) {
       </div>
     );
   }
-
-  useEffect(() => {
-    void fetchMetrics();
-  }, []);
 
   if (!metrics) {
     return (

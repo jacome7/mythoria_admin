@@ -19,7 +19,7 @@ interface NotificationRule {
   updatedAt: string;
 }
 
-async function getRuleById(_id: string): Promise<NotificationRule | null> {
+async function getRuleById(): Promise<NotificationRule | null> {
   console.warn('Notification rule detail read is disabled until real persistence is implemented.');
   return null;
 }
@@ -39,9 +39,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await params;
+    await params;
 
-    const rule = await getRuleById(id);
+    const rule = await getRuleById();
 
     if (!rule) {
       return NextResponse.json(
