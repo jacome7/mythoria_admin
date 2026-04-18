@@ -1,3 +1,4 @@
+# Postmaster env vars are optional; production needs a mounted SA key path (see env.manifest POSTMASTER_SERVICE_ACCOUNT_KEY note).
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
