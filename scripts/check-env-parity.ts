@@ -9,9 +9,12 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import yaml from 'js-yaml';
 import dotenv from 'dotenv';
 import { envManifest, manifestByName } from '../env.manifest';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 interface SourceMaps {
   dev: Record<string, string | undefined>;
@@ -209,6 +212,4 @@ function main() {
   process.exit(grouped['Missing']?.length ? 1 : 0);
 }
 
-if (process.argv[1] && /check-env-parity\.ts$/.test(process.argv[1])) {
-  main();
-}
+main();

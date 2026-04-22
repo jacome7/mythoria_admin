@@ -48,6 +48,11 @@ export const campaignRecipientStatusEnum = pgEnum('campaign_recipient_status', [
 
 export const campaignRecipientTypeEnum = pgEnum('campaign_recipient_type', ['user', 'lead']);
 
+export const campaignAttachmentTypeEnum = pgEnum('campaign_attachment_type', [
+  'none',
+  'selfprint',
+]);
+
 // -----------------------------------------------------------------------------
 // Marketing campaigns table
 // -----------------------------------------------------------------------------
@@ -62,6 +67,8 @@ export const marketingCampaigns = pgTable(
     userNotificationPreferences: varchar('user_notification_preferences', { length: 20 }).array(),
     filterTree: jsonb('filter_tree'),
     dailySendLimit: integer('daily_send_limit'),
+    attachmentType: campaignAttachmentTypeEnum('attachment_type').default('none').notNull(),
+    skipPrintQa: boolean('skip_print_qa').default(false).notNull(),
     startAt: timestamp('start_at', { withTimezone: true }),
     endAt: timestamp('end_at', { withTimezone: true }),
     createdBy: varchar('created_by', { length: 255 }).notNull(),
@@ -163,6 +170,13 @@ export const marketingCampaignRecipients = pgTable(
     status: campaignRecipientStatusEnum('status').default('queued').notNull(),
     lastError: text('last_error'),
     processedAt: timestamp('processed_at', { withTimezone: true }),
+    attachmentContext: jsonb('attachment_context').$type<{
+      storyId: string;
+      storyTitle?: string;
+      interiorCmykPdfUrl?: string;
+      coverCmykPdfUrl?: string;
+      bytes?: number;
+    }>(),
   },
   (table) => ({
     campaignRecipientUnique: uniqueIndex('uq_campaign_recipient').on(
@@ -198,3 +212,4 @@ export type CampaignChannel = (typeof campaignChannelEnum.enumValues)[number];
 export type CampaignBatchStatus = (typeof campaignBatchStatusEnum.enumValues)[number];
 export type CampaignRecipientStatus = (typeof campaignRecipientStatusEnum.enumValues)[number];
 export type CampaignRecipientType = (typeof campaignRecipientTypeEnum.enumValues)[number];
+export type CampaignAttachmentType = (typeof campaignAttachmentTypeEnum.enumValues)[number];

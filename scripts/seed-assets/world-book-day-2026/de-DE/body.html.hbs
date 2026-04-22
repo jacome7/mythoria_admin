@@ -1,0 +1,139 @@
+{{! World Book Day 2026 campaign - de-DE }}
+<html lang='de-DE'>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='x-apple-disable-message-reformatting' />
+    <meta http-equiv='x-ua-compatible' content='ie=edge' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <meta name='format-detection' content='telephone=no, date=no, address=no, email=no' />
+    <title>Frohen Welttag des Buches — "{{storyTitle}}" schenken wir dir</title>
+    <link rel='preconnect' href='https://fonts.googleapis.com' />
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+    <link
+      href='https://fonts.googleapis.com/css2?family=Spectral:wght@400;700&family=Inter:wght@400;700&display=swap'
+      rel='stylesheet'
+    />
+    <style>
+      @media (max-width: 600px) {
+        .sm-w-full { width: 100% !important; }
+        .sm-px-4 { padding-left: 16px !important; padding-right: 16px !important; }
+        .sm-p-6 { padding: 24px !important; }
+      }
+    </style>
+  </head>
+  <body style='margin:0;width:100%;padding:0;-webkit-font-smoothing:antialiased;background-color:#FAF7F1;'>
+    <div style='display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;'>
+      Frohen Welttag des Buches, {{firstName}}. "{{storyTitle}}" liegt druckfertig im Anhang — unser Geschenk an dich.
+    </div>
+    <div role='article' aria-label='Welttag des Buches 2026' lang='de-DE'>
+      <table style="width:100%;font-family:'Inter',sans-serif;color:#1E2B44;" cellpadding='0' cellspacing='0' role='presentation'>
+        <tr>
+          <td align='center' style='background-color:#FAF7F1;padding:16px 0;'>
+            <table class='sm-w-full' style='width:600px;' cellpadding='0' cellspacing='0' role='presentation'>
+              <tr>
+                <td class='sm-px-4' align='center'>
+                  <table style='width:100%;' role='presentation'>
+                    <tr>
+                      <td style='background:#FEFBF6;border-radius:12px;padding:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);text-align:center;' class='sm-p-6'>
+                        <a href='https://mythoria.pt' target='_blank'>
+                          <img src='https://storage.googleapis.com/mythoria-generated-stories/logo/Logo_transparent_background_1024x683.png' width='260' alt='Mythoria' style='max-width:100%;border:0;vertical-align:middle;' />
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr><td style='height:20px;line-height:20px;font-size:20px;' aria-hidden='true'>&nbsp;</td></tr>
+              <tr>
+                <td class='sm-px-4' style='padding-bottom:16px;'>
+                  <table role='presentation' style='width:100%;'>
+                    <tr>
+                      <td style='background:#fffaed;border-radius:12px;padding:32px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);' class='sm-p-6'>
+                        <h1 style="margin:0 0 16px;font-family:'Spectral',serif;font-size:28px;color:#014A70;">Frohen Welttag des Buches, {{#if firstName}}{{firstName}}{{else}}Geschichtenerzähler{{/if}}!</h1>
+                        <p style='margin:0 0 16px;font-size:16px;line-height:1.6;'>
+                          Jedes Jahr am 23. April lädt die UNESCO die Welt ein, Bücher, Autorinnen und Autoren sowie die Freude am Lesen zu feiern — ein Tag für alle, die Geschichten am Leben halten.
+                        </p>
+                        <p style='margin:0 0 16px;font-size:16px;line-height:1.6;'>
+                          Zu diesem Anlass haben wir deine Geschichte <strong style='color:#014A70;'>&bdquo;{{storyTitle}}&ldquo;</strong> als druckfertiges PDF vorbereitet — CMYK, mit Schnittmarken und Beschnitt — und an diese E-Mail angehängt. Ein Selbstdruck kostet normalerweise 4 Credits; heute ist es unser Geschenk an dich.
+                        </p>
+                        <p style='margin:0;font-size:16px;line-height:1.6;'>
+                          {{instructionsSummary}}
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td class='sm-px-4' style='padding-bottom:16px;'>
+                  <table role='presentation' style='width:100%;'>
+                    <tr>
+                      <td style='background:#FFFFFF;border-radius:12px;padding:32px;box-shadow:0 2px 4px -1px rgba(0,0,0,.06),0 1px 2px -1px rgba(0,0,0,.06);' class='sm-p-6'>
+                        <p style="margin:0 0 12px;font-size:18px;font-weight:700;font-family:'Spectral',serif;color:#014A70;">Was im Anhang liegt</p>
+                        <ul style='margin:0 0 24px;padding-left:20px;font-size:15px;line-height:1.6;'>
+                          {{#each attachmentLabels}}<li>{{this}}</li>{{/each}}
+                        </ul>
+                        <p style="margin:0 0 12px;font-size:18px;font-weight:700;font-family:'Spectral',serif;color:#014A70;">In der Druckerei</p>
+                        <table style='width:100%;' role='presentation'>
+                          {{#each printTips}}
+                            <tr>
+                              <td style='padding-bottom:12px;'>
+                                <table style='width:100%;' role='presentation'>
+                                  <tr>
+                                    <td style='width:24px;vertical-align:top;padding-right:12px;font-size:18px;color:#E6C26B;'>&#10022;</td>
+                                    <td style='vertical-align:top;font-size:15px;line-height:1.6;'>{{this}}</td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          {{/each}}
+                        </table>
+                        <p style='margin:16px 0 0;font-size:15px;line-height:1.6;'>Brauchst du Hilfe? <a href='mailto:{{supportEmail}}' style='color:#014A70;text-decoration:underline;'>Schreib uns</a> — wir hören gerne, wie die Geschichten aufs Papier kommen.</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td class='sm-px-4' style='padding-bottom:16px;'>
+                  <table role='presentation' style='width:100%;'>
+                    <tr>
+                      <td style='background:#FFFFFF;border-radius:12px;padding:32px;box-shadow:0 2px 4px -1px rgba(0,0,0,.06),0 1px 2px -1px rgba(0,0,0,.06);text-align:center;' class='sm-p-6'>
+                        <p style="margin:0 0 12px;font-size:18px;font-weight:700;font-family:'Spectral',serif;color:#014A70;">Finde eine Druckerei in deiner Nähe</p>
+                        <p style='margin:0 0 24px;font-size:15px;line-height:1.6;'>Unsere Partner-Druckereien wissen bereits, wie man Mythoria-Geschichten zum Leben erweckt. Reingehen, PDF übergeben, mit dem fertigen Buch wieder raus.</p>
+                        <a href='{{partnerPageUrl}}' target='_blank' style='display:inline-block;background-color:#E6C26B;color:#1E2B44;font-size:16px;font-weight:700;padding:14px 32px;border-radius:8px;text-decoration:none;'>Druckerei finden &rarr;</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td class='sm-px-4' style='padding-bottom:24px;'>
+                  <div style='text-align:center;padding:24px 32px;' class='sm-p-6'>
+                    <p style='margin:0;font-size:16px;line-height:1.6;color:#1E2B44;'>
+                      Erzähle weiter die Geschichten, die nur du erzählen kannst.
+                      <br /><br />Herzlich &hearts;,
+                      <br /><strong>Dein Mythoria-Team</strong>
+                    </p>
+                    <p style='margin:16px 0 0;font-size:12px;color:#5B6B7A;'>Story-ID: {{storyId}}</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class='sm-px-4' align='center' style='padding:16px 0;'>
+                  <p style='margin:2px;font-size:12px;color:#5B6B7A;'>Du erhältst diese E-Mail, weil du registrierter Autor auf <a href='https://mythoria.pt' style='color:#014A70;text-decoration:underline;'>Mythoria</a> bist.</p>
+                  <p style='margin:0;font-size:12px;color:#5B6B7A;'>{{physicalAddress}} &copy; {{currentYear}}. Alle Rechte vorbehalten.</p>
+                  <p style='margin:8px 0 0;font-size:12px;color:#5B6B7A;'>
+                    <a href='{{unsubscribeLink}}' style='color:#5B6B7A;text-decoration:underline;'>Abmelden</a>
+                    &nbsp;&middot;&nbsp;
+                    <a href='https://mythoria.pt/termsAndConditions' style='color:#5B6B7A;text-decoration:underline;'>AGB</a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

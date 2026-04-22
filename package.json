@@ -25,6 +25,7 @@
     "db:seed": "tsx -r dotenv/config ./src/db/seed.ts",
     "sync-workflows-schema": "tsx -r dotenv/config ./scripts/sync-workflows-schema.ts",
     "sync-mythoria-db-schema": "tsx -r dotenv/config ./scripts/sync-mythoria-db-schema.ts",
+    "seed:world-book-day": "tsx -r dotenv/config ./scripts/seed-world-book-day-2026.ts",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
     "deploy:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast",
     "check:env": "tsx ./scripts/check-env-parity.ts"

@@ -54,18 +54,18 @@ export const envManifest: EnvVarDescriptor[] = [
   {
     name: 'GOOGLE_CLIENT_SECRET',
     required: true,
-    scopes: ['prod', 'runtime'],
+    scopes: ['prod', 'runtime', 'dev'],
     secret: true,
     source: 'secret-manager',
-    note: 'Secret for Google OAuth; injected via Secret Manager.',
+    note: 'Secret for Google OAuth; injected via Secret Manager in prod; required in .env.local for local sign-in.',
   },
   {
     name: 'AUTH_SECRET',
     required: true,
-    scopes: ['prod', 'runtime'],
+    scopes: ['prod', 'runtime', 'dev'],
     secret: true,
     source: 'secret-manager',
-    note: 'NextAuth secret for JWT/session encryption.',
+    note: 'NextAuth secret for JWT/session encryption; required in .env.local for local dev.',
   },
   {
     name: 'NEXTAUTH_URL',
@@ -101,9 +101,10 @@ export const envManifest: EnvVarDescriptor[] = [
   {
     name: 'NEXT_PUBLIC_GA_MEASUREMENT_ID',
     required: true,
-    scopes: ['prod', 'build', 'public'],
+    scopes: ['prod', 'runtime', 'public'],
     source: 'secret-manager',
-    note: 'Analytics instrumentation id.',
+    note:
+      'Analytics measurement ID; injected at Cloud Run runtime via Secret Manager (see cloudbuild --set-secrets), not as a Docker build arg.',
   },
   {
     name: 'GOOGLE_ANALYTICS_API_SECRET',
@@ -218,17 +219,18 @@ export const envManifest: EnvVarDescriptor[] = [
   {
     name: 'NOTIFICATION_ENGINE_API_KEY',
     required: true,
-    scopes: ['prod', 'runtime'],
+    scopes: ['prod', 'runtime', 'dev'],
     secret: true,
     source: 'secret-manager',
+    note: 'Required locally when exercising mail-marketing / notification routes.',
   },
   {
     name: 'ADMIN_API_KEY',
     required: true,
-    scopes: ['prod', 'runtime'],
+    scopes: ['prod', 'runtime', 'dev'],
     secret: true,
     source: 'secret-manager',
-    note: 'Internal API access protection.',
+    note: 'Internal API access protection; required in .env.local for local admin API routes.',
   },
   {
     name: 'MCP_SECRET_KEY',
@@ -290,10 +292,11 @@ export const envManifest: EnvVarDescriptor[] = [
   {
     name: 'POSTMASTER_SERVICE_ACCOUNT_KEY',
     required: false,
-    scopes: ['prod', 'runtime'],
+    scopes: ['prod', 'runtime', 'dev'],
     secret: true,
     source: 'secret-manager',
-    note: 'Service account private key JSON for Postmaster API authentication.',
+    note:
+      'Filesystem path to service account JSON (read by PostmasterClient). For Cloud Run, mount a secret as a file and set this to that path; raw JSON in env is not supported by the current client.',
   },
   {
     name: 'POSTMASTER_IMPERSONATE_EMAIL',

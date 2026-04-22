@@ -1,0 +1,32 @@
+Happy World Book Day, {{#if firstName}}{{firstName}}{{else}}storyteller{{/if}}!
+
+Every year on April 23, UNESCO invites the world to celebrate books, authors, and the joy of reading.
+
+To honour the occasion, we've packaged your story "{{storyTitle}}" as a print-ready PDF — CMYK, with trim marks and bleed — and attached it to this email. Normally a self-print costs 4 credits; today it's our gift to you.
+
+{{instructionsSummary}}
+
+What's attached:
+{{#each attachmentLabels}}- {{this}}
+{{/each}}
+
+At the print shop:
+{{#each printTips}}* {{this}}
+{{/each}}
+
+Find a print shop near you:
+{{partnerPageUrl}}
+
+Questions? Write to us at {{supportEmail}} — we love hearing how the stories land.
+
+Keep telling the stories only you can tell.
+
+Warmly,
+The Mythoria Team
+
+Story ID: {{storyId}}
+
+---
+You received this email because you are a registered author on Mythoria.
+{{physicalAddress}} © {{currentYear}}. All rights reserved.
+Unsubscribe: {{unsubscribeLink}}

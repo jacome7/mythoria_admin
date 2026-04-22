@@ -11,7 +11,7 @@ import {
   type FilterTree,
   type UpdateCampaignInput,
 } from '@/lib/schemas/campaigns';
-import type { CampaignAudienceSource } from '@/db/schema/campaigns';
+import type { CampaignAudienceSource, CampaignAttachmentType } from '@/db/schema/campaigns';
 import CampaignDetailHeader from '@/components/email-campaigns/CampaignDetailHeader';
 import CampaignFilterEditor from '@/components/email-campaigns/CampaignFilterEditor';
 import CampaignAssetEditor from '@/components/email-campaigns/CampaignAssetEditor';
@@ -56,6 +56,8 @@ export default function CampaignDetailPage() {
   >([...DEFAULT_USER_NOTIFICATION_PREFERENCES]);
   const [editDailyLimit, setEditDailyLimit] = useState('');
   const [editFilterTree, setEditFilterTree] = useState<FilterTree | null>(null);
+  const [editAttachmentType, setEditAttachmentType] = useState<CampaignAttachmentType>('none');
+  const [editSkipPrintQa, setEditSkipPrintQa] = useState(false);
   const [isSavingMeta, setIsSavingMeta] = useState(false);
   const [metaMessage, setMetaMessage] = useState<string | null>(null);
 
@@ -86,6 +88,8 @@ export default function CampaignDetailPage() {
       );
       setEditDailyLimit(data.dailySendLimit ? String(data.dailySendLimit) : '');
       setEditFilterTree(data.filterTree as FilterTree | null);
+      setEditAttachmentType(data.attachmentType ?? 'none');
+      setEditSkipPrintQa(Boolean(data.skipPrintQa));
     } catch (err) {
       console.error('Error fetching campaign:', err);
       setError(err instanceof Error ? err.message : 'Failed to load campaign');
@@ -191,6 +195,11 @@ export default function CampaignDetailPage() {
       return;
     }
 
+    if (editAttachmentType === 'selfprint' && editAudienceSource === 'leads') {
+      setMetaMessage("Self-print attachments require real users — 'leads' audience is not allowed");
+      return;
+    }
+
     setIsSavingMeta(true);
     setMetaMessage(null);
     try {
@@ -201,6 +210,8 @@ export default function CampaignDetailPage() {
         userNotificationPreferences: editUserNotificationPreferences,
         dailySendLimit: editDailyLimit ? parseInt(editDailyLimit, 10) : null,
         filterTree: editFilterTree,
+        attachmentType: editAttachmentType,
+        skipPrintQa: editAttachmentType === 'selfprint' ? editSkipPrintQa : false,
       };
       await campaignClient.update(campaignId, updateData);
       await fetchCampaign();
@@ -257,6 +268,7 @@ export default function CampaignDetailPage() {
         audienceSource: editAudienceSource,
         userNotificationPreferences: editUserNotificationPreferences,
         filterTree: editFilterTree,
+        attachmentType: editAttachmentType,
       });
       setPreviousAudienceCount(audienceCount);
       setAudienceCount(count);
@@ -473,6 +485,71 @@ export default function CampaignDetailPage() {
           </div>
         )}
 
+        {/* Attachments / Special offer (draft only) */}
+        {isDraft && (
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body">
+              <h3 className="card-title text-sm mb-3">Attachments / Special offer</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text text-sm">Attachment type</span>
+                  </label>
+                  <select
+                    className="select select-bordered select-sm w-full"
+                    value={editAttachmentType}
+                    onChange={(e) =>
+                      setEditAttachmentType(e.target.value as CampaignAttachmentType)
+                    }
+                  >
+                    <option value="none">None</option>
+                    <option value="selfprint">Self-print PDF</option>
+                  </select>
+                  <label className="label py-1">
+                    <span className="label-text-alt text-base-content/60">
+                      Selfprint attaches a CMYK print-ready PDF of each recipient&apos;s latest
+                      completed story.
+                    </span>
+                  </label>
+                </div>
+
+                {editAttachmentType === 'selfprint' && (
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text text-sm">Quality review</span>
+                    </label>
+                    <label className="label cursor-pointer justify-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-sm"
+                        checked={editSkipPrintQa}
+                        onChange={(e) => setEditSkipPrintQa(e.target.checked)}
+                      />
+                      <span className="label-text">Skip print QA</span>
+                    </label>
+                    <label className="label py-1">
+                      <span className="label-text-alt text-base-content/60">
+                        Bypasses the deterministic + multimodal PDF quality review to keep
+                        generation throughput high. Recommended only for low-stakes campaigns.
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {editAttachmentType === 'selfprint' && (
+                <div className="alert alert-info alert-sm py-2 mt-3">
+                  <span className="text-sm">
+                    Audience is automatically restricted to authors with at least one completed
+                    story.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Non-draft metadata display */}
         {!isDraft && (
           <div className="card bg-base-100 shadow-sm border border-base-200">
@@ -499,6 +576,14 @@ export default function CampaignDetailPage() {
                 <div>
                   <span className="text-base-content/50 text-xs">Daily Limit</span>
                   <p className="font-medium">{campaign.dailySendLimit ?? 'Unlimited'}</p>
+                </div>
+                <div>
+                  <span className="text-base-content/50 text-xs">Attachment</span>
+                  <p className="font-medium">
+                    {campaign.attachmentType === 'selfprint'
+                      ? `Self-print PDF${campaign.skipPrintQa ? ' (skip QA)' : ''}`
+                      : 'None'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-base-content/50 text-xs">Created By</span>
@@ -566,6 +651,7 @@ export default function CampaignDetailPage() {
             campaignId={campaignId}
             availableLocales={availableLocales}
             assets={campaign.assets}
+            attachmentType={campaign.attachmentType}
           />
         )}
 

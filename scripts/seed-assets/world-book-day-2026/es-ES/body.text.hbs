@@ -1,0 +1,32 @@
+¡Feliz Día del Libro, {{#if firstName}}{{firstName}}{{else}}narrador{{/if}}!
+
+Cada 23 de abril, la UNESCO invita al mundo a celebrar los libros, a sus autores y el placer de leer.
+
+Para celebrarlo, hemos preparado tu historia "{{storyTitle}}" en PDF listo para imprimir — CMYK, con marcas de corte y sangrado — y la adjuntamos a este correo. Normalmente una impresión personal cuesta 4 créditos; hoy es nuestro regalo para ti.
+
+{{instructionsSummary}}
+
+Qué va adjunto:
+{{#each attachmentLabels}}- {{this}}
+{{/each}}
+
+En la imprenta:
+{{#each printTips}}* {{this}}
+{{/each}}
+
+Encuentra una imprenta cerca de ti:
+{{partnerPageUrl}}
+
+¿Necesitas ayuda? Escríbenos a {{supportEmail}}.
+
+Sigue contando las historias que sólo tú sabes contar.
+
+Con cariño,
+El equipo de Mythoria
+
+ID de la historia: {{storyId}}
+
+---
+Recibes este correo porque eres autor registrado en Mythoria.
+{{physicalAddress}} © {{currentYear}}. Todos los derechos reservados.
+Cancelar suscripción: {{unsubscribeLink}}

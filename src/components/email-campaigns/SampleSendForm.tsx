@@ -14,20 +14,32 @@ const DEFAULT_VARIABLES_JSON = JSON.stringify(
   2,
 );
 
+const DEFAULT_SELFPRINT_VARIABLES_JSON = JSON.stringify(
+  { name: 'John Doe', firstName: 'John', email: 'john@example.com', storyTitle: 'My Story' },
+  null,
+  2,
+);
+
 interface SampleSendFormProps {
   campaignId: string;
   availableLocales: string[];
   assets: MarketingCampaignAsset[];
+  attachmentType?: string;
 }
 
 export default function SampleSendForm({
   campaignId,
   availableLocales,
   assets,
+  attachmentType,
 }: SampleSendFormProps) {
+  const isSelfprint = attachmentType === 'selfprint';
   const [locale, setLocale] = useState(availableLocales[0] ?? 'en-US');
   const [email, setEmail] = useState('');
-  const [variablesJson, setVariablesJson] = useState(DEFAULT_VARIABLES_JSON);
+  const [storyId, setStoryId] = useState('');
+  const [variablesJson, setVariablesJson] = useState(
+    isSelfprint ? DEFAULT_SELFPRINT_VARIABLES_JSON : DEFAULT_VARIABLES_JSON,
+  );
   const [isSending, setIsSending] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -50,6 +62,10 @@ export default function SampleSendForm({
         setMessage({ type: 'error', text: 'Invalid JSON in variables field.' });
         return;
       }
+    }
+
+    if (isSelfprint && storyId.trim()) {
+      variables = { ...variables, storyId: storyId.trim() };
     }
 
     setIsSending(true);
@@ -117,6 +133,30 @@ export default function SampleSendForm({
               />
             </div>
           </div>
+
+          {isSelfprint && (
+            <div className="alert alert-info py-2 text-xs">
+              <span>
+                PDF will be generated and attached. Provide a Story ID below to test with a real
+                PDF; leave blank to send without attachment.
+              </span>
+            </div>
+          )}
+
+          {isSelfprint && (
+            <div className="form-control">
+              <label className="label py-0.5">
+                <span className="label-text text-xs">Story ID (for PDF attachment)</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full font-mono"
+                placeholder="e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                value={storyId}
+                onChange={(e) => setStoryId(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="form-control">
             <label className="label py-0.5">

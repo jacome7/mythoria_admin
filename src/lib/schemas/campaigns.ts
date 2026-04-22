@@ -9,6 +9,7 @@ export const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'completed', 'can
 export const AUDIENCE_SOURCES = ['users', 'leads', 'both'] as const;
 export const CAMPAIGN_CHANNELS = ['email'] as const;
 export const NOTIFICATION_PREFERENCES = ['essential', 'inspiration', 'news'] as const;
+export const CAMPAIGN_ATTACHMENT_TYPES = ['none', 'selfprint'] as const;
 
 // -----------------------------------------------------------------------------
 // Filter tree schema
@@ -36,40 +37,64 @@ export interface FilterTree {
 // -----------------------------------------------------------------------------
 // Create campaign schema
 // -----------------------------------------------------------------------------
-export const createCampaignSchema = z.object({
-  title: z.string().min(1).max(255),
-  description: z.string().max(5000).nullable().optional(),
-  audienceSource: z.enum(AUDIENCE_SOURCES),
-  userNotificationPreferences: z
-    .array(z.enum(NOTIFICATION_PREFERENCES))
-    .min(1)
-    .nullable()
-    .optional(),
-  filterTree: filterTreeSchema.nullable().optional(),
-  dailySendLimit: z.number().int().min(1).nullable().optional(),
-  startAt: z.string().datetime().nullable().optional(),
-  endAt: z.string().datetime().nullable().optional(),
-});
+export const createCampaignSchema = z
+  .object({
+    title: z.string().min(1).max(255),
+    description: z.string().max(5000).nullable().optional(),
+    audienceSource: z.enum(AUDIENCE_SOURCES),
+    userNotificationPreferences: z
+      .array(z.enum(NOTIFICATION_PREFERENCES))
+      .min(1)
+      .nullable()
+      .optional(),
+    filterTree: filterTreeSchema.nullable().optional(),
+    dailySendLimit: z.number().int().min(1).nullable().optional(),
+    attachmentType: z.enum(CAMPAIGN_ATTACHMENT_TYPES).optional(),
+    skipPrintQa: z.boolean().optional(),
+    startAt: z.string().datetime().nullable().optional(),
+    endAt: z.string().datetime().nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.attachmentType === 'selfprint' && data.audienceSource === 'leads') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['audienceSource'],
+        message: "Self-print attachments require at least one real user — 'leads' audience is not allowed.",
+      });
+    }
+  });
 
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
 
 // -----------------------------------------------------------------------------
 // Update campaign schema
 // -----------------------------------------------------------------------------
-export const updateCampaignSchema = z.object({
-  title: z.string().min(1).max(255).optional(),
-  description: z.string().max(5000).nullable().optional(),
-  audienceSource: z.enum(AUDIENCE_SOURCES).optional(),
-  userNotificationPreferences: z
-    .array(z.enum(NOTIFICATION_PREFERENCES))
-    .min(1)
-    .nullable()
-    .optional(),
-  filterTree: filterTreeSchema.nullable().optional(),
-  dailySendLimit: z.number().int().min(1).nullable().optional(),
-  startAt: z.string().datetime().nullable().optional(),
-  endAt: z.string().datetime().nullable().optional(),
-});
+export const updateCampaignSchema = z
+  .object({
+    title: z.string().min(1).max(255).optional(),
+    description: z.string().max(5000).nullable().optional(),
+    audienceSource: z.enum(AUDIENCE_SOURCES).optional(),
+    userNotificationPreferences: z
+      .array(z.enum(NOTIFICATION_PREFERENCES))
+      .min(1)
+      .nullable()
+      .optional(),
+    filterTree: filterTreeSchema.nullable().optional(),
+    dailySendLimit: z.number().int().min(1).nullable().optional(),
+    attachmentType: z.enum(CAMPAIGN_ATTACHMENT_TYPES).optional(),
+    skipPrintQa: z.boolean().optional(),
+    startAt: z.string().datetime().nullable().optional(),
+    endAt: z.string().datetime().nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.attachmentType === 'selfprint' && data.audienceSource === 'leads') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['audienceSource'],
+        message: "Self-print attachments require at least one real user — 'leads' audience is not allowed.",
+      });
+    }
+  });
 
 export type UpdateCampaignInput = z.infer<typeof updateCampaignSchema>;
 
@@ -80,6 +105,7 @@ export const audienceEstimateSchema = z.object({
   audienceSource: z.enum(AUDIENCE_SOURCES).optional(),
   userNotificationPreferences: z.array(z.enum(NOTIFICATION_PREFERENCES)).nullable().optional(),
   filterTree: filterTreeSchema.nullable().optional(),
+  attachmentType: z.enum(CAMPAIGN_ATTACHMENT_TYPES).optional(),
 });
 
 export type AudienceEstimateInput = z.infer<typeof audienceEstimateSchema>;

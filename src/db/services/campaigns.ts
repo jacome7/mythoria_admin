@@ -9,6 +9,7 @@ import { and, count, desc, eq, gte, sql, asc } from 'drizzle-orm';
 import type {
   CampaignStatus,
   CampaignAudienceSource,
+  CampaignAttachmentType,
   MarketingCampaign,
   MarketingCampaignAsset,
 } from '../schema/campaigns';
@@ -153,6 +154,7 @@ export const campaignService = {
   // ---------------------------------------------------------------------------
   async createCampaign(data: CreateCampaignInput, adminEmail: string): Promise<MarketingCampaign> {
     const db = getBackofficeDb();
+    const attachmentType = data.attachmentType ?? 'none';
     const [campaign] = await db
       .insert(marketingCampaigns)
       .values({
@@ -163,6 +165,8 @@ export const campaignService = {
         userNotificationPreferences: data.userNotificationPreferences ?? null,
         filterTree: data.filterTree ?? null,
         dailySendLimit: data.dailySendLimit ?? null,
+        attachmentType,
+        skipPrintQa: attachmentType === 'selfprint' ? (data.skipPrintQa ?? false) : false,
         startAt: data.startAt ? new Date(data.startAt) : null,
         endAt: data.endAt ? new Date(data.endAt) : null,
         createdBy: adminEmail,
@@ -251,6 +255,8 @@ export const campaignService = {
         userNotificationPreferences: campaign.userNotificationPreferences,
         filterTree: campaign.filterTree,
         dailySendLimit: campaign.dailySendLimit,
+        attachmentType: campaign.attachmentType,
+        skipPrintQa: campaign.skipPrintQa,
         startAt: campaign.startAt,
         endAt: campaign.endAt,
         createdBy: adminEmail,
@@ -307,6 +313,13 @@ export const campaignService = {
       updateData.userNotificationPreferences = data.userNotificationPreferences;
     if (data.filterTree !== undefined) updateData.filterTree = data.filterTree;
     if (data.dailySendLimit !== undefined) updateData.dailySendLimit = data.dailySendLimit;
+    if (data.attachmentType !== undefined) updateData.attachmentType = data.attachmentType;
+    if (data.skipPrintQa !== undefined) updateData.skipPrintQa = data.skipPrintQa;
+    // Coerce skipPrintQa to false when the effective attachmentType isn't 'selfprint'.
+    const effectiveAttachmentType = data.attachmentType;
+    if (effectiveAttachmentType !== undefined && effectiveAttachmentType !== 'selfprint') {
+      updateData.skipPrintQa = false;
+    }
     if (data.startAt !== undefined)
       updateData.startAt = data.startAt ? new Date(data.startAt) : null;
     if (data.endAt !== undefined) updateData.endAt = data.endAt ? new Date(data.endAt) : null;
@@ -623,6 +636,7 @@ export const campaignService = {
     audienceSource: CampaignAudienceSource,
     filterTree: FilterTree | null | undefined,
     userNotificationPreferences?: string[] | null,
+    attachmentType: CampaignAttachmentType = 'none',
   ): Promise<{ users: number; leads: number; total: number }> {
     const mythoriaDb = getMythoriaDb();
     let userCount = 0;
@@ -646,6 +660,12 @@ export const campaignService = {
         const filterSql = buildFilterSql(filterTree, 'users');
         if (filterSql) {
           userConditions.push(filterSql);
+        }
+
+        // Selfprint attachments require the author to have at least one completed story.
+        if (attachmentType === 'selfprint') {
+          userQuery +=
+            ` AND EXISTS (SELECT 1 FROM stories s WHERE s.author_id = authors.author_id AND s.status = 'completed')`;
         }
 
         // Exclude already-sent recipients for this campaign
@@ -679,7 +699,10 @@ export const campaignService = {
       }
     }
 
-    if (audienceSource === 'leads' || audienceSource === 'both') {
+    if (
+      (audienceSource === 'leads' || audienceSource === 'both') &&
+      attachmentType !== 'selfprint'
+    ) {
       // Default suppression: exclude unsub and hard_bounce
       const leadConditions: string[] = [`email_status NOT IN ('unsub', 'hard_bounce')`];
 

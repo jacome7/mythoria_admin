@@ -1,8 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { authenticateAdmin } from '@/lib/api-helpers';
 import { campaignService } from '@/db/services/campaigns';
-import type { CampaignAudienceSource } from '@/db/schema/campaigns';
-import { audienceEstimateSchema, type FilterTree } from '@/lib/schemas/campaigns';
+import type { CampaignAudienceSource, CampaignAttachmentType } from '@/db/schema/campaigns';
+import {
+  audienceEstimateSchema,
+  CAMPAIGN_ATTACHMENT_TYPES,
+  type FilterTree,
+} from '@/lib/schemas/campaigns';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -29,6 +33,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       campaign.audienceSource as CampaignAudienceSource,
       campaign.filterTree as FilterTree | null,
       campaign.userNotificationPreferences as string[] | null | undefined,
+      campaign.attachmentType as CampaignAttachmentType,
     );
 
     return NextResponse.json(audienceCount);
@@ -70,6 +75,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       body,
       'userNotificationPreferences',
     );
+    const hasAttachmentType = Object.prototype.hasOwnProperty.call(body, 'attachmentType');
 
     const audienceSource = hasAudienceSource
       ? (parsed.data.audienceSource ?? campaign.audienceSource)
@@ -83,11 +89,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       ? parsed.data.userNotificationPreferences
       : (campaign.userNotificationPreferences as string[] | null | undefined);
 
+    const rawAttachmentType = hasAttachmentType
+      ? (body.attachmentType as unknown)
+      : campaign.attachmentType;
+    const attachmentType: CampaignAttachmentType = CAMPAIGN_ATTACHMENT_TYPES.includes(
+      rawAttachmentType as CampaignAttachmentType,
+    )
+      ? (rawAttachmentType as CampaignAttachmentType)
+      : 'none';
+
     const audienceCount = await campaignService.getEstimatedAudienceCount(
       id,
       audienceSource as CampaignAudienceSource,
       filterTree as FilterTree | null,
       userNotificationPreferences,
+      attachmentType,
     );
 
     return NextResponse.json(audienceCount);
