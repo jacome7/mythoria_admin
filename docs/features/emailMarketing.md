@@ -1,6 +1,6 @@
 # Email campaign management
 
-_Last updated: 2026-02-09_
+_Last updated: 2026-04-22_
 
 ## Overview
 
@@ -67,6 +67,25 @@ Each campaign targets one of three audience sources:
 | Leads    | `emailStatus`            | `eq`, `in`, `not_in`                           |
 | Leads    | `lastEmailSentAt`        | `gt`, `gte`, `lt`, `lte`, `between`, `is_null` |
 
+### Attachments / Special offers
+
+Campaigns can optionally attach generated files to every email. This is configured via two fields on the campaign:
+
+| Field            | Type                      | Description                                                                                    |
+| ---------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `attachmentType` | `none` \| `selfprint`     | `selfprint` generates a CMYK-ready interior + cover PDF per recipient and attaches them.       |
+| `skipPrintQa`    | `boolean` (default false) | When true, bypasses the deterministic + multimodal QA review on PDF generation. Recommended for high-volume, low-stakes campaigns. |
+
+**Self-print campaign constraints:**
+- `audienceSource` cannot be `leads` (leads have no stories).
+- Audience is automatically restricted to authors with at least one completed story. The most recently completed story per author is used.
+- PDF generation calls `story-generation-workflow`'s `/internal/print/generate` synchronously per recipient. Use a low `dailySendLimit` (e.g. 200) and small batch size to account for the added latency.
+- `attachmentContext` is persisted on `marketing_campaign_recipients` for audit and retry purposes.
+
+The **Attachments** card in the campaign editor is only editable while the campaign is in `draft` status.
+
+---
+
 ### Campaign assets (templates)
 
 Each campaign has locale-specific assets—one per `(channel, language)` pair. Currently only the `email` channel is supported.
@@ -92,6 +111,11 @@ Assets are edited in-place (no versioning). A SHA-256 hash snapshot is stored pe
 | `{{homepageLink}}`     | Homepage with tracking    | Leads         |
 | `{{termsLink}}`        | Terms and conditions      | Leads         |
 | `{{physicalAddress}}`  | Company physical address  | Users + Leads |
+| `{{storyTitle}}`       | Title of attached story   | selfprint only |
+| `{{storyId}}`          | ID of attached story      | selfprint only |
+| `{{partnerPageUrl}}`   | Link to print-shop partner page | selfprint only |
+| `{{printTips}}`        | Locale-aware print instructions | selfprint only |
+| `{{attachmentLabels}}` | Array of attachment file labels | selfprint only |
 
 ### Batch sending and rate limiting
 
@@ -153,7 +177,7 @@ All tables live in `backoffice_db` and are defined in `src/db/schema/campaigns.t
 | `marketing_campaigns`           | Campaign definitions with metadata, audience config, user notification preferences, filters, and lifecycle state |
 | `marketing_campaign_assets`     | Per-locale email templates (subject, HTML, text) linked to a campaign                                            |
 | `marketing_campaign_batches`    | Batch execution records with stats, timing, and asset snapshot hashes                                            |
-| `marketing_campaign_recipients` | Per-recipient send records with delivery status and error tracking                                               |
+| `marketing_campaign_recipients` | Per-recipient send records with delivery status, error tracking, and `attachment_context` JSONB for audit       |
 
 ### Enums
 
@@ -161,6 +185,7 @@ All tables live in `backoffice_db` and are defined in `src/db/schema/campaigns.t
 | --------------------------- | ----------------------------------------------------- |
 | `campaign_status`           | `draft`, `active`, `paused`, `completed`, `cancelled` |
 | `campaign_audience_source`  | `users`, `leads`, `both`                              |
+| `campaign_attachment_type`  | `none`, `selfprint`                                   |
 | `campaign_channel`          | `email`                                               |
 | `campaign_batch_status`     | `queued`, `running`, `completed`, `failed`            |
 | `campaign_recipient_status` | `queued`, `sent`, `failed`, `skipped`                 |
@@ -265,8 +290,8 @@ The `campaignService` object provides all data-access methods:
 
 Zod validation schemas for all campaign inputs:
 
-- `createCampaignSchema` — title (required), description, audienceSource, dailySendLimit, startAt, endAt
-- `updateCampaignSchema` — all fields optional
+- `createCampaignSchema` — title (required), description, audienceSource, dailySendLimit, startAt, endAt, attachmentType, skipPrintQa
+- `updateCampaignSchema` — all fields optional; `skipPrintQa` is coerced to `false` when `attachmentType` is not `selfprint`
 - `campaignAssetSchema` — channel, language, subject, htmlBody, textBody
 - `sampleSendSchema` — locale, email, variables (optional JSON)
 - `filterTreeSchema` — recursive AND/OR logic tree with conditions
@@ -312,7 +337,7 @@ All campaign UI components are in `src/components/email-campaigns/`:
 | `CampaignAssetEditor`  | Locale-tabbed template editor with variables panel             |
 | `GenerateAssetsModal`  | AI-powered modal to generate email assets for all locales      |
 | `VariablesPanel`       | Available Handlebars variable reference with copy-to-clipboard |
-| `SampleSendForm`       | Test send form with locale/email/variables inputs              |
+| `SampleSendForm`       | Test send form with locale/email/variables inputs; shows Story ID field for selfprint campaigns to generate a real PDF attachment |
 | `CampaignProgress`     | Stats grid, progress bar, and batch history                    |
 
 ---
@@ -420,15 +445,21 @@ The Notification Engine connects to `backoffice_db` (3-connection pool) to:
 
 The Notification Engine's `campaignFilterEvaluator` translates the JSONB filter tree into SQL WHERE clauses executed against `mythoria_db`. It applies default suppression, deduplicates against existing recipients, and returns eligible audience rows with name, email, and locale information.
 
+For `selfprint` campaigns the evaluator additionally:
+- Requires at least one `completed` story per author (via SQL `EXISTS`).
+- Returns the most recently completed `storyId` and `storyTitle` per recipient via a lateral join.
+
 ### Key source files (Notification Engine)
 
-| File                                      | Purpose                                                                  |
-| ----------------------------------------- | ------------------------------------------------------------------------ |
-| `src/db/backofficeConnection.ts`          | Drizzle connection pool to `backoffice_db`                               |
-| `src/db/backofficeSchema.ts`              | Campaign table schema (mirror of admin schema)                           |
-| `src/services/campaignFilterEvaluator.ts` | Filter tree evaluation and audience resolution                           |
-| `src/services/campaignDispatch.ts`        | Core dispatch logic with round-robin, template rendering, and compliance |
-| `src/routes/campaigns.ts`                 | Express routes mounted at `/internal/campaigns`                          |
+| File                                           | Purpose                                                                  |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| `src/db/backofficeConnection.ts`               | Drizzle connection pool to `backoffice_db`                               |
+| `src/db/backofficeSchema.ts`                   | Campaign table schema (mirror of admin schema)                           |
+| `src/services/campaignFilterEvaluator.ts`      | Filter tree evaluation and audience resolution (incl. story-existence filter) |
+| `src/services/campaignDispatch.ts`             | Core dispatch logic with round-robin, template rendering, compliance, and selfprint PDF attachment |
+| `src/services/selfprintAttachment.ts`          | Calls SGW `/internal/print/generate` and returns CMYK PDF URLs for attachment |
+| `src/services/storyPrintInstructions.helpers.ts` | Shared helpers: `resolveStorageAttachments`, `buildTemplateVariables` (print tips, labels) |
+| `src/routes/campaigns.ts`                      | Express routes mounted at `/internal/campaigns`                          |
 
 ---
 
