@@ -40,8 +40,11 @@ steps:
       - '5'
       - '--concurrency'
       - '80'
+      # MCP SSE connections can stay open for long periods; keep Cloud Run
+      # above the default 300s cutoff so the admin transport does not get
+      # terminated mid-stream.
       - '--timeout'
-      - '300'
+      - '3600'
       - '--network'
       - 'default'
       - '--subnet'
