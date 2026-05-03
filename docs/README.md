@@ -58,6 +58,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-02-09: Added a dependency update prompt for upgrading packages and running quality gates (see `.github/prompts/update-dependencies.prompt.md`).
 - 2026-03-11: Stories management now supports filtering by target audience, novel style, and graphical style, and exposes those attributes in the admin table (see `docs/features/storiesManagement.md`).
 - 2026-04-04: MCP `get_project_statistics` supports date windows and merged daily or monthly buckets (see `docs/mcp.md`).
+- 2026-05-03: MCP `update_blog` and `translate_blog` update existing blog translation content by `(post_id, locale)` instead of attempting duplicate inserts (see `docs/mcp.md`).
 
 ---
 

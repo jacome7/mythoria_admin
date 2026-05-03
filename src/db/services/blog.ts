@@ -1,6 +1,6 @@
 import { getMythoriaDb } from '../index';
 import { blogPosts, blogPostTranslations } from '../schema/blog/blog';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 
 export const ADMIN_BLOG_LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'] as const;
 export type AdminBlogLocale = (typeof ADMIN_BLOG_LOCALES)[number];
@@ -148,33 +148,27 @@ export const adminBlogService = {
   async upsertTranslation(postId: string, tr: AdminTranslationInput) {
     const db = getMythoriaDb();
     if (!isValidSlug(tr.slug)) throw new Error('Invalid slug');
-    const [existing] = await db
-      .select({ id: blogPostTranslations.id })
-      .from(blogPostTranslations)
-      .where(
-        and(eq(blogPostTranslations.postId, postId), eq(blogPostTranslations.locale, tr.locale)),
-      );
-    if (existing) {
-      await db
-        .update(blogPostTranslations)
-        .set({
-          slug: tr.slug,
-          title: tr.title,
-          summary: tr.summary,
-          contentMdx: tr.contentMdx,
-          updatedAt: new Date(),
-        })
-        .where(eq(blogPostTranslations.id, existing.id));
-    } else {
-      await db.insert(blogPostTranslations).values({
+    await db
+      .insert(blogPostTranslations)
+      .values({
         postId,
         locale: tr.locale,
         slug: tr.slug,
         title: tr.title,
         summary: tr.summary,
         contentMdx: tr.contentMdx,
+      })
+      .onConflictDoUpdate({
+        target: [blogPostTranslations.postId, blogPostTranslations.locale],
+        set: {
+          slug: tr.slug,
+          title: tr.title,
+          summary: tr.summary,
+          contentMdx: tr.contentMdx,
+          updatedAt: new Date(),
+        },
       });
-    }
+    return this.getById(postId);
   },
 
   async update(id: string, input: AdminUpdatePostInput) {

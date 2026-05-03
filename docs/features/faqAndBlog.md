@@ -1,6 +1,6 @@
 # FAQ and blog content management
 
-_Last updated: 2026-02-08_
+_Last updated: 2026-05-03_
 
 ## Context
 
@@ -21,6 +21,7 @@ Editorial tooling includes FAQ maintenance (`/faq`) and blog authoring (`/blog`,
 2. New/edit pages provide MDX editing with preview endpoint integration.
 3. Translation action generates localized variants.
 4. Publish action updates publication status.
+5. MCP blog edits update existing translation rows by `(post_id, locale)`, including `content_mdx`.
 
 ## Backend and API touchpoints
 
@@ -44,4 +45,4 @@ Editorial tooling includes FAQ maintenance (`/faq`) and blog authoring (`/blog`,
   - `faq_sections`
   - `faq_entries`
   - `blog_posts`
-  - `blog_post_translations`
+  - `blog_post_translations` with unique locale rows per post and unique localized slugs.

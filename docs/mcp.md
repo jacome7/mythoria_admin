@@ -42,7 +42,7 @@ The MCP Server implements 9 main business domain groups directly mapped into our
     If `workflows_db` is unavailable, `warnings` may include a note and AI fields will be zeroed.
 - `get_server_status`: Query active instances for Mythoria health metrics.
 
-_Last updated: 2026-04-05 — per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization). Prior: 2026-04-04 — extended `get_project_statistics` with date windows and merged daily/monthly series._
+_Last updated: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
 
 ### C. User Management
 
@@ -64,8 +64,8 @@ _Last updated: 2026-04-05 — per-session MCP server for concurrent SSE; Bearer 
 ### F. Blog Content
 
 - `list_blogs`: View general news outputs.
-- `create_blog` / `update_blog`: Manage global draft models.
-- `translate_blog`: Invoke localized schema arrays directly within active document versions.
+- `create_blog` / `update_blog`: Manage global draft models. `update_blog` upserts provided translations by `(post_id, locale)`, so existing locale rows are updated in place, including `contentMdx`.
+- `translate_blog`: Save one localized translation directly. Existing locale rows are updated in place by `(post_id, locale)`, including `contentMdx`.
 - `update_blog_status`: Push live or strip document access entirely globally (`publish`, `archive`).
 
 ### G. Email Marketing
