@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
+  "packageManager": "npm@11.12.1",
   "scripts": {
     "dev": "next dev --turbopack --port 3001",
     "build": "cross-env NEXT_PRIVATE_SKIP_TURBOPACK=1 next build --webpack",
@@ -76,7 +77,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.5.2",
+    "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "baseline-browser-mapping": "^2.10.14",
@@ -94,7 +95,7 @@
     "typescript-eslint": "^8.58.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "24.15.0"
   },
   "overrides": {
     "esbuild": ">=0.24.3"

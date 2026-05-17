@@ -42,7 +42,8 @@ We apply the Diátaxis model so that each document answers a single type of ques
 1. Review `docs/AGENTS.md` and `.github/instructions/general.instructions.md` before editing; both spell out formatting expectations for contributors and automation.
 2. Timestamp significant rewrites inside each doc so on-call staff know which version they are reading.
 3. Capture new env vars in `env.manifest.ts` and reference them from the relevant doc instead of duplicating `.env` snippets.
-4. When you add a doc, register it under the correct Diátaxis table above so Copilot knowledge bases can locate it deterministically.[^2]
+4. Keep runtime pins aligned across `.node-version`, `.nvmrc`, `package.json`, `Dockerfile`, `cloudbuild.yaml`, and deployment docs.
+5. When you add a doc, register it under the correct Diátaxis table above so Copilot knowledge bases can locate it deterministically.[^2]
 
 ## Contributing to docs
 
@@ -59,6 +60,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-03-11: Stories management now supports filtering by target audience, novel style, and graphical style, and exposes those attributes in the admin table (see `docs/features/storiesManagement.md`).
 - 2026-04-04: MCP `get_project_statistics` supports date windows and merged daily or monthly buckets (see `docs/mcp.md`).
 - 2026-05-03: MCP `update_blog` and `translate_blog` update existing blog translation content by `(post_id, locale)` instead of attempting duplicate inserts (see `docs/mcp.md`).
+- 2026-05-17: Runtime pins now use Node.js 24.15.0 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
 
 ---
 
@@ -68,4 +70,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-04-04_
+_Index refreshed: 2026-05-17_

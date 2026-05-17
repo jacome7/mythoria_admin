@@ -50,6 +50,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 ### 2. Local Development Environment
 
 - Google Cloud SDK installed and configured
+- Node.js 24.15.0 LTS installed locally (`.node-version` and `.nvmrc` pin this version)
 - Docker installed (for local testing)
 - Git repository access
 - Environment variables configured
@@ -69,7 +70,8 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 
 ```dockerfile
 # Multi-stage build for production optimization
-FROM node:22.21-alpine AS base
+ARG NODE_VERSION=24.15.0
+FROM node:${NODE_VERSION}-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -122,6 +124,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--build-arg'
+      - 'NODE_VERSION=$_NODE_VERSION'
       - '-t'
       - 'gcr.io/$PROJECT_ID/mythoria-admin:$COMMIT_SHA'
       - '-t'
@@ -176,7 +180,12 @@ timeout: '1200s'
 options:
   machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _NODE_VERSION: '24.15.0'
 ```
+
+The deployment runtime is pinned to Node.js `24.15.0` LTS. Keep `_NODE_VERSION`, the Dockerfile default `NODE_VERSION`, `.node-version`, `.nvmrc`, and `package.json` `engines.node` aligned when the LTS version changes.
 
 ### 3. Next.js Configuration (`next.config.ts`)
 
@@ -621,6 +630,6 @@ gcloud run services update mythoria-admin \
 
 ---
 
-**Deployment Guide Version**: 1.0.0  
-**Last Updated**: February 9, 2026  
-**Service**: Mythoria Admin Portal v0.1.0+
+**Deployment Guide Version**: 1.0.1  
+**Last Updated**: May 17, 2026  
+**Service**: Mythoria Admin Portal v0.3.0+

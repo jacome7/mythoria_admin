@@ -4,6 +4,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--build-arg'
+      - 'NODE_VERSION=$_NODE_VERSION'
       - '-t'
       - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
       - '.'
@@ -60,6 +62,7 @@ steps:
 substitutions:
   _SERVICE_NAME: 'mythoria-admin'
   _REGION: 'europe-west9'
+  _NODE_VERSION: '24.15.0'
   # Non-sensitive configuration variables
   _GOOGLE_CLIENT_ID: '803421888801-fsse90vkqpobthd3runvv60dfijnh63t.apps.googleusercontent.com'
   _NEXTAUTH_URL: 'https://mythoria-admin-803421888801.europe-west9.run.app'
