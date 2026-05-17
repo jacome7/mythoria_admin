@@ -664,8 +664,9 @@ export const campaignService = {
 
         // Selfprint attachments require the author to have at least one completed story.
         if (attachmentType === 'selfprint') {
-          userQuery +=
-            ` AND EXISTS (SELECT 1 FROM stories s WHERE s.author_id = authors.author_id AND s.status = 'completed')`;
+          userConditions.push(
+            `EXISTS (SELECT 1 FROM stories s WHERE s.author_id = authors.author_id AND s.status = 'completed')`,
+          );
         }
 
         // Exclude already-sent recipients for this campaign

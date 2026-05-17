@@ -214,10 +214,49 @@ export function registerMcpTools(server: McpServer) {
     async ({ authorId, amount, eventType }) => {
       try {
         const { adminService } = await import('@/db/services');
+        const { notificationClient } = await import('@/lib/notifications/client');
+
+        const user = (await adminService.getUserById(authorId)) as
+          | { email: string; displayName: string; preferredLocale?: string; authorId: string }
+          | undefined;
+        if (!user) {
+          return { isError: true, content: [{ type: 'text', text: `Error: User ${authorId} not found.` }] };
+        }
+
         await adminService.assignCreditsToUser(authorId, amount, eventType);
+
+        let warning: string | undefined;
+
+        if (eventType === 'refund') {
+          const notifyResult = await notificationClient.sendCreditRefundNotification({
+            email: user.email,
+            name: user.displayName,
+            credits: amount,
+            preferredLocale: user.preferredLocale,
+            authorId: user.authorId,
+          });
+          if (!notifyResult.success) {
+            warning = `Credits assigned but refund email failed: ${notifyResult.error}`;
+          }
+        } else if (eventType === 'voucher') {
+          const notifyResult = await notificationClient.sendCreditsAddedNotification({
+            email: user.email,
+            name: user.displayName,
+            credits: amount,
+            preferredLocale: user.preferredLocale,
+            authorId: user.authorId,
+            source: 'voucher',
+            entityId: crypto.randomUUID(),
+          });
+          if (!notifyResult.success) {
+            warning = `Credits assigned but voucher email failed: ${notifyResult.error}`;
+          }
+        }
+
+        const result = `Successfully assigned ${amount} credits to ${authorId}.`;
         return {
           content: [
-            { type: 'text', text: `Successfully assigned ${amount} credits to ${authorId}.` },
+            { type: 'text', text: warning ? `${result} Warning: ${warning}` : result },
           ],
         };
       } catch (e: unknown) {
