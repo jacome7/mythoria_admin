@@ -169,6 +169,12 @@ try {
         Write-Host "  - URL: $serviceUrl"
     }
 
+    & (Join-Path $PSScriptRoot "verify-cloud-run-timeout.ps1") -ServiceName $SERVICE_NAME -Region $Region -ExpectedTimeoutSeconds 3600
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERR] Post-deploy timeout verification failed"
+        exit 1
+    }
+
 }
 catch {
     Write-Host "[ERR] Deployment failed with error: $($_.Exception.Message)"
