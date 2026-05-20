@@ -187,6 +187,8 @@ substitutions:
 
 The deployment runtime is pinned to Node.js `24.15.0` LTS. Keep `_NODE_VERSION`, the Dockerfile default `NODE_VERSION`, `.node-version`, `.nvmrc`, and `package.json` `engines.node` aligned when the LTS version changes.
 
+The production Admin deployment must keep Cloud Run request timeout at `3600s`. MCP uses long-lived SSE connections on `/api/mcp`, and the Cloud Run default `300s` timeout causes noisy truncated-response warnings even when the client reconnects. The deploy scripts run `scripts/verify-cloud-run-timeout.ps1` after Cloud Build completes and fail the deploy if the live service timeout drifts from `3600s`.
+
 ### 3. Next.js Configuration (`next.config.ts`)
 
 ```typescript
