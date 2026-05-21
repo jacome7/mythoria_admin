@@ -924,7 +924,10 @@ function LocaleEditor({
         <div className="card bg-base-50">
           <div className="card-body">
             <h4 className="card-title text-lg">Preview</h4>
-            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }} />
+            <div
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
+            />
           </div>
         </div>
       )}

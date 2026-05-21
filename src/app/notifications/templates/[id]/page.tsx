@@ -20,7 +20,6 @@ interface NotificationTemplate {
   updatedAt?: string;
 }
 
-
 export default function NotificationTemplatePage() {
   const { status } = useSession();
   const router = useRouter();
@@ -102,7 +101,9 @@ export default function NotificationTemplatePage() {
   }, [status, router, loadTemplate]);
 
   const handleSave = async () => {
-    console.error('Notification template save is disabled until the real persistence API is implemented.');
+    console.error(
+      'Notification template save is disabled until the real persistence API is implemented.',
+    );
   };
 
   const renderPreview = (content: string) => {
@@ -406,8 +407,8 @@ export default function NotificationTemplatePage() {
 
                 <div className="alert alert-warning mt-6">
                   <span>
-                    Template editing is temporarily read-only here because the persistence API is not
-                    implemented yet. This avoids showing false successful saves in production.
+                    Template editing is temporarily read-only here because the persistence API is
+                    not implemented yet. This avoids showing false successful saves in production.
                   </span>
                 </div>
 

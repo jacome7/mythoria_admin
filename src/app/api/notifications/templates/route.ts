@@ -66,7 +66,9 @@ export async function POST() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    console.warn('Notification template creation is disabled until real persistence is implemented.');
+    console.warn(
+      'Notification template creation is disabled until real persistence is implemented.',
+    );
 
     return NextResponse.json(
       {

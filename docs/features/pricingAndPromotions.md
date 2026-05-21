@@ -1,6 +1,6 @@
 # Pricing and promotion codes
 
-_Last updated: 2026-02-08_
+_Last updated: 2026-05-20_
 
 ## Context
 
@@ -21,6 +21,8 @@ Commercial controls are split between credit package catalog management (`/prici
 2. `/promotion-codes/new` creates new codes with validity windows and limits.
 3. `/promotion-codes/[id]` shows status plus redemption history.
 4. Toggle action enables/disables a code while retaining history.
+5. `/promotion-codes/[id]` can edit any create-time field only while the code has zero redemptions.
+6. Delete is available only for inactive codes with zero redemptions, preserving redemption history for used codes.
 
 ## Backend and API touchpoints
 
@@ -28,7 +30,7 @@ Commercial controls are split between credit package catalog management (`/prici
 - `GET/PUT /api/credit-packages/[id]`
 - `POST /api/credit-packages/[id]/toggle`
 - `GET/POST /api/admin/promotion-codes`
-- `GET/PUT/DELETE /api/admin/promotion-codes/[id]`
+- `GET/PUT/DELETE /api/admin/promotion-codes/[id]` (`PUT` requires zero redemptions; `DELETE` requires inactive plus zero redemptions)
 - `POST /api/admin/promotion-codes/[id]/toggle`
 - `GET /api/admin/promotion-codes/[id]/redemptions`
 

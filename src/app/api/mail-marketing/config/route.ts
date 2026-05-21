@@ -36,14 +36,11 @@ export async function GET() {
     }
 
     // Make request to notification engine
-    const response = await fetch(
-      `${getNotificationEngineUrl()}/internal/mail-marketing/config`,
-      {
-        headers: {
-          'x-api-key': getNotificationEngineApiKey(),
-        },
+    const response = await fetch(`${getNotificationEngineUrl()}/internal/mail-marketing/config`, {
+      headers: {
+        'x-api-key': getNotificationEngineApiKey(),
       },
-    );
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -84,17 +81,14 @@ export async function PUT(request: Request) {
     const body = await request.json();
 
     // Make request to notification engine
-    const response = await fetch(
-      `${getNotificationEngineUrl()}/internal/mail-marketing/config`,
-      {
-        method: 'PUT',
-        headers: {
-          'x-api-key': getNotificationEngineApiKey(),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+    const response = await fetch(`${getNotificationEngineUrl()}/internal/mail-marketing/config`, {
+      method: 'PUT',
+      headers: {
+        'x-api-key': getNotificationEngineApiKey(),
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       const errorData = await response.json();

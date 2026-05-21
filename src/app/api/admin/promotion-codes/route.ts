@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'invalid_code_format' }, { status: 400 });
       if (code === 'invalid_credit_amount')
         return NextResponse.json({ error: 'invalid_credit_amount' }, { status: 400 });
+      if (code === 'invalid_redemption_limit')
+        return NextResponse.json({ error: 'invalid_redemption_limit' }, { status: 400 });
       if (code === 'invalid_validity_window')
         return NextResponse.json({ error: 'invalid_validity_window' }, { status: 400 });
       throw err;

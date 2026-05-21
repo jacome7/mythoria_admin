@@ -67,7 +67,9 @@ export async function GET(request: NextRequest) {
 
     // Test network connectivity to a public domain only in debug mode.
     // External egress is informative, but it should not gate core health.
-    const networkResult = debug ? await testNetworkConnectivity() : { status: 'connected' as const };
+    const networkResult = debug
+      ? await testNetworkConnectivity()
+      : { status: 'connected' as const };
     const authResult = validateAuthConfiguration(debug);
 
     // Determine overall health

@@ -43,9 +43,12 @@ export async function proxyToNotificationEngine(
 
   const notificationEngineUrl = process.env.NOTIFICATION_ENGINE_URL;
   if (!notificationEngineUrl) {
-    return NextResponse.json({ error: 'Notification engine is not configured' }, {
-      status: 503,
-    });
+    return NextResponse.json(
+      { error: 'Notification engine is not configured' },
+      {
+        status: 503,
+      },
+    );
   }
 
   const response = await fetch(`${notificationEngineUrl}${path}`, {
@@ -77,12 +80,9 @@ export async function proxyToNotificationEngine(
           };
 
     console.error(`Notification engine error [${path}] status=${response.status}`, responseSummary);
-    return NextResponse.json(
-      data ?? { error: rawBody || 'Notification engine request failed' },
-      {
-        status: response.status,
-      },
-    );
+    return NextResponse.json(data ?? { error: rawBody || 'Notification engine request failed' }, {
+      status: response.status,
+    });
   }
 
   return NextResponse.json(data ?? { success: true });

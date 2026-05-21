@@ -21,13 +21,13 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 ## Reference (lookup)
 
-| Doc                                | Scope                                                               |
-| ---------------------------------- | ------------------------------------------------------------------- |
-| `docs/api-reference.md`            | REST route map, accepted query params, and response shapes.         |
-| `docs/mcp.md`                      | Model Context Protocol server (SSE), auth, tools, and statistics.   |
-| `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).       |
-| `docs/features/*.md`               | Per-page feature deep dives (context, UI workflow, DB structures).  |
-| `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents. |
+| Doc                                | Scope                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `docs/api-reference.md`            | REST route map, accepted query params, and response shapes.                         |
+| `docs/mcp.md`                      | Model Context Protocol server (streamable HTTP + SSE), auth, tools, and statistics. |
+| `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).                       |
+| `docs/features/*.md`               | Per-page feature deep dives (context, UI workflow, DB structures).                  |
+| `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents.                 |
 
 ## Explanation (deep understanding)
 
@@ -61,6 +61,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-04-04: MCP `get_project_statistics` supports date windows and merged daily or monthly buckets (see `docs/mcp.md`).
 - 2026-05-03: MCP `update_blog` and `translate_blog` update existing blog translation content by `(post_id, locale)` instead of attempting duplicate inserts (see `docs/mcp.md`).
 - 2026-05-17: Runtime pins now use Node.js 24.15.0 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
+- 2026-05-17: MCP `/api/mcp` accepts streamable HTTP `POST` requests for Codex clients while preserving the legacy SSE flow (see `docs/mcp.md`).
 
 ---
 

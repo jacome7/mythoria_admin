@@ -2023,6 +2023,64 @@ ef: '#/components/responses/InternalError'
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Promotion Codes]
+      summary: Edit an unused promotion code
+      description: Updates any create-time field only when the promotion code has no redemptions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionCodeCreateRequest'
+      responses:
+        '200':
+          description: Updated promotion code with aggregates.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  promotionCode:
+                    $ref: '#/components/schemas/PromotionCodeDetail'
+                required: [promotionCode]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Promotion Codes]
+      summary: Delete an inactive unused promotion code
+      description: Hard-deletes only inactive promotion codes with no redemptions.
+      responses:
+        '200':
+          description: Promotion code deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/admin/promotion-codes/{id}/toggle:
     parameters:
       - name: id

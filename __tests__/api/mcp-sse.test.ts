@@ -31,16 +31,17 @@ async function readStreamPrefix(
 }
 
 let mcpGet: typeof import('@/app/api/mcp/route').GET;
+let mcpPost: typeof import('@/app/api/mcp/route').POST;
 let mcpMessagesPost: typeof import('@/app/api/mcp/messages/route').POST;
 
 const SECRET = 'x'.repeat(32);
 
 beforeAll(async () => {
-  ({ GET: mcpGet } = await import('@/app/api/mcp/route'));
+  ({ GET: mcpGet, POST: mcpPost } = await import('@/app/api/mcp/route'));
   ({ POST: mcpMessagesPost } = await import('@/app/api/mcp/messages/route'));
 });
 
-describe('MCP SSE routes', () => {
+describe('MCP routes', () => {
   beforeEach(() => {
     process.env.MCP_SECRET_KEY = SECRET;
     jest.clearAllMocks();
@@ -66,6 +67,41 @@ describe('MCP SSE routes', () => {
     expect(chunk1).toContain('/api/mcp/messages?sessionId=');
     expect(chunk2).toContain('event: endpoint');
     expect(chunk2).toContain('/api/mcp/messages?sessionId=');
+  });
+
+  it('supports streamable HTTP initialize POST for Codex clients', async () => {
+    const res = await mcpPost(
+      new NextRequest('http://localhost:3001/api/mcp', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${SECRET}`,
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-03-26',
+            capabilities: {},
+            clientInfo: { name: 'codex-test', version: '1.0.0' },
+          },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('application/json');
+
+    const body = await res.json();
+    expect(body).toMatchObject({
+      jsonrpc: '2.0',
+      id: 1,
+      result: {
+        serverInfo: { name: 'mythoria_admin' },
+      },
+    });
   });
 
   it('rejects MCP messages POST without Bearer auth', async () => {

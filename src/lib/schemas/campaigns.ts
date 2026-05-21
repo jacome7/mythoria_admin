@@ -59,7 +59,8 @@ export const createCampaignSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['audienceSource'],
-        message: "Self-print attachments require at least one real user — 'leads' audience is not allowed.",
+        message:
+          "Self-print attachments require at least one real user — 'leads' audience is not allowed.",
       });
     }
   });
@@ -91,7 +92,8 @@ export const updateCampaignSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['audienceSource'],
-        message: "Self-print attachments require at least one real user — 'leads' audience is not allowed.",
+        message:
+          "Self-print attachments require at least one real user — 'leads' audience is not allowed.",
       });
     }
   });

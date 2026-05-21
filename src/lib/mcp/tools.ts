@@ -220,7 +220,10 @@ export function registerMcpTools(server: McpServer) {
           | { email: string; displayName: string; preferredLocale?: string; authorId: string }
           | undefined;
         if (!user) {
-          return { isError: true, content: [{ type: 'text', text: `Error: User ${authorId} not found.` }] };
+          return {
+            isError: true,
+            content: [{ type: 'text', text: `Error: User ${authorId} not found.` }],
+          };
         }
 
         await adminService.assignCreditsToUser(authorId, amount, eventType);
@@ -255,9 +258,7 @@ export function registerMcpTools(server: McpServer) {
 
         const result = `Successfully assigned ${amount} credits to ${authorId}.`;
         return {
-          content: [
-            { type: 'text', text: warning ? `${result} Warning: ${warning}` : result },
-          ],
+          content: [{ type: 'text', text: warning ? `${result} Warning: ${warning}` : result }],
         };
       } catch (e: unknown) {
         return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };

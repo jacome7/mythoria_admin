@@ -45,7 +45,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!rule) {
       return NextResponse.json(
-        { error: 'Notification rule details are unavailable until real persistence is implemented.' },
+        {
+          error: 'Notification rule details are unavailable until real persistence is implemented.',
+        },
         { status: 501 },
       );
     }

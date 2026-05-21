@@ -36,14 +36,11 @@ export async function GET() {
     }
 
     // Make request to notification engine
-    const response = await fetch(
-      `${getNotificationEngineUrl()}/internal/mail-marketing/status`,
-      {
-        headers: {
-          'x-api-key': getNotificationEngineApiKey(),
-        },
+    const response = await fetch(`${getNotificationEngineUrl()}/internal/mail-marketing/status`, {
+      headers: {
+        'x-api-key': getNotificationEngineApiKey(),
       },
-    );
+    });
 
     if (!response.ok) {
       const errorText = await response.text();

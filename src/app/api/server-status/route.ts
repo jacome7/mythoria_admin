@@ -111,8 +111,12 @@ async function checkServiceHealth(service: ServiceConfiguration) {
     }
 
     // Check HTTP status, and only treat an explicit body status as authoritative when present.
-    const bodyStatus = responseData && typeof responseData === 'object' ? (responseData as { status?: string }).status : undefined;
-    const normalizedBodyStatus = typeof bodyStatus === 'string' ? bodyStatus.toLowerCase() : undefined;
+    const bodyStatus =
+      responseData && typeof responseData === 'object'
+        ? (responseData as { status?: string }).status
+        : undefined;
+    const normalizedBodyStatus =
+      typeof bodyStatus === 'string' ? bodyStatus.toLowerCase() : undefined;
     const isHealthy =
       response.ok &&
       (normalizedBodyStatus == null ||

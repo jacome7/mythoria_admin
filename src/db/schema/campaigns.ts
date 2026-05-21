@@ -48,10 +48,7 @@ export const campaignRecipientStatusEnum = pgEnum('campaign_recipient_status', [
 
 export const campaignRecipientTypeEnum = pgEnum('campaign_recipient_type', ['user', 'lead']);
 
-export const campaignAttachmentTypeEnum = pgEnum('campaign_attachment_type', [
-  'none',
-  'selfprint',
-]);
+export const campaignAttachmentTypeEnum = pgEnum('campaign_attachment_type', ['none', 'selfprint']);
 
 // -----------------------------------------------------------------------------
 // Marketing campaigns table

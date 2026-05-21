@@ -115,14 +115,20 @@ export default function WorkflowsList({ status, refreshTrigger }: WorkflowsListP
 
       if (!response.ok) {
         const errorMessage =
-          payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+          payload &&
+          typeof payload === 'object' &&
+          'error' in payload &&
+          typeof payload.error === 'string'
             ? payload.error
             : 'Failed to retry workflow';
         throw new Error(errorMessage);
       }
 
       const successMessage =
-        payload && typeof payload === 'object' && 'message' in payload && typeof payload.message === 'string'
+        payload &&
+        typeof payload === 'object' &&
+        'message' in payload &&
+        typeof payload.message === 'string'
           ? payload.message
           : 'Workflow retry requested successfully';
 

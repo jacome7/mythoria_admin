@@ -103,8 +103,7 @@ export const envManifest: EnvVarDescriptor[] = [
     required: true,
     scopes: ['prod', 'runtime', 'public'],
     source: 'secret-manager',
-    note:
-      'Analytics measurement ID; injected at Cloud Run runtime via Secret Manager (see cloudbuild --set-secrets), not as a Docker build arg.',
+    note: 'Analytics measurement ID; injected at Cloud Run runtime via Secret Manager (see cloudbuild --set-secrets), not as a Docker build arg.',
   },
   {
     name: 'GOOGLE_ANALYTICS_API_SECRET',
@@ -295,8 +294,7 @@ export const envManifest: EnvVarDescriptor[] = [
     scopes: ['prod', 'runtime', 'dev'],
     secret: true,
     source: 'secret-manager',
-    note:
-      'Filesystem path to service account JSON (read by PostmasterClient). For Cloud Run, mount a secret as a file and set this to that path; raw JSON in env is not supported by the current client.',
+    note: 'Filesystem path to service account JSON (read by PostmasterClient). For Cloud Run, mount a secret as a file and set this to that path; raw JSON in env is not supported by the current client.',
   },
   {
     name: 'POSTMASTER_IMPERSONATE_EMAIL',

@@ -110,7 +110,9 @@ export default function NotificationsPage() {
 
   const toggleChannel = async (channelId: string, enabled: boolean) => {
     if (!channelUpdatesAvailable) {
-      console.error('Notification channel updates are disabled until a real persistence endpoint is implemented.');
+      console.error(
+        'Notification channel updates are disabled until a real persistence endpoint is implemented.',
+      );
       return;
     }
 
@@ -309,7 +311,8 @@ export default function NotificationsPage() {
                 Configure and manage notification delivery channels.
               </p>
               <p className="text-warning text-sm mb-4">
-                Channel enable or disable is currently read-only until the real persistence endpoint is implemented.
+                Channel enable or disable is currently read-only until the real persistence endpoint
+                is implemented.
               </p>
 
               <div className="grid gap-4">

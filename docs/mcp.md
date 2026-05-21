@@ -4,11 +4,11 @@ The Mythoria Admin application exposes a fully functional **Model Context Protoc
 
 ## Integration Architecture
 
-We implement the official `@modelcontextprotocol/sdk` using a custom HTTP Server-Sent Events (SSE) transport wrapper on Next.js App Router route handlers (`ReadableStream`). Each SSE session constructs its own `McpServer` so concurrent connections on the same instance are supported. Standard clients send JSON-RPC over the MCP HTTP+SSE flow.
+We implement the official `@modelcontextprotocol/sdk` on Next.js App Router route handlers. The primary `/api/mcp` endpoint supports streamable HTTP `POST` requests for modern MCP clients such as Codex. The same path keeps the legacy HTTP Server-Sent Events (SSE) `GET` transport, with JSON-RPC messages posted to `/api/mcp/messages`, so existing SSE clients can continue to connect.
 
 ## Endpoints
 
-- **Connection Type**: SSE (Server-Sent Events)
+- **Connection Types**: Streamable HTTP (`POST /api/mcp`) and legacy SSE (`GET /api/mcp` + `POST /api/mcp/messages`)
 - **Local Endpoint**: `http://localhost:3001/api/mcp`
 - **Production Endpoint**: `https://<admin-domain>/api/mcp`
 
@@ -17,11 +17,17 @@ We implement the official `@modelcontextprotocol/sdk` using a custom HTTP Server
 Due to the highly sensitive domain of admin tools, the MCP server forces strict authorization rules automatically on every connection and message attempt:
 
 1. **API Key Generation Requirement**: The system expects a secure passkey to be defined using the `.env` variable `MCP_SECRET_KEY`.
-2. **Bearer Verification**: SSE `GET` and message `POST` must send `Authorization: Bearer <your-secret-key>` (same value as `MCP_SECRET_KEY`).
+2. **Bearer Verification**: Streamable HTTP `POST`, SSE `GET`, and SSE message `POST` must send `Authorization: Bearer <your-secret-key>` (same value as `MCP_SECRET_KEY`).
 3. **Timing-Safe Evaluation**: Verification utilizes constant-time string comparisons (`crypto.timingSafeEqual`) to prevent brute-force timing attacks against the secret configuration length.
 4. **Audit Trails**: Mutative execution tasks are heavily logged. Tools stream structured logs prefixed with `[MCP AUDIT] Session <id> executing payload:` for external tracing within Google Cloud Logging.
 
-### OpenClaw and other remote MCP clients
+### Codex and streamable HTTP clients
+
+- Transport is **streamable HTTP**: send MCP JSON-RPC requests to `POST /api/mcp` with `Authorization: Bearer <MCP_SECRET_KEY>`.
+- Codex config should use the exact `/api/mcp` URL with `bearer_token_env_var = "MYTHORIA_ADMIN_MCP_SECRET"` and should not include a trailing slash.
+- Initialization returns `application/json` in JSON response mode so clients do not receive the framework HTML fallback for unsupported methods.
+
+### OpenClaw and other SSE clients
 
 - Transport is **SSE**: connect with `GET /api/mcp` and header `Authorization: Bearer <MCP_SECRET_KEY>`.
 - **URL shape**: Use exactly `/api/mcp` with **no trailing slash**. A request to `/api/mcp/` receives **308** to `/api/mcp`; many HTTP stacks drop or alter `Authorization` on redirect, which shows up as **401 Unauthorized** on the follow-up request.
@@ -42,7 +48,7 @@ The MCP Server implements 9 main business domain groups directly mapped into our
     If `workflows_db` is unavailable, `warnings` may include a note and AI fields will be zeroed.
 - `get_server_status`: Query active instances for Mythoria health metrics.
 
-_Last updated: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
+_Last updated: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE. Prior: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
 
 ### C. User Management
 

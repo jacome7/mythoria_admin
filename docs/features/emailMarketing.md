@@ -71,12 +71,13 @@ Each campaign targets one of three audience sources:
 
 Campaigns can optionally attach generated files to every email. This is configured via two fields on the campaign:
 
-| Field            | Type                      | Description                                                                                    |
-| ---------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
-| `attachmentType` | `none` \| `selfprint`     | `selfprint` generates a CMYK-ready interior + cover PDF per recipient and attaches them.       |
+| Field            | Type                      | Description                                                                                                                        |
+| ---------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `attachmentType` | `none` \| `selfprint`     | `selfprint` generates a CMYK-ready interior + cover PDF per recipient and attaches them.                                           |
 | `skipPrintQa`    | `boolean` (default false) | When true, bypasses the deterministic + multimodal QA review on PDF generation. Recommended for high-volume, low-stakes campaigns. |
 
 **Self-print campaign constraints:**
+
 - `audienceSource` cannot be `leads` (leads have no stories).
 - Audience is automatically restricted to authors with at least one completed story. The most recently completed story per author is used.
 - PDF generation calls `story-generation-workflow`'s `/internal/print/generate` synchronously per recipient. Use a low `dailySendLimit` (e.g. 200) and small batch size to account for the added latency.
@@ -100,19 +101,19 @@ Assets are edited in-place (no versioning). A SHA-256 hash snapshot is stored pe
 
 #### Available template variables
 
-| Variable               | Description               | Available for |
-| ---------------------- | ------------------------- | ------------- |
-| `{{name}}`             | Full name                 | Users + Leads |
-| `{{firstName}}`        | First name                | Users + Leads |
-| `{{email}}`            | Email address             | Users + Leads |
-| `{{trackingPixelUrl}}` | Open tracking pixel       | Leads         |
-| `{{signUpLink}}`       | Sign-up CTA with tracking | Leads         |
-| `{{unsubscribeLink}}`  | One-click unsubscribe     | Users + Leads |
-| `{{homepageLink}}`     | Homepage with tracking    | Leads         |
-| `{{termsLink}}`        | Terms and conditions      | Leads         |
-| `{{physicalAddress}}`  | Company physical address  | Users + Leads |
-| `{{storyTitle}}`       | Title of attached story   | selfprint only |
-| `{{storyId}}`          | ID of attached story      | selfprint only |
+| Variable               | Description                     | Available for  |
+| ---------------------- | ------------------------------- | -------------- |
+| `{{name}}`             | Full name                       | Users + Leads  |
+| `{{firstName}}`        | First name                      | Users + Leads  |
+| `{{email}}`            | Email address                   | Users + Leads  |
+| `{{trackingPixelUrl}}` | Open tracking pixel             | Leads          |
+| `{{signUpLink}}`       | Sign-up CTA with tracking       | Leads          |
+| `{{unsubscribeLink}}`  | One-click unsubscribe           | Users + Leads  |
+| `{{homepageLink}}`     | Homepage with tracking          | Leads          |
+| `{{termsLink}}`        | Terms and conditions            | Leads          |
+| `{{physicalAddress}}`  | Company physical address        | Users + Leads  |
+| `{{storyTitle}}`       | Title of attached story         | selfprint only |
+| `{{storyId}}`          | ID of attached story            | selfprint only |
 | `{{partnerPageUrl}}`   | Link to print-shop partner page | selfprint only |
 | `{{printTips}}`        | Locale-aware print instructions | selfprint only |
 | `{{attachmentLabels}}` | Array of attachment file labels | selfprint only |
@@ -177,7 +178,7 @@ All tables live in `backoffice_db` and are defined in `src/db/schema/campaigns.t
 | `marketing_campaigns`           | Campaign definitions with metadata, audience config, user notification preferences, filters, and lifecycle state |
 | `marketing_campaign_assets`     | Per-locale email templates (subject, HTML, text) linked to a campaign                                            |
 | `marketing_campaign_batches`    | Batch execution records with stats, timing, and asset snapshot hashes                                            |
-| `marketing_campaign_recipients` | Per-recipient send records with delivery status, error tracking, and `attachment_context` JSONB for audit       |
+| `marketing_campaign_recipients` | Per-recipient send records with delivery status, error tracking, and `attachment_context` JSONB for audit        |
 
 ### Enums
 
@@ -325,20 +326,20 @@ Reference HTML email templates used by the AI asset generation feature. These ar
 
 All campaign UI components are in `src/components/email-campaigns/`:
 
-| Component              | Purpose                                                        |
-| ---------------------- | -------------------------------------------------------------- |
-| `CampaignStatusBadge`  | Color-coded DaisyUI badge for campaign status                  |
-| `CampaignListTable`    | Sortable campaign table with action buttons                    |
-| `CreateCampaignModal`  | Modal form for creating new campaigns                          |
-| `DeleteCampaignModal`  | Confirmation dialog for campaign deletion                      |
-| `GlobalSettingsPanel`  | Batch size slider and send window display                      |
-| `CampaignDetailHeader` | Title, status badge, and lifecycle action buttons              |
-| `CampaignFilterEditor` | Interactive filter builder with audience estimation            |
-| `CampaignAssetEditor`  | Locale-tabbed template editor with variables panel             |
-| `GenerateAssetsModal`  | AI-powered modal to generate email assets for all locales      |
-| `VariablesPanel`       | Available Handlebars variable reference with copy-to-clipboard |
+| Component              | Purpose                                                                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `CampaignStatusBadge`  | Color-coded DaisyUI badge for campaign status                                                                                     |
+| `CampaignListTable`    | Sortable campaign table with action buttons                                                                                       |
+| `CreateCampaignModal`  | Modal form for creating new campaigns                                                                                             |
+| `DeleteCampaignModal`  | Confirmation dialog for campaign deletion                                                                                         |
+| `GlobalSettingsPanel`  | Batch size slider and send window display                                                                                         |
+| `CampaignDetailHeader` | Title, status badge, and lifecycle action buttons                                                                                 |
+| `CampaignFilterEditor` | Interactive filter builder with audience estimation                                                                               |
+| `CampaignAssetEditor`  | Locale-tabbed template editor with variables panel                                                                                |
+| `GenerateAssetsModal`  | AI-powered modal to generate email assets for all locales                                                                         |
+| `VariablesPanel`       | Available Handlebars variable reference with copy-to-clipboard                                                                    |
 | `SampleSendForm`       | Test send form with locale/email/variables inputs; shows Story ID field for selfprint campaigns to generate a real PDF attachment |
-| `CampaignProgress`     | Stats grid, progress bar, and batch history                    |
+| `CampaignProgress`     | Stats grid, progress bar, and batch history                                                                                       |
 
 ---
 
@@ -446,20 +447,21 @@ The Notification Engine connects to `backoffice_db` (3-connection pool) to:
 The Notification Engine's `campaignFilterEvaluator` translates the JSONB filter tree into SQL WHERE clauses executed against `mythoria_db`. It applies default suppression, deduplicates against existing recipients, and returns eligible audience rows with name, email, and locale information.
 
 For `selfprint` campaigns the evaluator additionally:
+
 - Requires at least one `completed` story per author (via SQL `EXISTS`).
 - Returns the most recently completed `storyId` and `storyTitle` per recipient via a lateral join.
 
 ### Key source files (Notification Engine)
 
-| File                                           | Purpose                                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------------------ |
-| `src/db/backofficeConnection.ts`               | Drizzle connection pool to `backoffice_db`                               |
-| `src/db/backofficeSchema.ts`                   | Campaign table schema (mirror of admin schema)                           |
-| `src/services/campaignFilterEvaluator.ts`      | Filter tree evaluation and audience resolution (incl. story-existence filter) |
-| `src/services/campaignDispatch.ts`             | Core dispatch logic with round-robin, template rendering, compliance, and selfprint PDF attachment |
-| `src/services/selfprintAttachment.ts`          | Calls SGW `/internal/print/generate` and returns CMYK PDF URLs for attachment |
-| `src/services/storyPrintInstructions.helpers.ts` | Shared helpers: `resolveStorageAttachments`, `buildTemplateVariables` (print tips, labels) |
-| `src/routes/campaigns.ts`                      | Express routes mounted at `/internal/campaigns`                          |
+| File                                             | Purpose                                                                                            |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `src/db/backofficeConnection.ts`                 | Drizzle connection pool to `backoffice_db`                                                         |
+| `src/db/backofficeSchema.ts`                     | Campaign table schema (mirror of admin schema)                                                     |
+| `src/services/campaignFilterEvaluator.ts`        | Filter tree evaluation and audience resolution (incl. story-existence filter)                      |
+| `src/services/campaignDispatch.ts`               | Core dispatch logic with round-robin, template rendering, compliance, and selfprint PDF attachment |
+| `src/services/selfprintAttachment.ts`            | Calls SGW `/internal/print/generate` and returns CMYK PDF URLs for attachment                      |
+| `src/services/storyPrintInstructions.helpers.ts` | Shared helpers: `resolveStorageAttachments`, `buildTemplateVariables` (print tips, labels)         |
+| `src/routes/campaigns.ts`                        | Express routes mounted at `/internal/campaigns`                                                    |
 
 ---
 

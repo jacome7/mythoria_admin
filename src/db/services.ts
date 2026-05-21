@@ -36,6 +36,17 @@ export { adminBlogService } from './services/blog';
 
 type EmailStatus = (typeof emailStatusEnum.enumValues)[number];
 
+type PromotionCodeInput = {
+  code: string;
+  type: string;
+  creditAmount: number;
+  maxGlobalRedemptions?: number | null;
+  maxRedemptionsPerUser?: number;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  active?: boolean;
+};
+
 const toIsoString = (value: string | Date) => new Date(value).toISOString();
 
 const startOfUtcDay = (date: Date) => {
@@ -48,6 +59,60 @@ const startOfUtcMonth = (date: Date) => {
   const copy = startOfUtcDay(date);
   copy.setUTCDate(1);
   return copy;
+};
+
+const normalizePromotionCodeInput = (input: PromotionCodeInput) => {
+  const code = input.code.trim().toUpperCase();
+  if (!/^[A-Z0-9-]{3,64}$/.test(code)) {
+    throw Object.assign(new Error('invalid_code_format'), { code: 'invalid_code_format' });
+  }
+  if (input.creditAmount <= 0) {
+    throw Object.assign(new Error('invalid_credit_amount'), { code: 'invalid_credit_amount' });
+  }
+  if (input.maxRedemptionsPerUser != null && input.maxRedemptionsPerUser <= 0) {
+    throw Object.assign(new Error('invalid_redemption_limit'), {
+      code: 'invalid_redemption_limit',
+    });
+  }
+  if (input.maxGlobalRedemptions != null && input.maxGlobalRedemptions <= 0) {
+    throw Object.assign(new Error('invalid_redemption_limit'), {
+      code: 'invalid_redemption_limit',
+    });
+  }
+
+  const validFrom = input.validFrom ? new Date(input.validFrom) : null;
+  const validUntil = input.validUntil ? new Date(input.validUntil) : null;
+
+  if (
+    (validFrom && Number.isNaN(validFrom.getTime())) ||
+    (validUntil && Number.isNaN(validUntil.getTime())) ||
+    (validFrom && validUntil && validFrom >= validUntil)
+  ) {
+    throw Object.assign(new Error('invalid_validity_window'), {
+      code: 'invalid_validity_window',
+    });
+  }
+
+  return {
+    code,
+    type: input.type || 'partner',
+    creditAmount: input.creditAmount,
+    maxGlobalRedemptions: input.maxGlobalRedemptions ?? null,
+    maxRedemptionsPerUser: input.maxRedemptionsPerUser ?? 1,
+    validFrom,
+    validUntil,
+    active: input.active ?? true,
+  };
+};
+
+const mapPromotionCodeUniqueError = (e: unknown) => {
+  if (e && typeof e === 'object' && 'message' in e) {
+    const msg = String((e as { message?: string }).message).toLowerCase();
+    if (msg.includes('duplicate') || msg.includes('unique')) {
+      throw Object.assign(new Error('code_exists'), { code: 'code_exists' });
+    }
+  }
+  throw e;
 };
 
 type StoryListStatus = 'temporary' | 'draft' | 'writing' | 'published';
@@ -306,60 +371,83 @@ export const adminService = {
     };
   },
 
-  async createPromotionCode(input: {
-    code: string;
-    type: string;
-    creditAmount: number;
-    maxGlobalRedemptions?: number | null;
-    maxRedemptionsPerUser?: number;
-    validFrom?: string | null;
-    validUntil?: string | null;
-    active?: boolean;
-  }) {
+  async createPromotionCode(input: PromotionCodeInput) {
     const db = getMythoriaDb();
-
-    // Normalize & validate
-    const code = input.code.trim().toUpperCase();
-    if (!/^[A-Z0-9-]{3,64}$/.test(code)) {
-      throw Object.assign(new Error('invalid_code_format'), { code: 'invalid_code_format' });
-    }
-    if (input.creditAmount <= 0) {
-      throw Object.assign(new Error('invalid_credit_amount'), { code: 'invalid_credit_amount' });
-    }
-    if (input.validFrom && input.validUntil) {
-      const from = new Date(input.validFrom);
-      const until = new Date(input.validUntil);
-      if (from >= until) {
-        throw Object.assign(new Error('invalid_validity_window'), {
-          code: 'invalid_validity_window',
-        });
-      }
-    }
+    const normalized = normalizePromotionCodeInput(input);
 
     try {
       const [created] = await db
         .insert(promotionCodes)
         .values({
-          code,
-          type: input.type || 'partner',
-          creditAmount: input.creditAmount,
-          maxGlobalRedemptions: input.maxGlobalRedemptions ?? null,
-          maxRedemptionsPerUser: input.maxRedemptionsPerUser ?? 1,
-          validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
-          validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
-          active: input.active ?? true,
+          ...normalized,
+          validFrom: normalized.validFrom ?? undefined,
+          validUntil: normalized.validUntil ?? undefined,
         })
         .returning();
       return created;
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'message' in e) {
-        const msg = String((e as { message?: string }).message).toLowerCase();
-        if (msg.includes('duplicate') || msg.includes('unique')) {
-          throw Object.assign(new Error('code_exists'), { code: 'code_exists' });
-        }
-      }
-      throw e;
+      mapPromotionCodeUniqueError(e);
     }
+  },
+
+  async updatePromotionCode(promotionCodeId: string, input: PromotionCodeInput) {
+    const db = getMythoriaDb();
+    const normalized = normalizePromotionCodeInput(input);
+
+    const [existing] = await db
+      .select({ promotionCodeId: promotionCodes.promotionCodeId })
+      .from(promotionCodes)
+      .where(eq(promotionCodes.promotionCodeId, promotionCodeId));
+    if (!existing) return null;
+
+    const [aggregate] = await db
+      .select({ totalRedemptions: count(promotionCodeRedemptions.promotionCodeRedemptionId) })
+      .from(promotionCodeRedemptions)
+      .where(eq(promotionCodeRedemptions.promotionCodeId, promotionCodeId));
+    if ((aggregate?.totalRedemptions || 0) > 0) {
+      throw Object.assign(new Error('promotion_code_used'), { code: 'promotion_code_used' });
+    }
+
+    try {
+      const [updated] = await db
+        .update(promotionCodes)
+        .set({ ...normalized, updatedAt: new Date() })
+        .where(eq(promotionCodes.promotionCodeId, promotionCodeId))
+        .returning();
+      return updated;
+    } catch (e: unknown) {
+      mapPromotionCodeUniqueError(e);
+    }
+  },
+
+  async deletePromotionCode(promotionCodeId: string) {
+    const db = getMythoriaDb();
+    const [existing] = await db
+      .select({
+        promotionCodeId: promotionCodes.promotionCodeId,
+        active: promotionCodes.active,
+      })
+      .from(promotionCodes)
+      .where(eq(promotionCodes.promotionCodeId, promotionCodeId));
+    if (!existing) return null;
+
+    if (existing.active) {
+      throw Object.assign(new Error('promotion_code_active'), { code: 'promotion_code_active' });
+    }
+
+    const [aggregate] = await db
+      .select({ totalRedemptions: count(promotionCodeRedemptions.promotionCodeRedemptionId) })
+      .from(promotionCodeRedemptions)
+      .where(eq(promotionCodeRedemptions.promotionCodeId, promotionCodeId));
+    if ((aggregate?.totalRedemptions || 0) > 0) {
+      throw Object.assign(new Error('promotion_code_used'), { code: 'promotion_code_used' });
+    }
+
+    const [deleted] = await db
+      .delete(promotionCodes)
+      .where(eq(promotionCodes.promotionCodeId, promotionCodeId))
+      .returning();
+    return deleted ?? null;
   },
 
   async togglePromotionCodeActive(promotionCodeId: string) {
