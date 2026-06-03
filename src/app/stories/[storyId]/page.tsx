@@ -77,6 +77,17 @@ export default function StoryDetailPage() {
                   {story.isPublic && <span className="badge badge-success">Public</span>}
                   {story.isFeatured && <span className="badge badge-info">Featured</span>}
                 </div>
+                <div>
+                  <span className="font-semibold">Storage:</span>
+                  <a
+                    href={`https://console.cloud.google.com/storage/browser/mythoria-generated-stories/${storyId}/?project=oceanic-beach-460916-n5`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link link-primary ml-2 text-sm"
+                  >
+                    View in GCS
+                  </a>
+                </div>
               </div>
             </div>
           </div>

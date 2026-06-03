@@ -25,12 +25,6 @@ export default function ServicesPage() {
     isActive: true,
   });
 
-  useEffect(() => {
-    if (!loading && session?.user) {
-      fetchServices();
-    }
-  }, [loading, session]);
-
   const fetchServices = async () => {
     try {
       const response = await fetch('/api/services');
@@ -46,6 +40,12 @@ export default function ServicesPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!loading && session?.user) {
+      fetchServices();
+    }
+  }, [loading, session]);
 
   const handleEditService = (service: Service) => {
     setEditingService({ ...service });

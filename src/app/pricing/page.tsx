@@ -24,12 +24,6 @@ export default function PricingPage() {
   const [creditPackages, setCreditPackages] = useState<CreditPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!loading && session?.user) {
-      fetchCreditPackages();
-    }
-  }, [loading, session]);
-
   const fetchCreditPackages = async () => {
     try {
       const response = await fetch('/api/credit-packages');
@@ -45,6 +39,12 @@ export default function PricingPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!loading && session?.user) {
+      fetchCreditPackages();
+    }
+  }, [loading, session]);
 
   const togglePackageStatus = async (packageId: string) => {
     try {

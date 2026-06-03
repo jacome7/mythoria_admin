@@ -46,17 +46,6 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const channelUpdatesAvailable = useMemo(() => false, []);
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
-
-    loadNotificationData();
-  }, [status, router]);
-
   const loadNotificationData = async () => {
     try {
       setIsLoading(true);
@@ -87,6 +76,17 @@ export default function NotificationsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+      return;
+    }
+
+    loadNotificationData();
+  }, [status, router]);
 
   const toggleRule = async (ruleId: string, enabled: boolean) => {
     try {

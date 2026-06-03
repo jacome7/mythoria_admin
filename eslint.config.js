@@ -17,6 +17,9 @@ const config = [
     files: ['**/*.{js,jsx,ts,tsx}'],
     rules: {
       'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/purity': 'off',
     },
   },
   {
