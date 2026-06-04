@@ -30,7 +30,7 @@ export const characters = pgTable(
     characteristics: text('characteristics'),
     physicalDescription: text('physical_description'),
     photoUrl: text('photo_url'), // Public URL for display
-    photoGcsUri: text('photo_gcs_uri'), // Full GCS path: characters/{authorId}/{characterId}.jpg
+    photoGcsUri: text('photo_gcs_uri'), // Bucket-relative path under {authorId}/characters/{characterId}/
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
