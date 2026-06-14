@@ -1,11 +1,14 @@
 # syntax=docker.io/docker/dockerfile:1
 
-# Use the official Node.js 24.15.0 LTS image as a base.
-ARG NODE_VERSION=24.15.0
+# Use the official Node.js 24.16.0 LTS image as a base.
+ARG NODE_VERSION=24.16.0
 FROM node:${NODE_VERSION}-alpine AS base
 
 # Install libc6-compat for better compatibility with Node.js packages on Alpine
 RUN apk add --no-cache libc6-compat
+
+# Keep npm aligned with packageManager in package.json.
+RUN npm install -g npm@11.17.0
 
 # Set the working directory in the container.
 WORKDIR /app

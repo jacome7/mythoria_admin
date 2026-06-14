@@ -1,4 +1,5 @@
-import { TargetAudience, NovelStyle, GraphicalStyle, LiteraryPersona } from '@/db/type/story-enums';
+import { TargetAudience, NovelStyle, GraphicalStyle, LiteraryPersona } from '@/types/story-enums';
+import type { WritingPersonaSettings } from '@/types/writing-persona';
 
 export interface StoryData {
   storyId: string;
@@ -8,6 +9,7 @@ export interface StoryData {
   novelStyle: NovelStyle | null;
   graphicalStyle: GraphicalStyle | null;
   literaryPersona?: LiteraryPersona | null;
+  customWritingPersona?: WritingPersonaSettings | null;
   plotDescription: string | null;
   additionalRequests: string | null;
   imageGenerationInstructions: string | null;

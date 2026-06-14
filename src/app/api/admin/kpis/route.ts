@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
+import { fiscalDocumentAdminService } from '@/db/services/fiscal-documents';
 import { TicketService } from '@/lib/ticketing/service';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 
@@ -20,16 +21,18 @@ export async function GET() {
     }
 
     // Get KPI data
-    const [usersCount, storiesCount, ticketMetrics] = await Promise.all([
+    const [usersCount, storiesCount, ticketMetrics, fiscalDocumentIssueCounts] = await Promise.all([
       adminService.getTotalAuthorsCount(),
       adminService.getTotalStoriesCount(),
       TicketService.getMetrics(),
+      fiscalDocumentAdminService.getIssueCounts(),
     ]);
 
     const kpis = {
       users: usersCount,
       stories: storiesCount,
       openTickets: ticketMetrics.openTickets + ticketMetrics.inProgressTickets,
+      fiscalDocumentIssues: fiscalDocumentIssueCounts.total,
     };
 
     return NextResponse.json(kpis);

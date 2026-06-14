@@ -40,6 +40,8 @@ tags:
     description: Admin-managed content for Mythoria updates and marketing.
   - name: Promotion Codes
     description: Voucher and promotion code lifecycle.
+  - name: Fiscal Documents
+    description: KeyInvoice fiscal document monitoring and operations.
   - name: Print Requests
     description: Physical book production requests.
   - name: Workflows
@@ -2142,6 +2144,160 @@ ef: '#/components/responses/InternalError'
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/admin/fiscal-documents:
+    get:
+      tags: [Fiscal Documents]
+      summary: List fiscal documents
+      description: Returns fiscal document summaries with payment, author, KeyInvoice customer, and computed attention flags.
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: Comma-separated fiscal document statuses.
+        - name: needsAttention
+          in: query
+          schema:
+            type: boolean
+        - name: hasError
+          in: query
+          schema:
+            type: boolean
+        - name: customerMode
+          in: query
+          schema:
+            type: string
+            enum: [final_consumer, keyinvoice_client]
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [keyinvoice]
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search across document, order, Stripe, customer, and VAT identifiers.
+      responses:
+        '200':
+          description: Fiscal documents returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalDocumentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/fiscal-documents/issues/count:
+    get:
+      tags: [Fiscal Documents]
+      summary: Count fiscal document issues
+      responses:
+        '200':
+          description: Issue counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalDocumentIssueCounts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/fiscal-documents/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Fiscal Documents]
+      summary: Get fiscal document detail
+      responses:
+        '200':
+          description: Fiscal document detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalDocumentDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/fiscal-documents/{id}/pdf:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Fiscal Documents]
+      summary: Stream an issued fiscal document PDF
+      responses:
+        '200':
+          description: PDF stream.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/fiscal-documents/{id}/retry:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Fiscal Documents]
+      summary: Retry a due fiscal document
+      description: Proxies retry to mythoria-webapp so the existing idempotent issuer owns KeyInvoice calls.
+      responses:
+        '200':
+          description: Retry accepted by the issuing backend.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/admin/workflows:
     get:
       tags: [Workflows]
@@ -3923,6 +4079,160 @@ components:
         pagination:
           $ref: '#/components/schemas/StandardPagination'
       required: [data, pagination]
+    FiscalDocumentStatus:
+      type: string
+      enum:
+        - draft
+        - pending
+        - issuing
+        - issued
+        - failed
+        - voided
+        - credit_note_required
+        - credit_note_issued
+    FiscalDocumentSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [keyinvoice]
+        status:
+          $ref: '#/components/schemas/FiscalDocumentStatus'
+        fullDocNumber:
+          type: string
+          nullable: true
+        grossTotal:
+          type: string
+          nullable: true
+        vatRate:
+          type: string
+          nullable: true
+        customerMode:
+          type: string
+          enum: [final_consumer, keyinvoice_client]
+        stripeCheckoutSessionId:
+          type: string
+          nullable: true
+        stripePaymentIntentId:
+          type: string
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
+        attemptCount:
+          type: integer
+        nextRetryAt:
+          type: string
+          format: date-time
+          nullable: true
+        issuedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        needsAttention:
+          type: boolean
+        retryableNow:
+          type: boolean
+        paymentOrder:
+          type: object
+          nullable: true
+          additionalProperties: true
+        author:
+          type: object
+          nullable: true
+          additionalProperties: true
+        keyInvoiceCustomer:
+          type: object
+          nullable: true
+          additionalProperties: true
+      required:
+        - id
+        - orderId
+        - authorId
+        - provider
+        - status
+        - customerMode
+        - attemptCount
+        - createdAt
+        - updatedAt
+        - needsAttention
+        - retryableNow
+    FiscalDocumentEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fiscalDocumentId:
+          type: string
+          format: uuid
+          nullable: true
+        orderId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        requestPayload:
+          type: object
+          nullable: true
+          additionalProperties: true
+        responsePayload:
+          type: object
+          nullable: true
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, orderId, eventType, createdAt]
+    FiscalDocumentDetail:
+      allOf:
+        - $ref: '#/components/schemas/FiscalDocumentSummary'
+        - type: object
+          properties:
+            events:
+              type: array
+              items:
+                $ref: '#/components/schemas/FiscalDocumentEvent'
+          required: [events]
+    FiscalDocumentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalDocumentSummary'
+        pagination:
+          $ref: '#/components/schemas/StandardPagination'
+      required: [data, pagination]
+    FiscalDocumentIssueCounts:
+      type: object
+      properties:
+        failed:
+          type: integer
+        stalePending:
+          type: integer
+        staleIssuing:
+          type: integer
+        creditNoteRequired:
+          type: integer
+        total:
+          type: integer
+      required: [failed, stalePending, staleIssuing, creditNoteRequired, total]
     AdminWorkflowStatusResponse:
       type: object
       properties:

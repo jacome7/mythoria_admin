@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { authors, addresses, events } from './authors';
 import { stories, storyVersions } from './stories';
 import { characters, storyCharacters } from './characters';
+import { writingPersonas } from './writing-personas';
 import { paymentMethods, payments, credits } from './payments';
 import { shippingCodes } from './shipping';
 import { creditLedger, authorCreditBalances } from './credits';
@@ -19,6 +20,7 @@ export const authorsRelations = relations(authors, ({ one, many }) => ({
   addresses: many(addresses),
   stories: many(stories),
   characters: many(characters), // Characters an author created directly
+  writingPersonas: many(writingPersonas),
   credits: many(credits),
   payments: many(payments),
   events: many(events),
@@ -76,6 +78,13 @@ export const storyCharactersRelations = relations(storyCharacters, ({ one }) => 
   character: one(characters, {
     fields: [storyCharacters.characterId],
     references: [characters.characterId],
+  }),
+}));
+
+export const writingPersonasRelations = relations(writingPersonas, ({ one }) => ({
+  author: one(authors, {
+    fields: [writingPersonas.authorId],
+    references: [authors.authorId],
   }),
 }));
 

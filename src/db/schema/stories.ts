@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { eq, isNotNull } from 'drizzle-orm';
 import { authors } from './authors';
+import type { WritingPersonaSettings } from '@/types/writing-persona';
 import {
   storyStatusEnum,
   runStatusEnum,
@@ -47,6 +48,7 @@ export const stories = pgTable(
     novelStyle: novelStyleEnum('novel_style'),
     graphicalStyle: graphicalStyleEnum('graphical_style'),
     literaryPersona: literaryPersonaEnum('literary_persona'),
+    customWritingPersona: jsonb('custom_writing_persona').$type<WritingPersonaSettings | null>(),
     status: storyStatusEnum('status').default('draft'),
     features: jsonb('features'), // {"ebook":true,"printed":false,"audiobook":true}
     deliveryAddress: jsonb('delivery_address'), // Delivery address for printed books
@@ -56,6 +58,7 @@ export const stories = pgTable(
     audiobookStatus: audiobookStatusEnum('audiobook_status'), // Status of audiobook generation
     coverUri: text('cover_uri'), // Internal Google Storage link to front cover image
     backcoverUri: text('backcover_uri'), // Internal Google Storage link to back cover image
+    coverReferenceUris: jsonb('cover_reference_uris').$type<string[] | null>(), // User-uploaded input photos (GCS URIs) flagged relevant for cover/back-cover image generation
     hasAudio: boolean('has_audio').default(false), // Whether story has audio narration
     interiorPdfUri: text('interior_pdf_uri'), // Internal Google Storage link to interior PDF for printing
     coverPdfUri: text('cover_pdf_uri'), // Internal Google Storage link to cover spread PDF for printing

@@ -249,6 +249,14 @@ export const envManifest: EnvVarDescriptor[] = [
     source: 'substitution',
   },
   {
+    name: 'STORAGE_BUCKET_NAME',
+    required: false,
+    scopes: ['prod', 'runtime', 'dev'],
+    default: 'mythoria-generated-stories',
+    source: 'substitution',
+    note: 'Private GCS bucket used for fiscal document PDFs and generated story assets.',
+  },
+  {
     name: 'PUBSUB_TOPIC',
     required: false,
     scopes: ['prod', 'runtime', 'dev'],

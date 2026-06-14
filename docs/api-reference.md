@@ -29,6 +29,11 @@ This reference highlights the REST endpoints implemented under `src/app/api/**`.
 | Promotions    | `DELETE /api/admin/promotion-codes/[id]`           | Hard-delete only inactive codes with zero redemptions. Returns `409` for active or used codes.                                                                    |
 | Promotions    | `POST /api/admin/promotion-codes/[id]/toggle`      | Activate or deactivate a promotion code while retaining history.                                                                                                  |
 | Promotions    | `GET /api/admin/promotion-codes/[id]/redemptions`  | Paginated redemption history for a promotion code.                                                                                                                |
+| Fiscal Docs   | `GET /api/admin/fiscal-documents`                  | Paginated fiscal document monitor. Query params: `page`, `limit`, `status`, `needsAttention`, `hasError`, `customerMode`, `provider`, `dateFrom`, `dateTo`, `q`.  |
+| Fiscal Docs   | `GET /api/admin/fiscal-documents/[id]`             | Fiscal document detail with payment order, author, KeyInvoice customer, and redacted event timeline.                                                              |
+| Fiscal Docs   | `GET /api/admin/fiscal-documents/issues/count`     | Counts failed, stale pending, stale issuing, and correction-required fiscal documents.                                                                            |
+| Fiscal Docs   | `GET /api/admin/fiscal-documents/[id]/pdf`         | Streams the issued fiscal document PDF from the private storage bucket after admin authorization.                                                                 |
+| Fiscal Docs   | `POST /api/admin/fiscal-documents/[id]/retry`      | Proxies single-document retry to `mythoria-webapp`; only due `pending` or `failed` documents are accepted.                                                        |
 | Leads         | `GET /api/admin/leads`                             | Paginated leads table with filters (`status`, `language`).                                                                                                        |
 | Leads         | `POST /api/admin/leads`                            | Upsert a single lead (email + language required).                                                                                                                 |
 | Leads         | `POST /api/admin/leads/bulk`                       | Bulk status changes (e.g., set `emailStatus` to `hard_bounce`). Requires API key.                                                                                 |
@@ -97,6 +102,7 @@ Cross-service campaign rollout and validation details: `../../docs/EMAIL_CAMPAIG
 - **Use the exported types** – `adminService`, `TicketService`, and the workflow helpers already expose TypeScript interfaces. Re-export or import those types in your UI components/tests to avoid drift.
 - **Validation** – Route handlers rely on `zod` schemas stored beside each API (`src/app/api/**/schema.ts` when present). Update those schemas first, then adjust services/tests.
 - **Pagination objects** – Follow the existing `{ page, limit, totalPages, totalCount, hasNext, hasPrev }` structure returned by `adminService`. Reuse that contract when adding list endpoints.
+- **Fiscal payload redaction** – Fiscal document event payloads recursively redact likely secret fields before they are returned to the browser.
 
 ## Error handling
 
@@ -111,4 +117,4 @@ Cross-service campaign rollout and validation details: `../../docs/EMAIL_CAMPAIG
 
 ---
 
-_Last updated: March 11, 2026_
+_Last updated: June 14, 2026_

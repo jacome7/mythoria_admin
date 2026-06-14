@@ -31,12 +31,6 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Experimental optimizations
-  experimental: {
-    // Enable optimizations - expanded for better tree shaking
-    optimizePackageImports: ['react-icons', 'drizzle-orm', 'zod'],
-  },
-
   // Turbopack configuration (moved from experimental.turbo)
   turbopack: {
     rules: {

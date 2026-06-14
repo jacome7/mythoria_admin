@@ -114,15 +114,38 @@ export const CHARACTER_TRAITS = [
   'methodical',
 ] as const;
 
+// Deprecated traits remain in CHARACTER_TRAITS for stored characters and
+// DB enum compatibility, but are no longer offered as new UI selections.
+export const DEPRECATED_CHARACTER_TRAITS: CharacterTrait[] = [
+  'courageous',
+  'empathetic',
+  'pragmatic',
+  'sincere',
+  'conscientious',
+  'callous',
+  'cowardly',
+  'cynical',
+  'methodical',
+];
+
+const DEPRECATED_POSITIVE_TRAITS: CharacterTrait[] = [
+  'courageous',
+  'empathetic',
+  'pragmatic',
+  'sincere',
+  'conscientious',
+];
+
+const DEPRECATED_NEGATIVE_TRAITS: CharacterTrait[] = ['callous', 'cowardly', 'cynical'];
+const DEPRECATED_NEUTRAL_TRAITS: CharacterTrait[] = ['methodical'];
+
 // Trait categories for UI organization
 export const POSITIVE_TRAITS: CharacterTrait[] = [
   'adaptable',
   'brave',
   'compassionate',
-  'courageous',
   'curious',
   'decisive',
-  'empathetic',
   'generous',
   'honest',
   'imaginative',
@@ -130,21 +153,15 @@ export const POSITIVE_TRAITS: CharacterTrait[] = [
   'optimistic',
   'patient',
   'practical',
-  'pragmatic',
   'resourceful',
   'self-disciplined',
-  'sincere',
   'witty',
   'kind',
-  'conscientious',
   'energetic',
 ];
 
 export const NEGATIVE_TRAITS: CharacterTrait[] = [
   'arrogant',
-  'callous',
-  'cowardly',
-  'cynical',
   'deceitful',
   'impulsive',
   'jealous',
@@ -156,7 +173,7 @@ export const NEGATIVE_TRAITS: CharacterTrait[] = [
   'vengeful',
 ];
 
-export const NEUTRAL_TRAITS: CharacterTrait[] = ['aloof', 'blunt', 'cautious', 'methodical'];
+export const NEUTRAL_TRAITS: CharacterTrait[] = ['aloof', 'blunt', 'cautious'];
 
 // Trait descriptions for UI tooltips
 export const CHARACTER_TRAIT_DESCRIPTIONS: Record<CharacterTrait, string> = {
@@ -375,7 +392,14 @@ export function getCharacterTraitOptions(
 }
 
 export function getTraitCategory(trait: CharacterTrait): 'positive' | 'negative' | 'neutral' {
-  if (POSITIVE_TRAITS.includes(trait)) return 'positive';
-  if (NEGATIVE_TRAITS.includes(trait)) return 'negative';
+  if (POSITIVE_TRAITS.includes(trait) || DEPRECATED_POSITIVE_TRAITS.includes(trait)) {
+    return 'positive';
+  }
+  if (NEGATIVE_TRAITS.includes(trait) || DEPRECATED_NEGATIVE_TRAITS.includes(trait)) {
+    return 'negative';
+  }
+  if (NEUTRAL_TRAITS.includes(trait) || DEPRECATED_NEUTRAL_TRAITS.includes(trait)) {
+    return 'neutral';
+  }
   return 'neutral';
 }

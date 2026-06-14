@@ -27,6 +27,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 | `docs/mcp.md`                      | Model Context Protocol server (streamable HTTP + SSE), auth, tools, and statistics. |
 | `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).                       |
 | `docs/features/*.md`               | Per-page feature deep dives (context, UI workflow, DB structures).                  |
+| `docs/features/fiscalDocuments.md` | Fiscal document monitoring, retry, PDF access, and KeyInvoice audit trail behavior. |
 | `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents.                 |
 
 ## Explanation (deep understanding)
@@ -61,7 +62,11 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-04-04: MCP `get_project_statistics` supports date windows and merged daily or monthly buckets (see `docs/mcp.md`).
 - 2026-05-03: MCP `update_blog` and `translate_blog` update existing blog translation content by `(post_id, locale)` instead of attempting duplicate inserts (see `docs/mcp.md`).
 - 2026-05-17: Runtime pins now use Node.js 24.15.0 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
+- 2026-06-14: Runtime pins now use Node.js 24.16.0 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
+- 2026-06-15: Local production deploys now run npm work through pinned Node.js/npm versions and prefer the Windows `gcloud.cmd` wrapper with explicit Python discovery (see `docs/deployment.md`).
 - 2026-05-17: MCP `/api/mcp` accepts streamable HTTP `POST` requests for Codex clients while preserving the legacy SSE flow (see `docs/mcp.md`).
+- 2026-06-14: MCP `list_users`, `list_stories`, and `list_tickets` now serialize list payloads inside named object keys for SDK result validation (see `docs/mcp.md`).
+- 2026-06-14: Added fiscal document monitoring, admin PDF access, and single-document retry (see `docs/features/fiscalDocuments.md`).
 
 ---
 
@@ -71,4 +76,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-05-17_
+_Index refreshed: 2026-06-15_

@@ -31,7 +31,6 @@ interface AdminStoryReaderProps {
   currentChapter?: number;
 }
 
-
 export default function AdminStoryReader({
   storyId,
   story,

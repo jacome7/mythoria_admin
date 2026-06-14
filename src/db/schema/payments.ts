@@ -80,7 +80,7 @@ export const payments = pgTable(
   }),
 );
 
-// Payment Orders for Revolut Pay integration
+// Payment Orders for checkout integrations
 export const paymentOrders = pgTable(
   'payment_orders',
   {
@@ -92,8 +92,8 @@ export const paymentOrders = pgTable(
     currency: varchar('currency', { length: 3 }).notNull().default('eur'),
     status: paymentOrderStatusEnum('status').notNull().default('pending'),
     provider: paymentProviderEnum('provider').notNull(),
-    providerOrderId: varchar('provider_order_id', { length: 255 }), // Revolut order ID
-    providerPublicId: varchar('provider_public_id', { length: 255 }), // Revolut public ID for frontend
+    providerOrderId: varchar('provider_order_id', { length: 255 }), // Stripe Checkout Session ID or legacy provider order ID
+    providerPublicId: varchar('provider_public_id', { length: 255 }), // Stripe PaymentIntent ID or legacy public ID
     creditBundle: jsonb('credit_bundle').notNull(), // { credits: number, price: number, bonusCredits?: number }
     metadata: jsonb('metadata'), // Additional data
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

@@ -48,6 +48,20 @@ export enum GraphicalStyle {
   COLORED_PENCIL = 'colored_pencil',
 }
 
+export enum LiteraryPersona {
+  STORYTELLER = 'storyteller',
+  ADVENTUROUS_NARRATOR = 'adventurous-narrator',
+  FUN_REPORTER = 'fun-reporter',
+  FRIENDLY_EDUCATOR = 'friendly-educator',
+  INSTITUTIONAL_CHRONICLER = 'institutional-chronicler',
+  PUB_BUDDY_NARRATOR = 'pub-buddy-narrator',
+  CLASSIC_NOVELIST = 'classic-novelist',
+  NOIR_INVESTIGATOR = 'noir-investigator',
+  WHIMSICAL_POET = 'whimsical-poet',
+  SCIFI_ANALYST = 'scifi-analyst',
+  FOLKLORE_TRADITIONALIST = 'folklore-traditionalist',
+}
+
 // Human-readable labels for UI display
 export const TargetAudienceLabels: Record<TargetAudience, string> = {
   [TargetAudience.CHILDREN_0_2]: 'Babies & Toddlers (0-2 years)',
@@ -102,6 +116,8 @@ export const getAllTargetAudiences = (): TargetAudience[] => Object.values(Targe
 export const getAllNovelStyles = (): NovelStyle[] => Object.values(NovelStyle);
 
 export const getAllGraphicalStyles = (): GraphicalStyle[] => Object.values(GraphicalStyle);
+
+export const getAllLiteraryPersonas = (): LiteraryPersona[] => Object.values(LiteraryPersona);
 
 // Helper functions to map between enum values and labels
 export const getTargetAudienceLabel = (value: TargetAudience): string =>

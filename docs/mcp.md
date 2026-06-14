@@ -48,23 +48,23 @@ The MCP Server implements 9 main business domain groups directly mapped into our
     If `workflows_db` is unavailable, `warnings` may include a note and AI fields will be zeroed.
 - `get_server_status`: Query active instances for Mythoria health metrics.
 
-_Last updated: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE. Prior: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
+_Last updated: 2026-06-14 - list tools serialize arrays inside named object keys for SDK result validation. Prior: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE. Prior: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
 
 ### C. User Management
 
-- `list_users`: Paginate over core author attributes.
+- `list_users`: Paginate over core author attributes. Tool text serializes as `{ "users": [...] }`.
 - `get_user_details`: Extrapolate complex user balances and profile objects.
 - `update_user_credits`: Assign varying types of system credits (promotions, refunds, vouchers) to targeted users securely.
 
 ### D. Stories Management
 
-- `list_stories`: Survey the master catalog for published and drafted materials.
+- `list_stories`: Survey the master catalog for published and drafted materials. Tool text serializes as `{ "stories": [...] }`.
 - `get_story_details`: Explore deep content routing values.
 - `restart_story_workflow`: Immediately kick off new Cloud Workflow generations to unstick stalled process assets.
 
 ### E. Tickets
 
-- `list_tickets`: Retrieve operational queues.
+- `list_tickets`: Retrieve operational queues. Tool text serializes as `{ "tickets": [...] }`.
 - `update_ticket_status`: Assign transitions through the resolution queue securely (`open`, `in_progress`, `resolved`, `closed`).
 
 ### F. Blog Content

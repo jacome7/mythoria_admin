@@ -12,6 +12,7 @@ interface KPIData {
   users: number;
   stories: number;
   openTickets: number;
+  fiscalDocumentIssues: number;
 }
 
 export default function AdminPortal() {
@@ -101,7 +102,7 @@ export default function AdminPortal() {
         </p>
 
         {/* KPI Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mb-8">
           <KPICard
             title="Users"
             value={kpis?.users ?? 0}
@@ -153,6 +154,25 @@ export default function AdminPortal() {
             }
             href="/tickets"
             description="Open and in-progress tickets"
+            isLoading={isLoadingKpis}
+          />
+
+          <KPICard
+            title="Fiscal Issues"
+            value={kpis?.fiscalDocumentIssues ?? 0}
+            icon={
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 14h6m-6 4h6M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3v5h5" />
+              </svg>
+            }
+            href="/fiscal-documents"
+            description="Failed, stale, or correction-required fiscal documents"
             isLoading={isLoadingKpis}
           />
         </div>

@@ -13,6 +13,7 @@ This folder contains page-level documentation derived from the current `src/app`
 - `partnersAndManagers.md`
 - `pricingAndPromotions.md`
 - `revenueAnalytics.md`
+- `fiscalDocuments.md`
 - `ticketsManagement.md`
 - `workflowsManagement.md`
 - `notifications.md`
@@ -20,4 +21,4 @@ This folder contains page-level documentation derived from the current `src/app`
 - `servicesAndHealth.md`
 - `emailMarketing.md`
 
-_Last updated: 2026-02-08_
+_Last updated: 2026-06-14_

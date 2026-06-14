@@ -25,6 +25,7 @@ export const authors = pgTable(
     mobilePhone: varchar('mobile_phone', { length: 30 }),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     preferredLocale: varchar('preferred_locale', { length: 5 }).default('en'), // CHAR(5)
+    countryOfOrigin: varchar('country_of_origin', { length: 2 }),
     // Onboarding profile fields (all optional besides displayName which we reuse as preferred name)
     gender: genderEnum('gender'),
     literaryAge: literaryAgeEnum('literary_age'),

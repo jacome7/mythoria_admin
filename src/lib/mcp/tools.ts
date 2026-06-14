@@ -180,7 +180,7 @@ export function registerMcpTools(server: McpServer) {
       try {
         const { adminService } = await import('@/db/services');
         const list = await adminService.getUsers(1, limit, query);
-        return { content: [{ type: 'text', text: JSON.stringify(list) }] };
+        return { content: [{ type: 'text', text: JSON.stringify({ users: list }) }] };
       } catch (e: unknown) {
         return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
       }
@@ -280,7 +280,7 @@ export function registerMcpTools(server: McpServer) {
       try {
         const { adminService } = await import('@/db/services');
         const list = await adminService.getStories(1, limit, query);
-        return { content: [{ type: 'text', text: JSON.stringify(list) }] };
+        return { content: [{ type: 'text', text: JSON.stringify({ stories: list }) }] };
       } catch (e: unknown) {
         return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
       }
@@ -331,7 +331,7 @@ export function registerMcpTools(server: McpServer) {
     try {
       const { TicketService } = await import('@/lib/ticketing/service');
       const tickets = await TicketService.getTickets();
-      return { content: [{ type: 'text', text: JSON.stringify(tickets) }] };
+      return { content: [{ type: 'text', text: JSON.stringify({ tickets }) }] };
     } catch (e: unknown) {
       return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
     }

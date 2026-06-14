@@ -25,23 +25,44 @@ Write-Host "[INFO] Region: $Region"
 try {
     # Configuration
     $SERVICE_NAME = "mythoria-admin"
+    $nodeVersion = (Get-Content -Raw ".node-version").Trim()
+    $packageJson = Get-Content -Raw "package.json" | ConvertFrom-Json
+    $npmVersion = ($packageJson.packageManager -replace "^npm@", "")
     
     Write-Host "[INFO] Project: $ProjectId"
     Write-Host "[INFO] Service: $SERVICE_NAME"
     Write-Host "[INFO] Region: $Region"
+    Write-Host "[INFO] Node.js version: $nodeVersion"
+    Write-Host "[INFO] npm version: $npmVersion"
     
     # Check if gcloud is installed
     Write-Host "[INFO] Checking gcloud installation..."
-    $gcloudPath = Get-Command gcloud -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+    $gcloudPath = Get-Command gcloud.cmd -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+    if (-not $gcloudPath) {
+        $gcloudPath = Get-Command gcloud -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+    }
     if (-not $gcloudPath) {
         Write-Host "[ERR] gcloud CLI not found. Please install Google Cloud SDK." -ForegroundColor Red
         exit 1
     }
     Write-Host "[OK] Google Cloud SDK found at: $gcloudPath"
+    if (-not $env:CLOUDSDK_PYTHON) {
+        $pythonPath = Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+        if ($pythonPath -and ($pythonPath -notlike "*\WindowsApps\python.exe")) {
+            $env:CLOUDSDK_PYTHON = $pythonPath
+            Write-Host "[INFO] Using CLOUDSDK_PYTHON=$pythonPath"
+        }
+    }
+
+    function Invoke-PinnedNpm {
+        param([Parameter(ValueFromRemainingArguments = $true)][string[]]$NpmArgs)
+        $npmCommand = "npm $($NpmArgs -join ' ')"
+        npx -y -p "node@$nodeVersion" -p "npm@$npmVersion" -c $npmCommand
+    }
 
     # Set the project
     Write-Host "[INFO] Setting Google Cloud project..."
-    gcloud config set project $ProjectId
+    & $gcloudPath config set project $ProjectId
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERR] Failed to set project"
         exit 1
@@ -50,10 +71,10 @@ try {
 
     # Check authentication
     Write-Host "[INFO] Checking authentication..."
-    $account = gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>$null
+    $account = & $gcloudPath auth list --filter=status:ACTIVE --format="value(account)" 2>$null
     if ([string]::IsNullOrEmpty($account)) {
         Write-Host "[WARN] Not authenticated. Running gcloud auth login..."
-        gcloud auth login
+        & $gcloudPath auth login
         if ($LASTEXITCODE -ne 0) {
             Write-Host "[ERR] Authentication failed"
             exit 1
@@ -71,7 +92,7 @@ try {
     
     foreach ($api in $apis) {
         Write-Host "[INFO] Enabling $api..."
-        gcloud services enable $api --quiet
+        & $gcloudPath services enable $api --quiet
         if ($LASTEXITCODE -ne 0) {
             Write-Host "[ERR] Failed to enable $api"
             exit 1
@@ -84,7 +105,7 @@ try {
         $attempt = 1
         while ($attempt -le $MaxAttempts) {
             Write-Host "[INFO] Installing dependencies (npm ci) - attempt $attempt/$MaxAttempts" -ForegroundColor Blue
-            npm ci
+            Invoke-PinnedNpm ci
             if ($LASTEXITCODE -eq 0) { return $true }
 
             Write-Host "[WARN] npm ci failed (exit $LASTEXITCODE). Attempting recovery..." -ForegroundColor Yellow
@@ -107,13 +128,13 @@ try {
         $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 1
         if (-not $ciOk) {
             Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
-            npm install --no-fund --no-audit
+            Invoke-PinnedNpm install --no-fund --no-audit
             if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
         }
     }
     else {
         Write-Host "[INFO] No package-lock.json found; installing dependencies (npm install)" -ForegroundColor Yellow
-        npm install --no-fund --no-audit
+        Invoke-PinnedNpm install --no-fund --no-audit
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
     }
 
@@ -122,18 +143,18 @@ try {
     }
     else {
         Write-Host "[INFO] Linting (npm run lint)" -ForegroundColor Blue
-        npm run lint
+        Invoke-PinnedNpm run lint
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Lint failed" -ForegroundColor Red; exit 1 }
         Write-Host "[INFO] Typecheck (npm run typecheck)" -ForegroundColor Blue
-        npm run typecheck
+        Invoke-PinnedNpm run typecheck
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Typecheck failed" -ForegroundColor Red; exit 1 }
         Write-Host "[INFO] Tests (npm test)" -ForegroundColor Blue
-        npm test
+        Invoke-PinnedNpm test
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Tests failed" -ForegroundColor Red; exit 1 }
     }
 
     Write-Host "[INFO] Building (npm run build)" -ForegroundColor Blue
-    npm run build
+    Invoke-PinnedNpm run build
     if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
 
     # Build and deploy with Cloud Build (cloudbuild.yaml)
@@ -141,10 +162,10 @@ try {
     Write-Host "[INFO] This may take several minutes..."
     
     if ($VerboseLogging) {
-        gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
+        & $gcloudPath beta builds submit --config cloudbuild.yaml --verbosity=debug
     }
     else {
-        gcloud beta builds submit --config cloudbuild.yaml
+        & $gcloudPath beta builds submit --config cloudbuild.yaml
     }
     
     if ($LASTEXITCODE -ne 0) {
@@ -154,7 +175,7 @@ try {
 
     # Get the service URL
     Write-Host "[INFO] Getting service URL..."
-    $serviceUrl = gcloud run services describe $SERVICE_NAME --region=$Region --format="value(status.url)" 2>$null
+    $serviceUrl = & $gcloudPath run services describe $SERVICE_NAME --region=$Region --format="value(status.url)" 2>$null
     
     if ([string]::IsNullOrEmpty($serviceUrl)) {
         Write-Host "[WARN] Could not retrieve service URL"

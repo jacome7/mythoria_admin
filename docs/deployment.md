@@ -50,7 +50,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 ### 2. Local Development Environment
 
 - Google Cloud SDK installed and configured
-- Node.js 24.15.0 LTS installed locally (`.node-version` and `.nvmrc` pin this version)
+- Node.js 24.16.0 LTS installed locally (`.node-version` and `.nvmrc` pin this version)
 - Docker installed (for local testing)
 - Git repository access
 - Environment variables configured
@@ -70,7 +70,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 
 ```dockerfile
 # Multi-stage build for production optimization
-ARG NODE_VERSION=24.15.0
+ARG NODE_VERSION=24.16.0
 FROM node:${NODE_VERSION}-alpine AS base
 
 # Install dependencies only when needed
@@ -182,10 +182,12 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 substitutions:
-  _NODE_VERSION: '24.15.0'
+  _NODE_VERSION: '24.16.0'
 ```
 
-The deployment runtime is pinned to Node.js `24.15.0` LTS. Keep `_NODE_VERSION`, the Dockerfile default `NODE_VERSION`, `.node-version`, `.nvmrc`, and `package.json` `engines.node` aligned when the LTS version changes.
+The deployment runtime is pinned to Node.js `24.16.0` LTS. Keep `_NODE_VERSION`, the Dockerfile default `NODE_VERSION`, `.node-version`, `.nvmrc`, and `package.json` `engines.node` aligned when the LTS version changes.
+
+The local deployment script reads `.node-version` and `package.json` `packageManager`, then runs install, lint, typecheck, test, and build commands through those pinned Node.js and npm versions. On Windows it also prefers `gcloud.cmd` and sets `CLOUDSDK_PYTHON` to a real Python executable when available, avoiding PowerShell wrapper and Windows Store Python alias failures.
 
 The production Admin deployment must keep Cloud Run request timeout at `3600s`. MCP uses long-lived SSE connections on `/api/mcp`, and the Cloud Run default `300s` timeout causes noisy truncated-response warnings even when the client reconnects. The deploy scripts run `scripts/verify-cloud-run-timeout.ps1` after Cloud Build completes and fail the deploy if the live service timeout drifts from `3600s`.
 
@@ -632,6 +634,6 @@ gcloud run services update mythoria-admin \
 
 ---
 
-**Deployment Guide Version**: 1.0.1  
-**Last Updated**: May 17, 2026  
+**Deployment Guide Version**: 1.0.3  
+**Last Updated**: June 15, 2026  
 **Service**: Mythoria Admin Portal v0.3.0+

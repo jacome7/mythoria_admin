@@ -1,12 +1,12 @@
 # Mythoria Admin Portal
 
-The governance hub for Mythoria: a Next.js 16.2.2 / React 19.2.4 admin surface that secures workflows, leads, tickets, and platform health while running on Google Cloud Run.
+The governance hub for Mythoria: a Next.js 16.2.9 / React 19.2.7 admin surface that secures workflows, leads, tickets, and platform health while running on Google Cloud Run.
 
 ## Stack and hosting
 
 | Layer        | Details                                                                                  |
 | ------------ | ---------------------------------------------------------------------------------------- |
-| Runtime      | Next.js App Router on Node.js 24.15.0 LTS, deployed to Cloud Run via Cloud Build         |
+| Runtime      | Next.js App Router on Node.js 24.16.0 LTS, deployed to Cloud Run via Cloud Build         |
 | UI kit       | Tailwind CSS + DaisyUI components scoped to `src/app` and `src/components`               |
 | Auth         | NextAuth v5 with Google OAuth + domain allowlisting (`src/auth.ts`, `src/middleware.ts`) |
 | Data         | Three PostgreSQL databases wired through Drizzle ORM (`src/db/**`, `drizzle/`)           |
@@ -19,7 +19,7 @@ npm install
 npm run dev -- --port 3001 # Turbopack dev server
 ```
 
-Use Node.js `24.15.0` locally. The repo pins the same LTS version in `.node-version`, `.nvmrc`, `package.json`, `Dockerfile`, and `cloudbuild.yaml`.
+Use Node.js `24.16.0` locally. The repo pins the same LTS version in `.node-version`, `.nvmrc`, `package.json`, `Dockerfile`, and `cloudbuild.yaml`.
 
 ## Everyday commands
 

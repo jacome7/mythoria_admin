@@ -190,6 +190,24 @@ export const paymentStatusEnum = pgEnum('payment_status', [
 
 export const transactionTypeEnum = pgEnum('transaction_type', ['purchase', 'bonus', 'refund']);
 
+export const fiscalDocumentProviderEnum = pgEnum('fiscal_document_provider', ['keyinvoice']);
+
+export const fiscalDocumentStatusEnum = pgEnum('fiscal_document_status', [
+  'draft',
+  'pending',
+  'issuing',
+  'issued',
+  'failed',
+  'voided',
+  'credit_note_required',
+  'credit_note_issued',
+]);
+
+export const fiscalDocumentCustomerModeEnum = pgEnum('fiscal_document_customer_mode', [
+  'keyinvoice_client',
+  'final_consumer',
+]);
+
 // Onboarding / profile enums
 export const genderEnum = pgEnum('gender', ['female', 'male', 'prefer_not_to_say']);
 

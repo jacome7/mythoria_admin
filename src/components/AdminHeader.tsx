@@ -227,6 +227,11 @@ export default function AdminHeader() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/fiscal-documents" onClick={closeDropdown}>
+                    Fiscal Documents
+                  </Link>
+                </li>
+                <li>
                   <Link href="/ai-usage" onClick={closeDropdown}>
                     AI Usage
                   </Link>
@@ -410,6 +415,11 @@ export default function AdminHeader() {
                     <li>
                       <Link href="/revenue" onClick={closeDrawer}>
                         Revenue
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/fiscal-documents" onClick={closeDrawer}>
+                        Fiscal Documents
                       </Link>
                     </li>
                     <li>
