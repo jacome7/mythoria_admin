@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import type { RegistrationRange } from '@/lib/analytics/registrations';
+import MeasuredChartFrame from '@/components/charts/MeasuredChartFrame';
 
 interface RevenueBucket {
   date: string;
@@ -171,7 +172,7 @@ export default function RevenuePage() {
           <div className="card bg-base-100 shadow-lg lg:col-span-2">
             <div className="card-body">
               <h3 className="card-title">Revenue trend</h3>
-              <div className="h-72">
+              <div className="h-72 min-h-72 min-w-0">
                 {error ? (
                   <div className="flex h-full items-center justify-center text-center">
                     <div>
@@ -184,47 +185,53 @@ export default function RevenuePage() {
                     No revenue recorded for this range.
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart
-                      data={chartData}
-                      margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.4)" />
-                      <XAxis
-                        dataKey="label"
-                        tick={(props) => <CustomTick {...props} />}
-                        interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
-                      />
-                      <YAxis
-                        yAxisId="revenue"
-                        tickFormatter={(value) => currencyFormatter.format(Number(value))}
-                      />
-                      <YAxis
-                        yAxisId="orders"
-                        orientation="right"
-                        allowDecimals={false}
-                        tickFormatter={(value) => Number(value).toLocaleString()}
-                      />
-                      <Tooltip content={<CustomTooltip currencyFormatter={currencyFormatter} />} />
-                      <Legend />
-                      <Bar
-                        dataKey="revenue"
-                        yAxisId="revenue"
-                        fill="#2563eb"
-                        name="Revenue"
-                        radius={[6, 6, 0, 0]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="transactions"
-                        yAxisId="orders"
-                        stroke="#f97316"
-                        strokeWidth={2}
-                        dot={false}
-                        name="Orders"
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
+                  <MeasuredChartFrame minHeight={288}>
+                    {({ width, height }) => (
+                      <ResponsiveContainer width={width} height={height}>
+                        <ComposedChart
+                          data={chartData}
+                          margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.4)" />
+                          <XAxis
+                            dataKey="label"
+                            tick={(props) => <CustomTick {...props} />}
+                            interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
+                          />
+                          <YAxis
+                            yAxisId="revenue"
+                            tickFormatter={(value) => currencyFormatter.format(Number(value))}
+                          />
+                          <YAxis
+                            yAxisId="orders"
+                            orientation="right"
+                            allowDecimals={false}
+                            tickFormatter={(value) => Number(value).toLocaleString()}
+                          />
+                          <Tooltip
+                            content={<CustomTooltip currencyFormatter={currencyFormatter} />}
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="revenue"
+                            yAxisId="revenue"
+                            fill="#2563eb"
+                            name="Revenue"
+                            radius={[6, 6, 0, 0]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="transactions"
+                            yAxisId="orders"
+                            stroke="#f97316"
+                            strokeWidth={2}
+                            dot={false}
+                            name="Orders"
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    )}
+                  </MeasuredChartFrame>
                 )}
               </div>
             </div>

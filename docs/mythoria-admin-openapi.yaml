@@ -2298,6 +2298,47 @@ ef: '#/components/responses/InternalError'
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/admin/fiscal-documents/{id}/mark-issued:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Fiscal Documents]
+      summary: Mark a fiscal document as issued after manual reconciliation
+      description: Updates only Mythoria Admin fiscal state after an admin verifies the invoice already exists in KeyInvoice or accounting. This endpoint does not call KeyInvoice or create fiscal documents.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalDocumentManualMarkIssuedRequest'
+      responses:
+        '200':
+          description: Fiscal document row updated to issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalDocumentSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          description: Validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/admin/workflows:
     get:
       tags: [Workflows]
@@ -4209,6 +4250,41 @@ components:
               items:
                 $ref: '#/components/schemas/FiscalDocumentEvent'
           required: [events]
+    FiscalDocumentManualMarkIssuedRequest:
+      type: object
+      properties:
+        docType:
+          type: string
+          minLength: 1
+          maxLength: 20
+        docSeries:
+          type: string
+          minLength: 1
+          maxLength: 80
+        docNum:
+          type: string
+          minLength: 1
+          maxLength: 80
+        fullDocNumber:
+          type: string
+          maxLength: 160
+          nullable: true
+          description: Optional; derived from docType, docSeries, and docNum when omitted.
+        atDocCodeId:
+          type: string
+          maxLength: 255
+          nullable: true
+        issuedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 2000
+        confirmation:
+          type: boolean
+          enum: [true]
+      required: [docType, docSeries, docNum, issuedAt, reason, confirmation]
     FiscalDocumentListResponse:
       type: object
       properties:

@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import type { NormalizedRevenueBucket } from '@/lib/analytics/revenue';
 import type { RegistrationRange, RegistrationGranularity } from '@/lib/analytics/registrations';
+import MeasuredChartFrame from './MeasuredChartFrame';
 
 interface RevenueSnapshotResponse {
   currency: string;
@@ -140,7 +141,7 @@ export default function GrossMarginChart({ onReady, range, onRangeChange }: Gros
         </div>
       </div>
 
-      <div className="mt-6 h-80">
+      <div className="mt-6 h-80 min-h-80 min-w-0">
         {isLoading ? (
           <ChartPlaceholder label="Loading margin chart" />
         ) : error ? (
@@ -153,39 +154,56 @@ export default function GrossMarginChart({ onReady, range, onRangeChange }: Gros
             No data available for this window.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11 }}
-                interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
-              />
-              <YAxis
-                tickFormatter={(value: number) => currencyFormatter.format(Number(value))}
-                tickMargin={4}
-                tick={{ fontSize: 10 }}
-                width={48}
-              />
-              <Tooltip
-                content={
-                  <CustomTooltip currencyFormatter={currencyFormatter} granularity={granularity} />
-                }
-                cursor={{ fill: 'rgba(59,130,246,0.08)' }}
-              />
-              <Bar dataKey="revenue" name="Revenue" fill={COLORS.revenue} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="aiCost" name="AI usage" fill={COLORS.aiCost} radius={[0, 0, 6, 6]} />
-              <Line
-                type="monotone"
-                dataKey="margin"
-                name="Margin"
-                stroke={COLORS.margin}
-                strokeWidth={2}
-                dot={false}
-                activeDot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <MeasuredChartFrame minHeight={320}>
+            {({ width, height }) => (
+              <ResponsiveContainer width={width} height={height}>
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11 }}
+                    interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
+                  />
+                  <YAxis
+                    tickFormatter={(value: number) => currencyFormatter.format(Number(value))}
+                    tickMargin={4}
+                    tick={{ fontSize: 10 }}
+                    width={48}
+                  />
+                  <Tooltip
+                    content={
+                      <CustomTooltip
+                        currencyFormatter={currencyFormatter}
+                        granularity={granularity}
+                      />
+                    }
+                    cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    name="Revenue"
+                    fill={COLORS.revenue}
+                    radius={[6, 6, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="aiCost"
+                    name="AI usage"
+                    fill={COLORS.aiCost}
+                    radius={[0, 0, 6, 6]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="margin"
+                    name="Margin"
+                    stroke={COLORS.margin}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </MeasuredChartFrame>
         )}
       </div>
     </section>

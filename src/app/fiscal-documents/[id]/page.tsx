@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { formatAdminDateTime } from '@/lib/date-utils';
-import { fiscalStatusLabel, type FiscalDocumentStatus } from '@/lib/fiscal-documents';
+import {
+  canManuallyMarkFiscalDocumentIssued,
+  fiscalStatusLabel,
+  formatFiscalDocumentFullNumber,
+  type FiscalDocumentStatus,
+} from '@/lib/fiscal-documents';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface FiscalDocumentDetail {
@@ -86,6 +91,17 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
   currency: 'EUR',
 });
 
+interface ManualMarkIssuedFormState {
+  docType: string;
+  docSeries: string;
+  docNum: string;
+  fullDocNumber: string;
+  atDocCodeId: string;
+  issuedAt: string;
+  reason: string;
+  confirmation: boolean;
+}
+
 export default function FiscalDocumentDetailPage() {
   const { session, loading } = useAdminAuth();
   const params = useParams();
@@ -94,6 +110,12 @@ export default function FiscalDocumentDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState<ManualMarkIssuedFormState>(() =>
+    emptyManualMarkIssuedForm(),
+  );
 
   const fetchDocument = useCallback(
     async (signal?: AbortSignal) => {
@@ -164,6 +186,82 @@ export default function FiscalDocumentDetailPage() {
     }
   };
 
+  const openManualMarkIssuedModal = () => {
+    if (!document) {
+      return;
+    }
+
+    setManualError(null);
+    setManualForm({
+      docType: document.docType || '34',
+      docSeries: document.docSeries || '',
+      docNum: document.docNum || '',
+      fullDocNumber: document.fullDocNumber || '',
+      atDocCodeId: document.atDocCodeId || '',
+      issuedAt: toDateTimeLocalValue(new Date()),
+      reason: '',
+      confirmation: false,
+    });
+    setManualModalOpen(true);
+  };
+
+  const updateManualForm = (field: keyof ManualMarkIssuedFormState, value: string | boolean) => {
+    setManualForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleManualMarkIssued = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!document) {
+      return;
+    }
+
+    const requiredFields = [
+      manualForm.docType.trim(),
+      manualForm.docSeries.trim(),
+      manualForm.docNum.trim(),
+      manualForm.issuedAt.trim(),
+      manualForm.reason.trim(),
+    ];
+    if (requiredFields.some((value) => !value) || !manualForm.confirmation) {
+      setManualError('Fill the mandatory fields and confirm the reconciliation statement.');
+      return;
+    }
+
+    const issuedAt = new Date(manualForm.issuedAt);
+    setManualSubmitting(true);
+    setManualError(null);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/fiscal-documents/${document.id}/mark-issued`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docType: manualForm.docType.trim(),
+          docSeries: manualForm.docSeries.trim(),
+          docNum: manualForm.docNum.trim(),
+          fullDocNumber: manualForm.fullDocNumber.trim() || undefined,
+          atDocCodeId: manualForm.atDocCodeId.trim() || undefined,
+          issuedAt: Number.isNaN(issuedAt.getTime()) ? manualForm.issuedAt : issuedAt.toISOString(),
+          reason: manualForm.reason.trim(),
+          confirmation: manualForm.confirmation,
+        }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || `Manual mark issued failed (${response.status})`);
+      }
+      setManualModalOpen(false);
+      await fetchDocument();
+    } catch (err) {
+      console.error('Manual fiscal document mark-issued failed:', err);
+      setManualError(
+        err instanceof Error ? err.message : 'Failed to manually mark fiscal document as issued.',
+      );
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
+
   if (loading || isLoading) {
     return <CenteredSpinner />;
   }
@@ -191,6 +289,11 @@ export default function FiscalDocumentDetailPage() {
   const latestFailure = [...document.events]
     .reverse()
     .find((event) => event.eventType === 'issue_failed');
+  const hasRemoteKeyInvoiceDocument = Boolean(document.docNum);
+  const canMarkIssuedManually = canManuallyMarkFiscalDocumentIssued({
+    status: document.status,
+    updatedAt: document.updatedAt,
+  });
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -245,6 +348,15 @@ export default function FiscalDocumentDetailPage() {
                   {retrying ? 'Retrying' : 'Retry now'}
                 </button>
               ) : null}
+              {canMarkIssuedManually ? (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={openManualMarkIssuedModal}
+                >
+                  Mark issued manually
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -260,6 +372,15 @@ export default function FiscalDocumentDetailPage() {
           {document.status === 'draft' ? (
             <div className="alert alert-info mt-4">
               <span>Remote KeyInvoice document created: No</span>
+            </div>
+          ) : null}
+
+          {document.status === 'failed' && hasRemoteKeyInvoiceDocument ? (
+            <div className="alert alert-info mt-4">
+              <span>
+                Remote KeyInvoice document exists. The current failure is in local follow-up work
+                such as PDF retrieval, PDF storage, AT registration, or readback reconciliation.
+              </span>
             </div>
           ) : null}
 
@@ -319,14 +440,10 @@ export default function FiscalDocumentDetailPage() {
             <DetailRow label="Customer mode" value={document.customerMode.replace('_', ' ')} />
             <DetailRow label="KeyInvoice client ID" value={document.keyInvoiceClientId || '-'} />
             <DetailRow
-              label="VAT/NIF"
-              value={
-                document.keyInvoiceCustomer?.vatin ||
-                document.author?.fiscalNumber ||
-                document.finalConsumerVatNumber ||
-                '-'
-              }
+              label="KeyInvoice/customer VAT"
+              value={document.keyInvoiceCustomer?.vatin || '-'}
             />
+            <DetailRow label="Profile VAT/NIF" value={document.author?.fiscalNumber || '-'} />
             <DetailRow label="Final consumer VAT" value={document.finalConsumerVatNumber || '-'} />
             <DetailRow
               label="Billing address"
@@ -398,6 +515,22 @@ export default function FiscalDocumentDetailPage() {
           )}
         </section>
       </main>
+
+      {manualModalOpen ? (
+        <ManualMarkIssuedModal
+          form={manualForm}
+          error={manualError}
+          submitting={manualSubmitting}
+          derivedFullDocNumber={deriveFullDocNumber(manualForm)}
+          onChange={updateManualForm}
+          onClose={() => {
+            if (!manualSubmitting) {
+              setManualModalOpen(false);
+            }
+          }}
+          onSubmit={handleManualMarkIssued}
+        />
+      ) : null}
     </div>
   );
 }
@@ -414,6 +547,148 @@ function StatusBadge({ status }: { status: FiscalDocumentStatus }) {
             ? 'badge-info'
             : 'badge-ghost';
   return <span className={`badge ${badgeClass}`}>{fiscalStatusLabel(status)}</span>;
+}
+
+function ManualMarkIssuedModal({
+  form,
+  error,
+  submitting,
+  derivedFullDocNumber,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  form: ManualMarkIssuedFormState;
+  error: string | null;
+  submitting: boolean;
+  derivedFullDocNumber: string;
+  onChange: (field: keyof ManualMarkIssuedFormState, value: string | boolean) => void;
+  onClose: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <dialog className="modal modal-open" open>
+      <div className="modal-box max-w-2xl">
+        <h2 className="text-xl font-semibold">Mark issued manually</h2>
+        <div className="alert alert-warning mt-4 text-sm">
+          <span>
+            This only reconciles Mythoria Admin. It does not issue, create, or update any document
+            in KeyInvoice.
+          </span>
+        </div>
+
+        {error ? <div className="alert alert-error mt-4 text-sm">{error}</div> : null}
+
+        <form className="mt-5 space-y-4" onSubmit={onSubmit} noValidate>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="form-control">
+              <span className="label-text">Doc type</span>
+              <input
+                className="input input-bordered"
+                value={form.docType}
+                onChange={(event) => onChange('docType', event.target.value)}
+                maxLength={20}
+                required
+              />
+            </label>
+            <label className="form-control">
+              <span className="label-text">Doc series</span>
+              <input
+                className="input input-bordered"
+                value={form.docSeries}
+                onChange={(event) => onChange('docSeries', event.target.value)}
+                maxLength={80}
+                required
+              />
+            </label>
+            <label className="form-control">
+              <span className="label-text">Doc number</span>
+              <input
+                className="input input-bordered"
+                value={form.docNum}
+                onChange={(event) => onChange('docNum', event.target.value)}
+                maxLength={80}
+                required
+              />
+            </label>
+          </div>
+
+          <label className="form-control">
+            <span className="label-text">Full document number</span>
+            <input
+              className="input input-bordered"
+              value={form.fullDocNumber}
+              onChange={(event) => onChange('fullDocNumber', event.target.value)}
+              placeholder={derivedFullDocNumber}
+              maxLength={160}
+            />
+            <span className="label-text-alt">
+              Leave blank to store {derivedFullDocNumber || 'the derived document number'}.
+            </span>
+          </label>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="form-control">
+              <span className="label-text">Issued at</span>
+              <input
+                type="datetime-local"
+                className="input input-bordered"
+                value={form.issuedAt}
+                onChange={(event) => onChange('issuedAt', event.target.value)}
+                required
+              />
+            </label>
+            <label className="form-control">
+              <span className="label-text">AT doc code ID</span>
+              <input
+                className="input input-bordered"
+                value={form.atDocCodeId}
+                onChange={(event) => onChange('atDocCodeId', event.target.value)}
+                maxLength={255}
+              />
+            </label>
+          </div>
+
+          <label className="form-control">
+            <span className="label-text">Operational reason</span>
+            <textarea
+              className="textarea textarea-bordered min-h-24"
+              value={form.reason}
+              onChange={(event) => onChange('reason', event.target.value)}
+              maxLength={2000}
+              required
+            />
+          </label>
+
+          <label className="flex items-start gap-3 rounded-lg border border-base-300 p-3 text-sm">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-warning mt-0.5"
+              checked={form.confirmation}
+              onChange={(event) => onChange('confirmation', event.target.checked)}
+              required
+            />
+            <span>
+              I confirm this invoice exists in KeyInvoice/accounting and this action will not create
+              a duplicate fiscal document.
+            </span>
+          </label>
+
+          <div className="modal-action">
+            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={submitting}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-warning" disabled={submitting}>
+              {submitting ? 'Saving' : 'Mark issued'}
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+        <button type="button" aria-label="Close manual mark issued modal" disabled={submitting} />
+      </form>
+    </dialog>
+  );
 }
 
 function SummaryStat({ label, value }: { label: string; value: string }) {
@@ -561,4 +836,32 @@ function formatBillingAddress(customerDetails?: Record<string, unknown> | null):
 function stringValue(value: object, key: string): string | null {
   const raw = (value as Record<string, unknown>)[key];
   return typeof raw === 'string' && raw.trim() ? raw : null;
+}
+
+function emptyManualMarkIssuedForm(): ManualMarkIssuedFormState {
+  return {
+    docType: '34',
+    docSeries: '',
+    docNum: '',
+    fullDocNumber: '',
+    atDocCodeId: '',
+    issuedAt: '',
+    reason: '',
+    confirmation: false,
+  };
+}
+
+function toDateTimeLocalValue(value: Date): string {
+  const offsetMs = value.getTimezoneOffset() * 60_000;
+  return new Date(value.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function deriveFullDocNumber(form: ManualMarkIssuedFormState): string {
+  const docType = form.docType.trim();
+  const docSeries = form.docSeries.trim();
+  const docNum = form.docNum.trim();
+  if (!docType || !docSeries || !docNum) {
+    return '';
+  }
+  return formatFiscalDocumentFullNumber({ docType, docSeries, docNum });
 }

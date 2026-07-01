@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import MeasuredChartFrame from './MeasuredChartFrame';
 
 export interface DailyAiUsagePoint {
   date: string;
@@ -54,43 +55,47 @@ export default function DailyAiUsageChart({
   );
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={chartData} margin={{ top: 8, right: 0, bottom: 8, left: -12 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
-        <XAxis dataKey="label" interval={0} tick={{ fontSize: 11 }} />
-        <YAxis
-          yAxisId="cost"
-          tickFormatter={(value: number) => currencyFormatter.format(Number(value))}
-          width={72}
-        />
-        <YAxis
-          yAxisId="tokens"
-          orientation="right"
-          tickFormatter={(value: number) => `${Number(value).toFixed(1)}M`}
-          width={48}
-        />
-        <Tooltip
-          content={<CustomTooltip currencyFormatter={currencyFormatter} />}
-          cursor={{ fill: 'rgba(59,130,246,0.08)' }}
-        />
-        <Bar
-          dataKey="totalCost"
-          yAxisId="cost"
-          name="Cost"
-          fill={COLORS.cost}
-          radius={[6, 6, 0, 0]}
-        />
-        <Line
-          type="monotone"
-          dataKey="tokensInMillions"
-          yAxisId="tokens"
-          stroke={COLORS.tokens}
-          strokeWidth={2}
-          dot={false}
-          name="Tokens"
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <MeasuredChartFrame minHeight={288}>
+      {({ width, height }) => (
+        <ResponsiveContainer width={width} height={height}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 0, bottom: 8, left: -12 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
+            <XAxis dataKey="label" interval={0} tick={{ fontSize: 11 }} />
+            <YAxis
+              yAxisId="cost"
+              tickFormatter={(value: number) => currencyFormatter.format(Number(value))}
+              width={72}
+            />
+            <YAxis
+              yAxisId="tokens"
+              orientation="right"
+              tickFormatter={(value: number) => `${Number(value).toFixed(1)}M`}
+              width={48}
+            />
+            <Tooltip
+              content={<CustomTooltip currencyFormatter={currencyFormatter} />}
+              cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+            />
+            <Bar
+              dataKey="totalCost"
+              yAxisId="cost"
+              name="Cost"
+              fill={COLORS.cost}
+              radius={[6, 6, 0, 0]}
+            />
+            <Line
+              type="monotone"
+              dataKey="tokensInMillions"
+              yAxisId="tokens"
+              stroke={COLORS.tokens}
+              strokeWidth={2}
+              dot={false}
+              name="Tokens"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
+    </MeasuredChartFrame>
   );
 }
 

@@ -87,7 +87,13 @@ export default function AdminHeader() {
           </button>
 
           <Link href="/" className="btn btn-ghost normal-case text-xl px-2 py-1">
-            <Image src="/just_lettering.png" alt="Mythoria Logo" width={150} height={49} />
+            <Image
+              src="/just_lettering.png"
+              alt="Mythoria Logo"
+              width={150}
+              height={49}
+              loading="eager"
+            />
           </Link>
         </div>
 

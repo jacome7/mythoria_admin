@@ -62,6 +62,8 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'EUR',
 });
+const DEFAULT_SORT = 'createdAt';
+const DEFAULT_SORT_ORDER = 'desc';
 
 export default function FiscalDocumentsPage() {
   const { session, loading } = useAdminAuth();
@@ -80,6 +82,8 @@ export default function FiscalDocumentsPage() {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
+      sort: DEFAULT_SORT,
+      sortOrder: DEFAULT_SORT_ORDER,
     });
     if (selectedStatuses.length) {
       params.set('status', selectedStatuses.join(','));
@@ -268,7 +272,7 @@ export default function FiscalDocumentsPage() {
               <table className="table table-zebra w-full">
                 <thead>
                   <tr>
-                    <th>Updated</th>
+                    <th>Created</th>
                     <th>Status</th>
                     <th>Attention</th>
                     <th>Document</th>
@@ -286,10 +290,7 @@ export default function FiscalDocumentsPage() {
                   {documents.map((document) => (
                     <tr key={document.id}>
                       <td className="whitespace-nowrap text-xs">
-                        <div>{formatAdminDateTime(document.updatedAt)}</div>
-                        <div className="text-base-content/50">
-                          Created {formatAdminDateTime(document.createdAt)}
-                        </div>
+                        <div>{formatAdminDateTime(document.createdAt)}</div>
                       </td>
                       <td>
                         <StatusBadge status={document.status} />

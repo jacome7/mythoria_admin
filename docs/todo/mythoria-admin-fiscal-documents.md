@@ -204,8 +204,7 @@ Optional, if backend supports it:
 - Open related payment order
 - Open related author/user
 - Mark operational note/resolution
-
-Do not implement manual invoice approval. The system should remain automatic.
+- Mark issued manually only as a reconciliation override after the invoice already exists in KeyInvoice/accounting. This action must not call KeyInvoice or create a fiscal document.
 
 ## Detail Page
 

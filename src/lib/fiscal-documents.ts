@@ -63,6 +63,32 @@ export function computeRetryableNow(params: {
   return new Date(params.nextRetryAt).getTime() <= now.getTime();
 }
 
+export function canManuallyMarkFiscalDocumentIssued(params: {
+  status: FiscalDocumentStatus;
+  updatedAt: string | Date;
+  now?: Date;
+}): boolean {
+  if (params.status === 'draft' || params.status === 'pending' || params.status === 'failed') {
+    return true;
+  }
+
+  if (params.status === 'issuing') {
+    return (
+      ageMinutes(params.updatedAt, params.now ?? new Date()) > FISCAL_ATTENTION_THRESHOLD_MINUTES
+    );
+  }
+
+  return false;
+}
+
+export function formatFiscalDocumentFullNumber(params: {
+  docType: string;
+  docSeries: string;
+  docNum: string;
+}): string {
+  return `${params.docType} ${params.docSeries}/${params.docNum}`;
+}
+
 export function fiscalStatusLabel(status: FiscalDocumentStatus): string {
   return status
     .split('_')

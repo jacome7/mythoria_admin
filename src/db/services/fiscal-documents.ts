@@ -8,7 +8,9 @@ import {
   inArray,
   isNotNull,
   like,
+  lt,
   lte,
+  ne,
   or,
   sql,
 } from 'drizzle-orm';
@@ -22,8 +24,10 @@ import {
   paymentOrders,
 } from '@/db/schema';
 import {
+  canManuallyMarkFiscalDocumentIssued,
   computeNeedsAttention,
   computeRetryableNow,
+  formatFiscalDocumentFullNumber,
   type FiscalCustomerMode,
   type FiscalDocumentStatus,
 } from '@/lib/fiscal-documents';
@@ -144,6 +148,27 @@ export interface FiscalIssueCounts {
   staleIssuing: number;
   creditNoteRequired: number;
   total: number;
+}
+
+export interface ManualMarkFiscalDocumentIssuedInput {
+  docType: string;
+  docSeries: string;
+  docNum: string;
+  fullDocNumber?: string | null;
+  atDocCodeId?: string | null;
+  issuedAt: Date;
+  reason: string;
+  adminEmail: string;
+  source: 'mythoria-admin';
+}
+
+export class FiscalDocumentManualIssueError extends Error {
+  constructor(
+    readonly status: 404 | 409,
+    readonly payload: { error: string; code: string },
+  ) {
+    super(payload.error);
+  }
 }
 
 const ATTENTION_THRESHOLD_SQL = sql`now() - interval '15 minutes'`;
@@ -268,6 +293,121 @@ export const fiscalDocumentAdminService = {
       total: failed + stalePending + staleIssuing + creditNoteRequired,
     };
   },
+
+  async markIssuedManually(
+    id: string,
+    input: ManualMarkFiscalDocumentIssuedInput,
+  ): Promise<typeof fiscalDocuments.$inferSelect> {
+    const db = getMythoriaDb();
+    const fullDocNumber =
+      input.fullDocNumber?.trim() ||
+      formatFiscalDocumentFullNumber({
+        docType: input.docType,
+        docSeries: input.docSeries,
+        docNum: input.docNum,
+      });
+    const atDocCodeId = input.atDocCodeId?.trim() || null;
+    const updatedDocument = await db.transaction(async (tx) => {
+      const [document] = await tx
+        .select()
+        .from(fiscalDocuments)
+        .where(eq(fiscalDocuments.id, id))
+        .limit(1);
+
+      if (!document) {
+        throw new FiscalDocumentManualIssueError(404, {
+          error: 'Fiscal document not found',
+          code: 'not_found',
+        });
+      }
+
+      const previousStatus = document.status as FiscalDocumentStatus;
+      if (
+        !canManuallyMarkFiscalDocumentIssued({
+          status: previousStatus,
+          updatedAt: document.updatedAt,
+        })
+      ) {
+        throw new FiscalDocumentManualIssueError(409, {
+          error: 'Fiscal document cannot be manually marked as issued in its current state',
+          code: 'not_eligible',
+        });
+      }
+
+      const [duplicate] = await tx
+        .select({ id: fiscalDocuments.id })
+        .from(fiscalDocuments)
+        .where(
+          and(
+            ne(fiscalDocuments.id, id),
+            eq(fiscalDocuments.docType, input.docType),
+            eq(fiscalDocuments.docSeries, input.docSeries),
+            eq(fiscalDocuments.docNum, input.docNum),
+          ),
+        )
+        .limit(1);
+
+      if (duplicate) {
+        throw new FiscalDocumentManualIssueError(409, {
+          error: 'Another fiscal document already uses this KeyInvoice document identity',
+          code: 'duplicate_document_identity',
+        });
+      }
+
+      const [updated] = await tx
+        .update(fiscalDocuments)
+        .set({
+          status: 'issued',
+          docType: input.docType,
+          docSeries: input.docSeries,
+          docNum: input.docNum,
+          fullDocNumber,
+          ...(atDocCodeId ? { atDocCodeId } : {}),
+          lastError: null,
+          nextRetryAt: null,
+          issuedAt: input.issuedAt,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(fiscalDocuments.id, id), manualIssuedEligibilityCondition()))
+        .returning();
+
+      if (!updated) {
+        throw new FiscalDocumentManualIssueError(409, {
+          error: 'Fiscal document state changed before the manual issued update could be applied',
+          code: 'state_changed',
+        });
+      }
+
+      await tx.insert(fiscalDocumentEvents).values({
+        fiscalDocumentId: document.id,
+        orderId: document.orderId,
+        eventType: 'manual_status_marked_issued',
+        requestPayload: {
+          adminEmail: input.adminEmail,
+          source: input.source,
+          reason: input.reason,
+          previousStatus,
+          submitted: {
+            docType: input.docType,
+            docSeries: input.docSeries,
+            docNum: input.docNum,
+            fullDocNumber,
+            atDocCodeId,
+            issuedAt: input.issuedAt.toISOString(),
+          },
+        },
+        responsePayload: {
+          status: 'issued',
+          fullDocNumber,
+          issuedAt: input.issuedAt.toISOString(),
+        },
+      });
+
+      return updated;
+    });
+
+    return updatedDocument;
+  },
 };
 
 function buildWhereClause(params: FiscalDocumentListParams): SQL {
@@ -366,6 +506,16 @@ function attentionCondition(): SQL {
 
 function attentionSortExpression(): SQL<number> {
   return sql<number>`CASE WHEN ${attentionCondition()} THEN 1 ELSE 0 END`;
+}
+
+function manualIssuedEligibilityCondition(): SQL {
+  return or(
+    inArray(fiscalDocuments.status, ['draft', 'pending', 'failed']),
+    and(
+      eq(fiscalDocuments.status, 'issuing'),
+      lt(fiscalDocuments.updatedAt, ATTENTION_THRESHOLD_SQL),
+    ),
+  ) as SQL;
 }
 
 function mapFiscalSummary(row: {

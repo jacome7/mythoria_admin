@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { GET as listFiscalDocuments } from '@/app/api/admin/fiscal-documents/route';
 import { GET as getFiscalDocument } from '@/app/api/admin/fiscal-documents/[id]/route';
+import { POST as markFiscalDocumentIssued } from '@/app/api/admin/fiscal-documents/[id]/mark-issued/route';
 import { GET as getFiscalDocumentPdf } from '@/app/api/admin/fiscal-documents/[id]/pdf/route';
 import { POST as retryFiscalDocument } from '@/app/api/admin/fiscal-documents/[id]/retry/route';
 import { authenticateAdmin } from '@/lib/api-helpers';
-import { fiscalDocumentAdminService } from '@/db/services/fiscal-documents';
+import {
+  FiscalDocumentManualIssueError,
+  fiscalDocumentAdminService,
+} from '@/db/services/fiscal-documents';
 import {
   FiscalDocumentRetryHttpError,
   requestFiscalDocumentRetry,
@@ -15,10 +19,19 @@ jest.mock('@/lib/api-helpers', () => ({
 }));
 
 jest.mock('@/db/services/fiscal-documents', () => ({
+  FiscalDocumentManualIssueError: class FiscalDocumentManualIssueError extends Error {
+    constructor(
+      readonly status: 404 | 409,
+      readonly payload: unknown,
+    ) {
+      super('manual mark issued failed');
+    }
+  },
   fiscalDocumentAdminService: {
     list: jest.fn(),
     getById: jest.fn(),
     getIssueCounts: jest.fn(),
+    markIssuedManually: jest.fn(),
   },
 }));
 
@@ -142,5 +155,110 @@ describe('fiscal document API routes', () => {
     });
 
     expect(response.status).toBe(503);
+  });
+
+  it('rejects unauthenticated manual mark-issued requests', async () => {
+    mockAuthenticateAdmin.mockResolvedValue({
+      error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    });
+
+    const response = await markFiscalDocumentIssued(new Request('http://localhost') as never, {
+      params: Promise.resolve({ id: 'doc-id' }),
+    });
+
+    expect(response.status).toBe(401);
+    expect(mockFiscalService.markIssuedManually).not.toHaveBeenCalled();
+  });
+
+  it('validates manual mark-issued payloads', async () => {
+    const response = await markFiscalDocumentIssued(
+      new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({
+          docType: '',
+          docSeries: '23',
+          docNum: '',
+          issuedAt: 'not-a-date',
+          reason: '',
+          confirmation: false,
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ id: 'doc-id' }),
+      },
+    );
+
+    expect(response.status).toBe(422);
+    expect(mockFiscalService.markIssuedManually).not.toHaveBeenCalled();
+  });
+
+  it('passes normalized manual mark-issued data to the service', async () => {
+    mockFiscalService.markIssuedManually.mockResolvedValue({
+      id: 'doc-id',
+      status: 'issued',
+    } as never);
+
+    const response = await markFiscalDocumentIssued(
+      new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({
+          docType: ' 34 ',
+          docSeries: ' 23 ',
+          docNum: ' 9 ',
+          fullDocNumber: '',
+          atDocCodeId: ' AT ',
+          issuedAt: '2026-07-01T12:00:00.000Z',
+          reason: ' Verified manually ',
+          confirmation: true,
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ id: 'doc-id' }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockFiscalService.markIssuedManually).toHaveBeenCalledWith(
+      'doc-id',
+      expect.objectContaining({
+        docType: '34',
+        docSeries: '23',
+        docNum: '9',
+        fullDocNumber: '',
+        atDocCodeId: 'AT',
+        reason: 'Verified manually',
+        adminEmail: 'admin@mythoria.pt',
+        source: 'mythoria-admin',
+      }),
+    );
+    expect(mockFiscalService.markIssuedManually.mock.calls[0][1].issuedAt).toBeInstanceOf(Date);
+  });
+
+  it('maps manual mark-issued service conflicts to HTTP responses', async () => {
+    mockFiscalService.markIssuedManually.mockRejectedValue(
+      new FiscalDocumentManualIssueError(409, {
+        error: 'Another fiscal document already uses this KeyInvoice document identity',
+        code: 'duplicate_document_identity',
+      }),
+    );
+
+    const response = await markFiscalDocumentIssued(
+      new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({
+          docType: '34',
+          docSeries: '23',
+          docNum: '9',
+          issuedAt: '2026-07-01T12:00:00.000Z',
+          reason: 'Verified manually',
+          confirmation: true,
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ id: 'doc-id' }),
+      },
+    );
+
+    expect(response.status).toBe(409);
   });
 });

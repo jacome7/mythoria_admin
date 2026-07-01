@@ -68,6 +68,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-06-14: MCP `list_users`, `list_stories`, and `list_tickets` now serialize list payloads inside named object keys for SDK result validation (see `docs/mcp.md`).
 - 2026-06-14: Added fiscal document monitoring, admin PDF access, and single-document retry (see `docs/features/fiscalDocuments.md`).
 - 2026-07-01: MCP now exposes fiscal document list/detail/issue-count tools and KeyInvoice retry parity with the admin fiscal documents page (see `docs/mcp.md`).
+- 2026-07-01: Fiscal document detail now supports a guarded manual mark-issued reconciliation override with audit events (see `docs/features/fiscalDocuments.md`).
 
 ---
 

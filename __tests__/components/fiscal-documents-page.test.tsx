@@ -51,5 +51,15 @@ describe('FiscalDocumentsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('No fiscal documents found.')).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('sort=createdAt'),
+        expect.any(Object),
+      );
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('sortOrder=desc'),
+        expect.any(Object),
+      );
+    });
   });
 });

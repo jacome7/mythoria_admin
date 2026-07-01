@@ -18,6 +18,7 @@ import type {
 } from '@/lib/analytics/service-usage';
 import { SERVICE_USAGE_EVENT_TYPES } from '@/lib/analytics/service-usage';
 import type { RegistrationRange } from '@/lib/analytics/registrations';
+import MeasuredChartFrame from './MeasuredChartFrame';
 
 interface ServiceUsageResponse {
   range: RegistrationRange;
@@ -199,7 +200,7 @@ export default function ServiceUsageChart({
         <LegendContent />
       </div>
 
-      <div className="mt-4 h-80">
+      <div className="mt-4 h-80 min-h-80 min-w-0">
         {isLoading ? (
           <ChartAreaPlaceholder label="Loading service usage chart" />
         ) : error ? (
@@ -212,49 +213,51 @@ export default function ServiceUsageChart({
             No credit usage recorded in this window.
           </div>
         ) : (
-          <div className="h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 0, bottom: 8, left: -12 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
-                <XAxis
-                  dataKey="label"
-                  tick={(props) => <CustomTick {...props} meta={tickMeta} />}
-                  interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
-                />
-                <YAxis
-                  width={32}
-                  allowDecimals={false}
-                  tickMargin={4}
-                  tick={{ fontSize: 10 }}
-                  tickFormatter={(value) => formatter.format(Number(value))}
-                />
-                <Tooltip
-                  content={<CustomTooltip viewMode={viewMode} />}
-                  cursor={{ fill: 'rgba(147, 197, 253, 0.08)' }}
-                />
-                <Legend wrapperStyle={{ display: 'none' }} />
-                {SERVICE_USAGE_EVENT_TYPES.map((eventType, index) => (
-                  <Bar
-                    key={eventType}
-                    dataKey={`${eventType}-${viewMode}`}
-                    stackId="usage"
-                    fill={EVENT_COLORS[eventType]}
-                    radius={
-                      index === SERVICE_USAGE_EVENT_TYPES.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]
-                    }
+          <MeasuredChartFrame minHeight={320}>
+            {({ width, height }) => (
+              <ResponsiveContainer width={width} height={height}>
+                <BarChart data={chartData} margin={{ top: 8, right: 0, bottom: 8, left: -12 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
+                  <XAxis
+                    dataKey="label"
+                    tick={(props) => <CustomTick {...props} meta={tickMeta} />}
+                    interval={chartData.length > 14 ? Math.floor(chartData.length / 14) : 0}
                   />
-                ))}
-                <Line
-                  type="monotone"
-                  dataKey={lineKey}
-                  stroke="#0ea5e9"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={false}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                  <YAxis
+                    width={32}
+                    allowDecimals={false}
+                    tickMargin={4}
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(value) => formatter.format(Number(value))}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip viewMode={viewMode} />}
+                    cursor={{ fill: 'rgba(147, 197, 253, 0.08)' }}
+                  />
+                  <Legend wrapperStyle={{ display: 'none' }} />
+                  {SERVICE_USAGE_EVENT_TYPES.map((eventType, index) => (
+                    <Bar
+                      key={eventType}
+                      dataKey={`${eventType}-${viewMode}`}
+                      stackId="usage"
+                      fill={EVENT_COLORS[eventType]}
+                      radius={
+                        index === SERVICE_USAGE_EVENT_TYPES.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]
+                      }
+                    />
+                  ))}
+                  <Line
+                    type="monotone"
+                    dataKey={lineKey}
+                    stroke="#0ea5e9"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </MeasuredChartFrame>
         )}
       </div>
     </section>
