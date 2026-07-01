@@ -5,6 +5,10 @@ import { GET as getFiscalDocumentPdf } from '@/app/api/admin/fiscal-documents/[i
 import { POST as retryFiscalDocument } from '@/app/api/admin/fiscal-documents/[id]/retry/route';
 import { authenticateAdmin } from '@/lib/api-helpers';
 import { fiscalDocumentAdminService } from '@/db/services/fiscal-documents';
+import {
+  FiscalDocumentRetryHttpError,
+  requestFiscalDocumentRetry,
+} from '@/services/fiscal-document-retry';
 
 jest.mock('@/lib/api-helpers', () => ({
   authenticateAdmin: jest.fn(),
@@ -22,8 +26,25 @@ jest.mock('@/lib/fiscal-pdf-storage', () => ({
   downloadFiscalDocumentPdf: jest.fn(),
 }));
 
+jest.mock('@/services/fiscal-document-retry', () => {
+  class FiscalDocumentRetryHttpError extends Error {
+    constructor(
+      readonly status: number,
+      readonly payload: unknown,
+    ) {
+      super('retry failed');
+    }
+  }
+
+  return {
+    FiscalDocumentRetryHttpError,
+    requestFiscalDocumentRetry: jest.fn(),
+  };
+});
+
 const mockAuthenticateAdmin = jest.mocked(authenticateAdmin);
 const mockFiscalService = jest.mocked(fiscalDocumentAdminService);
+const mockRequestFiscalDocumentRetry = jest.mocked(requestFiscalDocumentRetry);
 
 describe('fiscal document API routes', () => {
   beforeEach(() => {
@@ -96,30 +117,24 @@ describe('fiscal document API routes', () => {
     expect(response.status).toBe(404);
   });
 
-  it('rejects retry when document is not retryable', async () => {
-    mockFiscalService.getById.mockResolvedValue({
-      retryableNow: false,
-    } as never);
+  it('passes retry requests to the shared retry helper', async () => {
+    mockRequestFiscalDocumentRetry.mockResolvedValue({ success: true });
 
     const response = await retryFiscalDocument(new Request('http://localhost') as never, {
       params: Promise.resolve({ id: 'doc-id' }),
     });
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(200);
+    expect(mockRequestFiscalDocumentRetry).toHaveBeenCalledWith({
+      id: 'doc-id',
+      adminEmail: 'admin@mythoria.pt',
+      source: 'mythoria-admin',
+    });
   });
 
-  it('surfaces retry backend failures', async () => {
-    mockFiscalService.getById.mockResolvedValue({
-      retryableNow: true,
-    } as never);
-    process.env.WEBAPP_URL = 'http://webapp.local';
-    process.env.ADMIN_API_KEY = 'test-key';
-    const originalFetch = global.fetch;
-    global.fetch = jest.fn().mockResolvedValue(
-      new Response(JSON.stringify({ error: 'backend unavailable' }), {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+  it('maps retry helper failures to HTTP responses', async () => {
+    mockRequestFiscalDocumentRetry.mockRejectedValue(
+      new FiscalDocumentRetryHttpError(503, { error: 'backend unavailable' }),
     );
 
     const response = await retryFiscalDocument(new Request('http://localhost') as never, {
@@ -127,6 +142,5 @@ describe('fiscal document API routes', () => {
     });
 
     expect(response.status).toBe(503);
-    global.fetch = originalFetch;
   });
 });

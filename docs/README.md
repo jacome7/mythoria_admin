@@ -67,6 +67,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-05-17: MCP `/api/mcp` accepts streamable HTTP `POST` requests for Codex clients while preserving the legacy SSE flow (see `docs/mcp.md`).
 - 2026-06-14: MCP `list_users`, `list_stories`, and `list_tickets` now serialize list payloads inside named object keys for SDK result validation (see `docs/mcp.md`).
 - 2026-06-14: Added fiscal document monitoring, admin PDF access, and single-document retry (see `docs/features/fiscalDocuments.md`).
+- 2026-07-01: MCP now exposes fiscal document list/detail/issue-count tools and KeyInvoice retry parity with the admin fiscal documents page (see `docs/mcp.md`).
 
 ---
 
@@ -76,4 +77,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-06-15_
+_Index refreshed: 2026-07-01_

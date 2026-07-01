@@ -1,6 +1,6 @@
 # Fiscal documents
 
-_Last updated: 2026-06-14_
+_Last updated: 2026-07-01_
 
 ## Context
 
@@ -31,6 +31,13 @@ The fiscal documents page (`/fiscal-documents`) lets administrators monitor KeyI
 - `POST /api/admin/fiscal-documents/[id]/retry`
 
 The retry route proxies to `mythoria-webapp` at `POST /api/admin/fiscal-documents/[id]/retry` with `ADMIN_API_KEY`. That webapp endpoint records `admin_retry_requested` and calls the existing idempotent fiscal document issuer.
+
+## MCP tools
+
+- `list_fiscal_documents` mirrors the list page filters and returns fiscal document summaries plus pagination.
+- `get_fiscal_document_details` mirrors the detail route and redacts likely secrets from fiscal event payloads.
+- `get_fiscal_document_issue_counts` mirrors the dashboard issue count endpoint.
+- `retry_fiscal_document_keyinvoice` delegates retry to the same shared retry service as the REST route, using source `mythoria-admin-mcp` for audit attribution.
 
 ## Database structure
 

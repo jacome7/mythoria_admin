@@ -36,7 +36,7 @@ Due to the highly sensitive domain of admin tools, the MCP server forces strict 
 
 ## Supplied Services
 
-The MCP Server implements 9 main business domain groups directly mapped into our existing `src/db/services` libraries. They possess full execution powers matching an administrator role.
+The MCP Server implements 10 main business domain groups directly mapped into our existing `src/db/services` libraries. They possess full execution powers matching an administrator role.
 
 ### A & B. Project Statistics & Server Status
 
@@ -48,7 +48,7 @@ The MCP Server implements 9 main business domain groups directly mapped into our
     If `workflows_db` is unavailable, `warnings` may include a note and AI fields will be zeroed.
 - `get_server_status`: Query active instances for Mythoria health metrics.
 
-_Last updated: 2026-06-14 - list tools serialize arrays inside named object keys for SDK result validation. Prior: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE. Prior: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
+_Last updated: 2026-07-01 - added fiscal document list/detail/issue-count/retry tools for KeyInvoice operations. Prior: 2026-06-14 - list tools serialize arrays inside named object keys for SDK result validation. Prior: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE. Prior: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
 
 ### C. User Management
 
@@ -86,7 +86,14 @@ _Last updated: 2026-06-14 - list tools serialize arrays inside named object keys
 - `list_faqs` / `get_faq_details`: Check active queries.
 - `create_faq` / `update_faq` / `delete_faq`: Fully CRUD the content arrays.
 
-### I. Promotion Codes
+### I. Fiscal Documents
+
+- `list_fiscal_documents`: List KeyInvoice fiscal documents with page, limit, status, needs-attention, error, customer mode, provider, date-window, search, and sort filters. Tool text serializes as `{ "fiscalDocuments": [...], "pagination": {...} }`.
+- `get_fiscal_document_details`: Return one fiscal document with payment order, author, KeyInvoice customer, retry state, PDF metadata, and a redacted `fiscal_document_events` timeline.
+- `get_fiscal_document_issue_counts`: Count failed, stale pending, stale issuing, credit-note-required, and total fiscal documents needing attention.
+- `retry_fiscal_document_keyinvoice`: Retry one due `pending` or `failed` document through `mythoria-webapp`; requires `id` and `adminEmail`, sends source `mythoria-admin-mcp`, and preserves the existing idempotent KeyInvoice issuer boundary.
+
+### J. Promotion Codes
 
 - `list_promo_codes`: Explore active bulk codes.
 - `get_promo_code_details`: Observe redemptions metrics deeply.

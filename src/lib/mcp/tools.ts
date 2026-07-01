@@ -5,15 +5,75 @@ import type {
   AdminTranslationInput,
   AdminUpdatePostInput,
 } from '@/db/services/blog';
+import type { FiscalSort } from '@/db/services/fiscal-documents';
+import {
+  FISCAL_CUSTOMER_MODES,
+  FISCAL_DOCUMENT_STATUSES,
+  redactFiscalPayload,
+  type FiscalDocumentStatus,
+} from '@/lib/fiscal-documents';
 import type { CreateCampaignInput, UpdateCampaignInput } from '@/lib/schemas/campaigns';
+import { FiscalDocumentRetryHttpError } from '@/services/fiscal-document-retry';
 
 function toolErr(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+function parseMcpDate(value: string | undefined, fieldName: string): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${fieldName} must be a valid ISO 8601 date/time.`);
+  }
+
+  return date;
+}
+
+function formatRetryToolError(e: unknown): string {
+  if (!(e instanceof FiscalDocumentRetryHttpError)) {
+    return toolErr(e);
+  }
+
+  return `${e.message} (status ${e.status})`;
+}
+
 const campaignStatusFilterSchema = z
   .enum(['draft', 'active', 'paused', 'completed', 'cancelled'])
   .optional();
+
+const fiscalDocumentStatusSchema = z.enum(FISCAL_DOCUMENT_STATUSES);
+const fiscalCustomerModeSchema = z.enum(FISCAL_CUSTOMER_MODES);
+const fiscalSortSchema = z.enum([
+  'attention',
+  'createdAt',
+  'updatedAt',
+  'attemptCount',
+  'nextRetryAt',
+  'issuedAt',
+]);
+
+const fiscalDocumentListFields = {
+  page: z.number().int().positive().optional().describe('One-based page number.'),
+  limit: z.number().int().min(1).max(200).default(50).describe('Number of documents to return.'),
+  statuses: z.array(fiscalDocumentStatusSchema).optional().describe('Fiscal statuses to include.'),
+  needsAttention: z
+    .boolean()
+    .optional()
+    .describe('Filter to documents that currently need admin attention.'),
+  hasError: z.boolean().optional().describe('Filter by whether lastError is present.'),
+  customerMode: fiscalCustomerModeSchema.optional().describe('Filter by customer fiscal mode.'),
+  provider: z.enum(['keyinvoice']).optional().describe('Fiscal provider filter.'),
+  dateFrom: z.string().optional().describe('Created-at lower bound as an ISO 8601 date/time.'),
+  dateTo: z.string().optional().describe('Created-at upper bound as an ISO 8601 date/time.'),
+  q: z.string().optional().describe('Search document, order, Stripe, customer, or author fields.'),
+  sort: fiscalSortSchema.optional().describe('Sort field. Defaults to attention.'),
+  sortOrder: z.enum(['asc', 'desc']).optional().describe('Sort direction. Defaults to desc.'),
+};
+
+const fiscalDocumentListInputSchema = z.object(fiscalDocumentListFields);
 
 const registrationRangeMcpSchema = z.enum(['7d', '30d', '90d', 'forever']);
 
@@ -608,7 +668,119 @@ export function registerMcpTools(server: McpServer) {
   });
 
   // -----------------------------------------------------
-  // Group I Extended: Promo Codes
+  // Group I: Fiscal Documents
+  // -----------------------------------------------------
+  server.tool(
+    'list_fiscal_documents',
+    'List KeyInvoice fiscal documents with the same filters as the admin fiscal documents page.',
+    fiscalDocumentListFields,
+    async (args) => {
+      try {
+        const parsed = fiscalDocumentListInputSchema.parse(args ?? {});
+        const { fiscalDocumentAdminService } = await import('@/db/services/fiscal-documents');
+        const result = await fiscalDocumentAdminService.list({
+          page: parsed.page,
+          limit: parsed.limit,
+          statuses: parsed.statuses as FiscalDocumentStatus[] | undefined,
+          needsAttention: parsed.needsAttention,
+          hasError: parsed.hasError,
+          customerMode: parsed.customerMode,
+          provider: parsed.provider,
+          dateFrom: parseMcpDate(parsed.dateFrom, 'dateFrom'),
+          dateTo: parseMcpDate(parsed.dateTo, 'dateTo'),
+          q: parsed.q,
+          sort: parsed.sort as FiscalSort | undefined,
+          sortOrder: parsed.sortOrder,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                fiscalDocuments: result.data,
+                pagination: result.pagination,
+              }),
+            },
+          ],
+        };
+      } catch (e: unknown) {
+        return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
+      }
+    },
+  );
+
+  server.tool(
+    'get_fiscal_document_details',
+    'Get fiscal document detail, payment data, customer data, retry state, and redacted KeyInvoice event timeline.',
+    { id: z.string() },
+    async ({ id }) => {
+      try {
+        const { fiscalDocumentAdminService } = await import('@/db/services/fiscal-documents');
+        const document = await fiscalDocumentAdminService.getById(id);
+        if (!document) {
+          throw new Error(`Fiscal document ${id} not found.`);
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                ...document,
+                events: document.events.map((event) => ({
+                  ...event,
+                  requestPayload: redactFiscalPayload(event.requestPayload),
+                  responsePayload: redactFiscalPayload(event.responsePayload),
+                })),
+              }),
+            },
+          ],
+        };
+      } catch (e: unknown) {
+        return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
+      }
+    },
+  );
+
+  server.tool(
+    'get_fiscal_document_issue_counts',
+    'Count fiscal documents that need attention: failed, stale pending, stale issuing, and credit-note-required.',
+    {},
+    async () => {
+      try {
+        const { fiscalDocumentAdminService } = await import('@/db/services/fiscal-documents');
+        const counts = await fiscalDocumentAdminService.getIssueCounts();
+        return { content: [{ type: 'text', text: JSON.stringify(counts) }] };
+      } catch (e: unknown) {
+        return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
+      }
+    },
+  );
+
+  server.tool(
+    'retry_fiscal_document_keyinvoice',
+    'Retry sending one due pending or failed fiscal document to KeyInvoice through the mythoria-webapp issuer.',
+    { id: z.string(), adminEmail: z.string().email() },
+    async ({ id, adminEmail }) => {
+      try {
+        const { requestFiscalDocumentRetry } = await import('@/services/fiscal-document-retry');
+        const result = await requestFiscalDocumentRetry({
+          id,
+          adminEmail,
+          source: 'mythoria-admin-mcp',
+        });
+        return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      } catch (e: unknown) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Error: ${formatRetryToolError(e)}` }],
+        };
+      }
+    },
+  );
+
+  // -----------------------------------------------------
+  // Group J Extended: Promo Codes
   // -----------------------------------------------------
   server.tool(
     'get_promo_code_details',
