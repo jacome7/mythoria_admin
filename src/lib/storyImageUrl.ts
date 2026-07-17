@@ -1,5 +1,5 @@
-const DEFAULT_IMAGE_ORIGIN = 'https://mythoria.pt';
 const STORAGE_ORIGIN = 'https://storage.googleapis.com';
+const STORY_IMAGE_ORIGIN = `${STORAGE_ORIGIN}/mythoria-generated-stories/`;
 
 const SIGNED_URL_PARAMETERS = ['X-Goog-Signature', 'Signature'];
 
@@ -18,6 +18,23 @@ function normalizeGoogleStorageUrl(uri: string) {
   return new URL(storagePath, `${STORAGE_ORIGIN}/`);
 }
 
+function normalizeRelativeStoryImageUrl(uri: string, imageOrigin: string) {
+  const baseUrl = new URL(imageOrigin);
+  baseUrl.pathname = `${baseUrl.pathname.replace(/\/+$/, '')}/`;
+  baseUrl.search = '';
+  baseUrl.hash = '';
+
+  const url = new URL(uri.replace(/^\/+/, ''), baseUrl);
+
+  if (url.origin !== baseUrl.origin || !url.pathname.startsWith(baseUrl.pathname)) {
+    return null;
+  }
+
+  url.search = '';
+  url.hash = '';
+  return url;
+}
+
 /**
  * Returns a browser-safe story image URL, or null when the stored URI cannot be rendered.
  * Mutable image URLs receive a cache key so regenerated assets are fetched again.
@@ -25,7 +42,7 @@ function normalizeGoogleStorageUrl(uri: string) {
 export function getStoryImageUrl(
   uri: string | null | undefined,
   cacheKey?: string | number | null,
-  baseOrigin = process.env.NEXT_PUBLIC_ADMIN_URL || DEFAULT_IMAGE_ORIGIN,
+  relativeImageOrigin = STORY_IMAGE_ORIGIN,
 ) {
   if (typeof uri !== 'string') return null;
 
@@ -34,6 +51,7 @@ export function getStoryImageUrl(
 
   try {
     let url: URL;
+    let isRelativeUrl = false;
 
     if (normalizedUri.toLowerCase().startsWith('gs://')) {
       const storageUrl = normalizeGoogleStorageUrl(normalizedUri);
@@ -46,14 +64,17 @@ export function getStoryImageUrl(
     } else {
       // Reject unsupported schemes instead of passing them to next/image.
       if (/^[a-z][a-z\d+.-]*:/i.test(normalizedUri)) return null;
-      url = new URL(normalizedUri, baseOrigin);
+      isRelativeUrl = true;
+      const storageUrl = normalizeRelativeStoryImageUrl(normalizedUri, relativeImageOrigin);
+      if (!storageUrl) return null;
+      url = storageUrl;
     }
 
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
 
-    // Extra query parameters invalidate signed GCS URLs. Their signatures already
-    // provide a unique URL when a new signed link is generated.
-    if (cacheKey !== null && cacheKey !== undefined && !isSignedUrl(url)) {
+    // Relative versioned paths are kept canonical, while signed GCS URLs cannot
+    // accept extra parameters. Other mutable URLs receive the current cache key.
+    if (cacheKey !== null && cacheKey !== undefined && !isRelativeUrl && !isSignedUrl(url)) {
       url.searchParams.set('v', String(cacheKey));
     }
 

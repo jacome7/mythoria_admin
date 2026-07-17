@@ -70,7 +70,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-07-01: MCP now exposes fiscal document list/detail/issue-count tools and KeyInvoice retry parity with the admin fiscal documents page (see `docs/mcp.md`).
 - 2026-07-01: Fiscal document detail now supports a guarded manual mark-issued reconciliation override with audit events (see `docs/features/fiscalDocuments.md`).
 - 2026-07-02: Cloud Run cleanup scripts now separate `gcloud` stderr from JSON output and fail `cleanup-all.ps1` on the first cleanup step error (see `docs/deployment.md`).
-- 2026-07-17: Story readers now validate image URIs and bypass stale chapter, cover, and back-cover image caches (see `docs/features/storiesManagement.md`).
+- 2026-07-17: Story readers now validate image URIs, resolve relative image paths against the generated-stories storage bucket, center chapter illustrations, and bypass stale chapter, cover, and back-cover image caches (see `docs/features/storiesManagement.md`).
 
 ---
 

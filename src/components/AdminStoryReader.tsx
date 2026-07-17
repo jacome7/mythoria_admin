@@ -188,7 +188,7 @@ export default function AdminStoryReader({
 
           {/* Chapter Image */}
           {chapterImageUrl && (
-            <div className="text-center mb-6">
+            <div className="flex w-full justify-center mb-6">
               <Image
                 src={chapterImageUrl}
                 alt={`Chapter ${currentChapterData.chapterNumber} illustration`}

@@ -42,4 +42,6 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 
 - `GET /api/admin/stories` now accepts `target_audience`, `novel_style`, and `graphical_style` query params in addition to the existing status, featured, search, sort, and pagination controls.
 - The stories list now surfaces those three story attributes directly in the moderation table so operators can scan and narrow catalog slices without opening the detail page.
-- Story reading routes return only the latest stored version of each chapter and disable response caching. Chapter, cover, and back-cover image URIs are validated before rendering, `gs://` URIs are converted to HTTPS, and mutable images receive a per-request cache key so regenerated artwork is shown immediately.
+- Story reading routes return only the latest stored version of each chapter and disable response caching. Chapter, cover, and back-cover image URIs are validated before rendering, `gs://` URIs are converted to HTTPS, and mutable absolute image URLs receive a per-request cache key so regenerated artwork is shown immediately.
+- Relative story image paths are resolved against `https://storage.googleapis.com/mythoria-generated-stories/`, never the admin site's origin. Persisted query strings and fragments are removed from these versioned storage paths before rendering.
+- Chapter illustrations are horizontally centered within the story reader at every screen size.
