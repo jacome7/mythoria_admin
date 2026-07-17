@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { getStoryImageUrl } from '@/lib/storyImageUrl';
 
 interface Chapter {
   id: string;
@@ -24,8 +25,9 @@ interface AdminStoryReaderProps {
     authorName: string;
     targetAudience?: string;
     graphicalStyle?: string;
-    coverUri?: string;
-    backcoverUri?: string;
+    coverUri?: string | null;
+    backcoverUri?: string | null;
+    imageCacheKey: string;
   };
   chapters: Chapter[];
   currentChapter?: number;
@@ -82,12 +84,14 @@ export default function AdminStoryReader({
     }
   };
 
-  // Convert relative URLs to absolute URLs for images
-  const toAbsoluteImageUrl = (uri: string | null) => {
-    if (!uri) return null;
-    if (uri.startsWith('http')) return uri;
-    return `${process.env.NEXT_PUBLIC_APP_URL || 'https://mythoria.pt'}${uri}`;
-  };
+  const coverImageUrl = getStoryImageUrl(story.coverUri, story.imageCacheKey);
+  const backCoverImageUrl = getStoryImageUrl(story.backcoverUri, story.imageCacheKey);
+  const chapterImageUrl = getStoryImageUrl(
+    currentChapterData?.imageUri,
+    currentChapterData
+      ? `${story.imageCacheKey}-${currentChapterData.version}-${currentChapterData.updatedAt}`
+      : story.imageCacheKey,
+  );
 
   // Render first page content
   const renderFirstPage = () => (
@@ -96,16 +100,17 @@ export default function AdminStoryReader({
         <h1 className="text-4xl font-bold mb-4 text-black">{story.title}</h1>
         <p className="text-xl text-gray-700 mb-8">by {story.authorName}</p>
         {/* Front Cover Image (after title/author) */}
-        {story.coverUri && toAbsoluteImageUrl(story.coverUri) && (
+        {coverImageUrl && (
           <div className="flex justify-center mb-8">
             <Image
-              src={toAbsoluteImageUrl(story.coverUri)!}
+              src={coverImageUrl}
               alt="Front Cover"
               className="rounded-lg shadow-md"
               width={400}
               height={600}
               style={{ height: 'auto', maxWidth: '100%' }}
               priority
+              unoptimized
             />
           </div>
         )}
@@ -142,15 +147,16 @@ export default function AdminStoryReader({
       </div>
 
       {/* Back Cover Image (after table of contents and start button) */}
-      {story.backcoverUri && toAbsoluteImageUrl(story.backcoverUri) && (
+      {backCoverImageUrl && (
         <div className="mt-12 flex justify-center">
           <Image
-            src={toAbsoluteImageUrl(story.backcoverUri)!}
+            src={backCoverImageUrl}
             alt="Back Cover"
             className="rounded-lg shadow-sm"
             width={400}
             height={600}
             style={{ height: 'auto', maxWidth: '100%' }}
+            unoptimized
           />
         </div>
       )}
@@ -181,15 +187,16 @@ export default function AdminStoryReader({
           </h2>
 
           {/* Chapter Image */}
-          {currentChapterData.imageUri && toAbsoluteImageUrl(currentChapterData.imageUri) && (
+          {chapterImageUrl && (
             <div className="text-center mb-6">
               <Image
-                src={toAbsoluteImageUrl(currentChapterData.imageUri)!}
+                src={chapterImageUrl}
                 alt={`Chapter ${currentChapterData.chapterNumber} illustration`}
                 className="rounded-lg shadow-lg"
                 width={600}
                 height={400}
                 style={{ maxWidth: '100%', height: 'auto' }}
+                unoptimized
               />
             </div>
           )}

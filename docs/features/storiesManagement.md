@@ -1,6 +1,6 @@
 # Stories management
 
-_Last updated: 2026-03-11_
+_Last updated: 2026-07-17_
 
 ## Context
 
@@ -42,3 +42,4 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 
 - `GET /api/admin/stories` now accepts `target_audience`, `novel_style`, and `graphical_style` query params in addition to the existing status, featured, search, sort, and pagination controls.
 - The stories list now surfaces those three story attributes directly in the moderation table so operators can scan and narrow catalog slices without opening the detail page.
+- Story reading routes return only the latest stored version of each chapter and disable response caching. Chapter, cover, and back-cover image URIs are validated before rendering, `gs://` URIs are converted to HTTPS, and mutable images receive a per-request cache key so regenerated artwork is shown immediately.

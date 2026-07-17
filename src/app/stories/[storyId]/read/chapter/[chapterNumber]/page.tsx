@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AdminStoryReader from '../../../../../../components/AdminStoryReader';
+import { getLatestChapterVersions } from '@/lib/storyChapters';
 
 interface Chapter {
   id: string;
@@ -23,8 +24,9 @@ interface Story {
   authorName: string;
   targetAudience?: string;
   graphicalStyle?: string;
-  coverUri: string;
-  backcoverUri: string;
+  coverUri: string | null;
+  backcoverUri: string | null;
+  imageCacheKey: string;
 }
 
 export default function ReadChapterPage() {
@@ -43,21 +45,14 @@ export default function ReadChapterPage() {
   const fetchChapter = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/admin/stories/${storyId}/chapters/${chapterNumber}`);
+      const response = await fetch(`/api/admin/stories/${storyId}/chapters/${chapterNumber}`, {
+        cache: 'no-store',
+      });
       if (response.ok) {
         const data = await response.json();
         setStory(data.story);
         // Ensure only the latest version of each chapter is kept (defensive in case API returns older versions)
-        const latestByNumber: Record<number, Chapter> = {};
-        for (const ch of data.chapters as Chapter[]) {
-          const existing = latestByNumber[ch.chapterNumber];
-          if (!existing || ch.version > existing.version) {
-            latestByNumber[ch.chapterNumber] = ch;
-          }
-        }
-        const deduped = Object.values(latestByNumber).sort(
-          (a, b) => a.chapterNumber - b.chapterNumber,
-        );
+        const deduped = getLatestChapterVersions(data.chapters as Chapter[]);
         setChapters(deduped);
         // Pick the latest version for the requested chapter number
         const latestRequested = deduped.find((c) => c.chapterNumber === chapterNumber);

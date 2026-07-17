@@ -16,6 +16,75 @@ param(
   [switch]$DryRun
 )
 
+function Get-GcloudCommand {
+  $command = Get-Command gcloud.cmd -ErrorAction SilentlyContinue
+  if ($command) {
+    return $command.Source
+  }
+
+  $command = Get-Command gcloud -ErrorAction SilentlyContinue
+  if ($command) {
+    return $command.Source
+  }
+
+  Write-Host "gcloud was not found on PATH. Install the Google Cloud SDK or add it to PATH." -ForegroundColor Red
+  exit 1
+}
+
+function Invoke-GcloudJson {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string[]]$Arguments,
+
+    [Parameter(Mandatory = $true)]
+    [string]$FailureMessage
+  )
+
+  $stderrPath = [System.IO.Path]::GetTempFileName()
+
+  try {
+    $gcloudCommand = Get-GcloudCommand
+    $stdout = & $gcloudCommand @Arguments 2> $stderrPath
+    $exitCode = $LASTEXITCODE
+    $stderr = Get-Content -Path $stderrPath -Raw -ErrorAction SilentlyContinue
+
+    if ($exitCode -ne 0) {
+      Write-Host $FailureMessage -ForegroundColor Red
+      if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+        Write-Host $stderr.Trim() -ForegroundColor Red
+      }
+      exit $exitCode
+    }
+
+    if ([string]::IsNullOrWhiteSpace(($stdout -join "`n"))) {
+      if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+        Write-Host $FailureMessage -ForegroundColor Red
+        Write-Host $stderr.Trim() -ForegroundColor Red
+        exit 1
+      }
+
+      return @()
+    }
+
+    try {
+      return ($stdout | ConvertFrom-Json)
+    }
+    catch {
+      Write-Host "gcloud returned output that was not valid JSON." -ForegroundColor Red
+      Write-Host "Raw output:" -ForegroundColor Red
+      Write-Host ($stdout -join "`n") -ForegroundColor Red
+      if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+        Write-Host "Error output:" -ForegroundColor Red
+        Write-Host $stderr.Trim() -ForegroundColor Red
+      }
+      exit 1
+    }
+  }
+  finally {
+    Remove-Item -Path $stderrPath -Force -ErrorAction SilentlyContinue
+  }
+}
+
 Write-Host "=== Cloud Run Image Cleanup ===" -ForegroundColor Cyan
 Write-Host "Project: $ProjectId" -ForegroundColor White
 Write-Host "Service: $ServiceName" -ForegroundColor White
@@ -30,15 +99,16 @@ Write-Host ""
 
 # List all images with their creation time
 Write-Host "Fetching images from gcr.io/$ProjectId/$ServiceName..." -ForegroundColor Cyan
-$imagesJson = gcloud container images list-tags "gcr.io/$ProjectId/$ServiceName" --format=json --filter="timestamp.datetime < '$cutoffDate'" 2>&1
-
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "Error fetching images. Make sure you're authenticated with gcloud." -ForegroundColor Red
-  Write-Host "Run: gcloud auth login" -ForegroundColor Yellow
-  exit 1
-}
-
-$images = $imagesJson | ConvertFrom-Json
+$images = Invoke-GcloudJson `
+  -Arguments @(
+    "container",
+    "images",
+    "list-tags",
+    "gcr.io/$ProjectId/$ServiceName",
+    "--format=json",
+    "--filter=timestamp.datetime < '$cutoffDate'"
+  ) `
+  -FailureMessage "Error fetching images. Check your repository name, project, permissions, and gcloud authentication."
 
 if ($images.Count -eq 0) {
   Write-Host "No images found older than $DaysOld days. Nothing to clean up!" -ForegroundColor Green
@@ -54,7 +124,7 @@ foreach ($image in $images) {
   $timestamp = $image.timestamp
   $tags = if ($image.tags) { $image.tags -join ", " } else { "untagged" }
     
-  Write-Host "  • Digest: $digest" -ForegroundColor White
+  Write-Host "  - Digest: $digest" -ForegroundColor White
   Write-Host "    Created: $timestamp" -ForegroundColor Gray
   Write-Host "    Tags: $tags" -ForegroundColor Gray
   Write-Host ""

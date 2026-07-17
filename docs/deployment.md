@@ -431,6 +431,18 @@ gcloud run services describe mythoria-admin --region=europe-west9
 gcloud run services list --filter="metadata.name:mythoria-admin"
 ```
 
+#### Cleanup Old Revisions and Images
+
+Use `scripts/cleanup-all.ps1` to remove old Cloud Run revisions and GCR images after deployment churn:
+
+```powershell
+cd C:\Mythoria\mythoria_admin\scripts
+.\cleanup-all.ps1 -DaysOld 7 -KeepRevisions 5 -DryRun
+.\cleanup-all.ps1 -DaysOld 7 -KeepRevisions 5
+```
+
+The cleanup scripts require an active `gcloud` account with access to Cloud Run revisions and the `gcr.io/oceanic-beach-460916-n5/mythoria-admin` repository. On Windows they prefer `gcloud.cmd` over the PowerShell wrapper, then keep `gcloud` JSON output separate from stderr so access-denied and authentication failures are reported as failures instead of being parsed as empty JSON results. `cleanup-all.ps1` stops after the first failed cleanup step and only prints the completion banner when both cleanup steps succeed.
+
 ### 2. Health Monitoring
 
 #### Health Check Endpoint

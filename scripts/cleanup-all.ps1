@@ -44,6 +44,11 @@ Write-Host "--------------------------------------------" -ForegroundColor Magen
 Write-Host ""
 
 & "$scriptDir\cleanup-old-revisions.ps1" @params -KeepRevisions $KeepRevisions -Region $Region
+if ($LASTEXITCODE -ne 0) {
+  Write-Host ""
+  Write-Host "Cleanup failed during Cloud Run revision cleanup." -ForegroundColor Red
+  exit $LASTEXITCODE
+}
 
 Write-Host ""
 Write-Host ""
@@ -54,6 +59,11 @@ Write-Host "--------------------------------------------" -ForegroundColor Magen
 Write-Host ""
 
 & "$scriptDir\cleanup-old-images.ps1" @params -DaysOld $DaysOld
+if ($LASTEXITCODE -ne 0) {
+  Write-Host ""
+  Write-Host "Cleanup failed during container image cleanup." -ForegroundColor Red
+  exit $LASTEXITCODE
+}
 
 Write-Host ""
 Write-Host ""

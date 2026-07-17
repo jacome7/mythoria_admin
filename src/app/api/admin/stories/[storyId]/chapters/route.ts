@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { ALLOWED_DOMAINS } from '@/config/auth';
+import { getLatestChapterVersions } from '@/lib/storyChapters';
 
 // Minimal chapter shape expected from adminService.getStoryWithChapters
 type ChapterResult = {
@@ -49,27 +50,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
       graphicalStyle: storyWithChapters.graphicalStyle,
       coverUri: storyWithChapters.coverUri,
       backcoverUri: storyWithChapters.backcoverUri,
+      imageCacheKey: Date.now().toString(),
       // Add other fields as needed
     };
 
     // Requirement: only return the most recent version of each chapter
-    const latestChaptersByNumber: Map<number, ChapterResult> = new Map();
-    for (const ch of storyWithChapters.chapters as ChapterResult[]) {
-      const num = ch.chapterNumber as number;
-      const existing = latestChaptersByNumber.get(num);
-      if (!existing || (typeof ch.version === 'number' && ch.version > existing.version)) {
-        latestChaptersByNumber.set(num, ch);
-      }
-    }
-    // Convert map to sorted array
-    const latestChapters = Array.from(latestChaptersByNumber.values()).sort(
-      (a, b) => (a.chapterNumber as number) - (b.chapterNumber as number),
-    );
+    const latestChapters = getLatestChapterVersions(storyWithChapters.chapters as ChapterResult[]);
 
-    return NextResponse.json({
-      story: transformedStory,
-      chapters: latestChapters,
-    });
+    return NextResponse.json(
+      {
+        story: transformedStory,
+        chapters: latestChapters,
+      },
+      { headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error fetching story chapters:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

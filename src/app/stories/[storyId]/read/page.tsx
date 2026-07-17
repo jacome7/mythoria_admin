@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AdminStoryReader from '../../../../components/AdminStoryReader';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
+import { getLatestChapterVersions } from '@/lib/storyChapters';
 
 interface Chapter {
   id: string;
@@ -23,8 +24,9 @@ interface Story {
   authorName: string;
   targetAudience?: string;
   graphicalStyle?: string;
-  coverUri: string;
-  backcoverUri: string;
+  coverUri: string | null;
+  backcoverUri: string | null;
+  imageCacheKey: string;
 }
 
 export default function ReadStoryPage() {
@@ -41,22 +43,14 @@ export default function ReadStoryPage() {
   const fetchStory = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/admin/stories/${storyId}/chapters`);
+      const response = await fetch(`/api/admin/stories/${storyId}/chapters`, {
+        cache: 'no-store',
+      });
       if (response.ok) {
         const data = await response.json();
         setStory(data.story);
         // Defensive: ensure only latest version per chapterNumber (in case API changes or caching returns older list)
-        const latestByNumber: Record<number, Chapter> = {};
-        for (const ch of data.chapters as Chapter[]) {
-          const existing = latestByNumber[ch.chapterNumber];
-          if (!existing || ch.version > existing.version) {
-            latestByNumber[ch.chapterNumber] = ch;
-          }
-        }
-        const deduped = Object.values(latestByNumber).sort(
-          (a, b) => a.chapterNumber - b.chapterNumber,
-        );
-        setChapters(deduped);
+        setChapters(getLatestChapterVersions(data.chapters as Chapter[]));
       } else if (response.status === 404) {
         setError('Story not found');
       } else if (response.status === 403) {

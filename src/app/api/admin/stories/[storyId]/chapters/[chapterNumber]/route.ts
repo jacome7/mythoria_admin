@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { ALLOWED_DOMAINS } from '@/config/auth';
+import { getLatestChapterVersions, VersionedChapter } from '@/lib/storyChapters';
 
 export async function GET(
   request: Request,
@@ -34,14 +35,13 @@ export async function GET(
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
 
-    // Get the specific chapter
-    const chapter = await adminService.getStoryChapter(storyId, chapterNum);
+    // Get the latest version of every chapter for reading and navigation.
+    const allChapters = await adminService.getStoryChapters(storyId);
+    const latestChapters = getLatestChapterVersions(allChapters as VersionedChapter[]);
+    const chapter = latestChapters.find((item) => item.chapterNumber === chapterNum);
     if (!chapter) {
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
-
-    // Get all chapters for navigation
-    const allChapters = await adminService.getStoryChapters(storyId);
 
     // Transform story data for the story reader
     const transformedStory = {
@@ -51,14 +51,18 @@ export async function GET(
       graphicalStyle: story.graphicalStyle,
       coverUri: story.coverUri,
       backcoverUri: story.backcoverUri,
+      imageCacheKey: Date.now().toString(),
       // Add other fields as needed
     };
 
-    return NextResponse.json({
-      story: transformedStory,
-      chapters: allChapters,
-      currentChapter: chapter,
-    });
+    return NextResponse.json(
+      {
+        story: transformedStory,
+        chapters: latestChapters,
+        currentChapter: chapter,
+      },
+      { headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error fetching story chapter:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
