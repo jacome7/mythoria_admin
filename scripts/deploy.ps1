@@ -123,25 +123,25 @@ try {
         return $false
     }
 
-    # Install dependencies; prefer ci if lockfile exists, otherwise fallback to install
-    if (Test-Path -Path "package-lock.json") {
-        $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 1
-        if (-not $ciOk) {
-            Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
+    if ($Fast) {
+        Write-Host "[INFO] Fast deploy requested: Cloud Build will install dependencies and build the production image" -ForegroundColor Yellow
+    }
+    else {
+        # Install dependencies; prefer ci if lockfile exists, otherwise fallback to install
+        if (Test-Path -Path "package-lock.json") {
+            $ciOk = Invoke-NpmCiWithRecovery -MaxAttempts 1
+            if (-not $ciOk) {
+                Write-Host "[WARN] Falling back to 'npm install' after npm ci failures" -ForegroundColor Yellow
+                Invoke-PinnedNpm install --no-fund --no-audit
+                if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
+            }
+        }
+        else {
+            Write-Host "[INFO] No package-lock.json found; installing dependencies (npm install)" -ForegroundColor Yellow
             Invoke-PinnedNpm install --no-fund --no-audit
             if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
         }
-    }
-    else {
-        Write-Host "[INFO] No package-lock.json found; installing dependencies (npm install)" -ForegroundColor Yellow
-        Invoke-PinnedNpm install --no-fund --no-audit
-        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] npm install failed" -ForegroundColor Red; exit 1 }
-    }
 
-    if ($Fast) {
-        Write-Host "[INFO] Fast deploy requested: skipping lint/typecheck/tests" -ForegroundColor Yellow
-    }
-    else {
         Write-Host "[INFO] Linting (npm run lint)" -ForegroundColor Blue
         Invoke-PinnedNpm run lint
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Lint failed" -ForegroundColor Red; exit 1 }
@@ -153,9 +153,14 @@ try {
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Tests failed" -ForegroundColor Red; exit 1 }
     }
 
-    Write-Host "[INFO] Building (npm run build)" -ForegroundColor Blue
-    Invoke-PinnedNpm run build
-    if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
+    if ($Fast) {
+        Write-Host "[INFO] Skipping local build in fast mode; Cloud Build remains the production build authority" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "[INFO] Building (npm run build)" -ForegroundColor Blue
+        Invoke-PinnedNpm run build
+        if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
+    }
 
     # Build and deploy with Cloud Build (cloudbuild.yaml)
     Write-Host "[INFO] Starting Cloud Build production deployment..."

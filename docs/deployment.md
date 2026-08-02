@@ -385,8 +385,8 @@ Write-Host "🌐 Service URL: https://$ServiceName-$ProjectId-$Region.a.run.app"
 
 #### Fast Deploy Mode
 
-- `npm run deploy:fast` runs the same script with the `-Fast` switch so you can bypass the lint/typecheck/test gates when you already know the changes are safe.
-- Even in fast mode the script still runs `npm run build` locally and submits a brand-new image to Cloud Build, so production always receives the latest workspace snapshot.
+- `npm run deploy:fast` runs the same script with the `-Fast` switch so you can bypass local dependency installation, lint/typecheck/test gates, and the local build when the changes are already validated.
+- In fast mode Cloud Build installs the lockfile dependencies and builds the production image from the submitted workspace snapshot; the full `npm run deploy` path keeps the local safety gates.
 - Skip fast deploy if the registry does not already have a healthy image; use the full `npm run deploy` path after large changes or when you need the extra safety nets.
 
 ### 3. Database Migration Deployment
