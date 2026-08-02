@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile:1
 
-# Use the official Node.js 24.16.0 LTS image as a base.
-ARG NODE_VERSION=24.16.0
+# Use the official Node.js 24.18.1 LTS image as a base.
+ARG NODE_VERSION=24.18.1
 FROM node:${NODE_VERSION}-alpine AS base
 
 # Install libc6-compat for better compatibility with Node.js packages on Alpine

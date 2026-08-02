@@ -6,7 +6,7 @@ This guide condenses how the admin portal is wired today and merges the useful c
 
 | Layer           | What runs here                                                                                                                                     | Key directories                                    |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| UI composition  | Next.js 16.2.9 App Router (React 19.2.7) on Node.js 24.16.0 LTS, with Tailwind 4.3 + DaisyUI 5.5 powering layouts, forms, dashboards, and widgets. | `src/app`, `src/components`, `src/styles`          |
+| UI composition  | Next.js 16.2.9 App Router (React 19.2.7) on Node.js 24.18.1 LTS, with Tailwind 4.3 + DaisyUI 5.5 powering layouts, forms, dashboards, and widgets. | `src/app`, `src/components`, `src/styles`          |
 | API + actions   | Route handlers, server actions, and middleware that enforce auth, Zod validation, and service orchestration.                                       | `src/app/api`, `src/middleware.ts`, `src/services` |
 | Domain services | Pure helpers that talk to Drizzle clients, Pub/Sub publishers, workflow monitors, and notification clients.                                        | `src/lib`, `src/services`, `src/db/services.ts`    |
 | Data access     | Drizzle 0.45 schema modules, migrations, and `getMultiDatabaseConfig` helpers for the three PostgreSQL databases.                                  | `src/db`, `drizzle/`                               |
@@ -50,7 +50,7 @@ Every admin API enforces:
 
 ## Integrations & observability
 
-- **Google Cloud** – Cloud Run hosts the standalone Next build on the Node.js 24.16.0 LTS container image, Cloud Build handles CI, and Pub/Sub topics ship through `src/lib/pubsub.ts` for story/audiobook jobs.
+- **Google Cloud** – Cloud Run hosts the standalone Next build on the Node.js 24.18.1 LTS container image, Cloud Build handles CI, and Pub/Sub topics ship through `src/lib/pubsub.ts` for story/audiobook jobs.
 - **Notification engine & Postmaster** – Proxy routes under `/api/mail-marketing/*` and `/api/postmaster/*` enforce admin auth before calling external services. Supporting guides live beside this file (`bounceAPI.md`, `postmaster-setup.md`).
 - **Metrics & alerts** – JSON logs feed Cloud Logging; `/api/server-status` aggregates DB reachability, Pub/Sub health, Notification Engine ping, and env parity checks to power dashboard cards.
 

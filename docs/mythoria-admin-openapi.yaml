@@ -356,8 +356,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
-ef: '#/components/responses/InternalError'
-        '500':
           $ref: '#/components/responses/InternalError'
     post:
       tags: [Notifications]
@@ -1693,6 +1691,8 @@ ef: '#/components/responses/InternalError'
               - sketch
               - oil_painting
               - colored_pencil
+              - claymation
+              - papercut
               - all
         - name: sortBy
           in: query

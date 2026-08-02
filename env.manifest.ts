@@ -35,6 +35,14 @@ export const envManifest: EnvVarDescriptor[] = [
     note: 'Framework provided.',
   },
   {
+    name: 'NODE_VERSION',
+    required: false,
+    scopes: ['build'],
+    default: '24.18.1',
+    source: 'substitution',
+    note: 'Pinned Docker build argument; not exposed to the application runtime.',
+  },
+  {
     name: 'PORT',
     required: false,
     scopes: ['dev', 'runtime'],
@@ -222,6 +230,12 @@ export const envManifest: EnvVarDescriptor[] = [
     secret: true,
     source: 'secret-manager',
     note: 'Required locally when exercising mail-marketing / notification routes.',
+  },
+  {
+    name: 'COMPANY_PHYSICAL_ADDRESS',
+    required: false,
+    scopes: ['prod', 'runtime', 'dev'],
+    note: 'Optional company postal address available to email campaign tooling and previews.',
   },
   {
     name: 'ADMIN_API_KEY',

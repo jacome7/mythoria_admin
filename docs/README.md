@@ -64,6 +64,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-05-17: Runtime pins now use Node.js 24.15.0 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
 - 2026-06-14: Runtime pins now use Node.js 24.16.0 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
 - 2026-06-15: Local production deploys now run npm work through pinned Node.js/npm versions and prefer the Windows `gcloud.cmd` wrapper with explicit Python discovery (see `docs/deployment.md`).
+- 2026-08-02: Runtime pins now use Node.js 24.18.1 LTS consistently across local version-manager files, package metadata, Docker, Cloud Build, and deployment docs.
 - 2026-05-17: MCP `/api/mcp` accepts streamable HTTP `POST` requests for Codex clients while preserving the legacy SSE flow (see `docs/mcp.md`).
 - 2026-06-14: MCP `list_users`, `list_stories`, and `list_tickets` now serialize list payloads inside named object keys for SDK result validation (see `docs/mcp.md`).
 - 2026-06-14: Added fiscal document monitoring, admin PDF access, and single-document retry (see `docs/features/fiscalDocuments.md`).

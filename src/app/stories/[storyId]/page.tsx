@@ -8,6 +8,7 @@ import { StoryHeader } from '@/app/stories/[storyId]/components/StoryHeader';
 import { StoryActions } from '@/app/stories/[storyId]/components/StoryActions';
 import { ChapterTable } from '@/app/stories/[storyId]/components/ChapterTable';
 import { StoryActionPanel } from '@/app/stories/[storyId]/components/StoryActionPanel';
+import { GraphicalStyle, getGraphicalStyleLabel } from '@/types/story-enums';
 
 export default function StoryDetailPage() {
   const { session, loading } = useAdminAuth();
@@ -42,6 +43,12 @@ export default function StoryDetailPage() {
   if (!session?.user || !story) {
     return null;
   }
+
+  const graphicalStyleLabel =
+    story.graphicalStyle &&
+    Object.values(GraphicalStyle).includes(story.graphicalStyle as GraphicalStyle)
+      ? getGraphicalStyleLabel(story.graphicalStyle as GraphicalStyle)
+      : story.graphicalStyle;
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -167,7 +174,7 @@ export default function StoryDetailPage() {
                 {story.graphicalStyle && (
                   <div>
                     <span className="font-semibold">Graphical Style:</span>
-                    <span className="ml-2 capitalize">{story.graphicalStyle}</span>
+                    <span className="ml-2">{graphicalStyleLabel}</span>
                   </div>
                 )}
               </div>

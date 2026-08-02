@@ -46,6 +46,8 @@ export enum GraphicalStyle {
   SKETCH = 'sketch',
   OIL_PAINTING = 'oil_painting',
   COLORED_PENCIL = 'colored_pencil',
+  CLAYMATION = 'claymation',
+  PAPERCUT = 'papercut',
 }
 
 export enum LiteraryPersona {
@@ -268,6 +270,8 @@ export const GraphicalStyleLabels: Record<GraphicalStyle, string> = {
   [GraphicalStyle.SKETCH]: 'Sketch',
   [GraphicalStyle.OIL_PAINTING]: 'Oil Painting',
   [GraphicalStyle.COLORED_PENCIL]: 'Colored Pencil',
+  [GraphicalStyle.CLAYMATION]: 'Claymation',
+  [GraphicalStyle.PAPERCUT]: 'PaperCut',
 };
 
 // Helper functions to get all enum values as arrays

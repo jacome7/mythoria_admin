@@ -105,6 +105,8 @@ export const graphicalStyleEnum = pgEnum('graphical_style', [
   'sketch',
   'oil_painting',
   'colored_pencil',
+  'claymation',
+  'papercut',
 ]);
 
 export const literaryPersonaEnum = pgEnum('literary_persona', [
