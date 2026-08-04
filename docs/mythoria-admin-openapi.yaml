@@ -1816,13 +1816,19 @@ paths:
       summary: Restart story generation workflow
       responses:
         '200':
-          description: Workflow restart issued.
+          description: Durable restart published to Pub/Sub.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StoryRestartResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        '202':
+          description: Restart persisted; immediate dispatch failed and an automatic retry is scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryRestartResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2509,13 +2515,21 @@ paths:
       summary: Retry a failed workflow run
       responses:
         '200':
-          description: Retry accepted with new run id.
+          description: Durable retry published to Pub/Sub with a new run id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRetryResponse'
+        '202':
+          description: Retry persisted; immediate dispatch failed and an automatic retry is scheduled.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkflowRetryResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3901,7 +3915,14 @@ components:
           type: string
         status:
           type: string
-      required: [success, message, storyId, runId]
+          enum: [published, publishing, retrying]
+        messageId:
+          type: string
+        dispatchFailed:
+          type: boolean
+        dispatchError:
+          type: string
+      required: [success, message, storyId, runId, status, dispatchFailed]
     StoryChapter:
       type: object
       properties:
@@ -4514,7 +4535,20 @@ components:
           type: string
         originalRunId:
           type: string
-      required: [success, message, newRunId, originalRunId]
+        storyId:
+          type: string
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [published, publishing, retrying]
+        messageId:
+          type: string
+        dispatchFailed:
+          type: boolean
+        dispatchError:
+          type: string
+      required: [success, message, newRunId, originalRunId, storyId, runId, status, dispatchFailed]
     StoryPdfTriggerResponse:
       type: object
       properties:

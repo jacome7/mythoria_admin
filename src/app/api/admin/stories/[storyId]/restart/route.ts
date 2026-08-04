@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { adminService } from '@/db/services';
-import { publishStoryRequest } from '@/lib/pubsub';
 import { isAllowedEmailDomain } from '@/config/auth';
+import {
+  restartStoryGeneration,
+  StoryGenerationRestartError,
+} from '@/services/story-generation-restart';
 
 // POST /api/admin/stories/[storyId]/restart - Restart story generation workflow
 export async function POST(
@@ -21,56 +23,31 @@ export async function POST(
 
     const { storyId } = await params;
 
-    // Verify the story exists and can be restarted from its current status
-    const story = await adminService.getStoryByIdWithAuthor(storyId);
+    const result = await restartStoryGeneration({
+      storyId,
+      source: 'mythoria-admin',
+      requestedBy: session.user.email,
+    });
 
-    if (!story) {
-      return NextResponse.json({ error: 'Story not found' }, { status: 404 });
-    }
-
-    const canRestart = story.status === 'writing' || story.status === 'published';
-
-    if (!canRestart) {
-      return NextResponse.json(
-        {
-          error: 'Only stories in "writing" or "published" status can be restarted',
-        },
-        { status: 400 },
-      );
-    }
-
-    // Generate a new runId for workflow tracking.
-    // Only persist the run after Pub/Sub publish succeeds, to avoid orphan queued runs.
-    const { randomUUID } = await import('crypto');
-    const runId = randomUUID();
-
-    try {
-      await publishStoryRequest({
-        storyId,
-        runId,
-        timestamp: new Date().toISOString(),
-      });
-
-      const workflowRun = await adminService.createWorkflowRun(storyId, undefined, runId);
-
-      console.log(`Story generation restart request published for story ${storyId}, run ${runId}`);
-
-      return NextResponse.json({
+    const retryScheduled = result.status === 'retrying';
+    return NextResponse.json(
+      {
         success: true,
-        message: 'Story generation restarted successfully',
-        storyId,
-        runId: workflowRun.runId,
-        status: workflowRun.status,
-      });
-    } catch (pubsubError) {
-      console.error('Failed to publish story restart request:', pubsubError);
-
+        message: retryScheduled
+          ? 'Story restart queued; immediate dispatch failed and an automatic retry is scheduled'
+          : 'Story generation restart dispatched successfully',
+        ...result,
+        dispatchFailed: retryScheduled,
+      },
+      { status: retryScheduled ? 202 : 200 },
+    );
+  } catch (error) {
+    if (error instanceof StoryGenerationRestartError) {
       return NextResponse.json(
-        { error: 'Failed to restart story generation workflow' },
-        { status: 500 },
+        { error: error.message, code: error.code },
+        { status: error.status },
       );
     }
-  } catch (error) {
     console.error('Error restarting story generation:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

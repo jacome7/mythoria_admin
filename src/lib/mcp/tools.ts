@@ -368,13 +368,23 @@ export function registerMcpTools(server: McpServer) {
     { storyId: z.string() },
     async ({ storyId }) => {
       try {
-        const { adminService } = await import('@/db/services');
-        const run = await adminService.createWorkflowRun(storyId);
+        const { restartStoryGeneration } = await import('@/services/story-generation-restart');
+        const run = await restartStoryGeneration({
+          storyId,
+          source: 'mythoria-admin-mcp',
+          requestedBy: 'mcp',
+        });
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ message: 'Restart triggered successfully.', run }),
+              text: JSON.stringify({
+                message:
+                  run.status === 'retrying'
+                    ? 'Restart queued; immediate dispatch failed and an automatic retry is scheduled.'
+                    : 'Restart dispatched successfully.',
+                run,
+              }),
             },
           ],
         };

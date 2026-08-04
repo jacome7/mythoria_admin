@@ -21,14 +21,15 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 ## Reference (lookup)
 
-| Doc                                | Scope                                                                               |
-| ---------------------------------- | ----------------------------------------------------------------------------------- |
-| `docs/api-reference.md`            | REST route map, accepted query params, and response shapes.                         |
-| `docs/mcp.md`                      | Model Context Protocol server (streamable HTTP + SSE), auth, tools, and statistics. |
-| `docs/mythoria-admin-openapi.yaml` | Machine-readable OpenAPI spec (sync this when routes change).                       |
-| `docs/features/*.md`               | Per-page feature deep dives (context, UI workflow, DB structures).                  |
-| `docs/features/fiscalDocuments.md` | Fiscal document monitoring, retry, PDF access, and KeyInvoice audit trail behavior. |
-| `docs/AGENTS.md`                   | Directory-specific editing conventions for contributors and agents.                 |
+| Doc                                        | Scope                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `docs/api-reference.md`                    | REST route map, accepted query params, and response shapes.                          |
+| `docs/mcp.md`                              | Model Context Protocol server (streamable HTTP + SSE), auth, tools, and statistics.  |
+| `docs/mythoria-admin-openapi.yaml`         | Machine-readable OpenAPI spec (sync this when routes change).                        |
+| `docs/features/*.md`                       | Per-page feature deep dives (context, UI workflow, DB structures).                   |
+| `docs/features/fiscalDocuments.md`         | Fiscal document monitoring, retry, PDF access, and KeyInvoice audit trail behavior.  |
+| `docs/features/storyGenerationRestarts.md` | Cross-service restart dispatch, ownership, credit, email, and verification contract. |
+| `docs/AGENTS.md`                           | Directory-specific editing conventions for contributors and agents.                  |
 
 ## Explanation (deep understanding)
 
@@ -72,6 +73,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-07-01: Fiscal document detail now supports a guarded manual mark-issued reconciliation override with audit events (see `docs/features/fiscalDocuments.md`).
 - 2026-07-02: Cloud Run cleanup scripts now separate `gcloud` stderr from JSON output and fail `cleanup-all.ps1` on the first cleanup step error (see `docs/deployment.md`).
 - 2026-07-17: Story readers now validate image URIs, resolve relative image paths against the generated-stories storage bucket, center chapter illustrations, and bypass stale chapter, cover, and back-cover image caches (see `docs/features/storiesManagement.md`).
+- 2026-08-04: Admin story UI, failed-workflow retry UI, and MCP restarts now share a durable zero-credit dispatcher, expose Pub/Sub retry state, and resend the completion email per regeneration run (see `docs/features/storiesManagement.md`).
 
 ---
 
@@ -81,4 +83,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-07-17_
+_Index refreshed: 2026-08-04_

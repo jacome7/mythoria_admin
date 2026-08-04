@@ -1,6 +1,6 @@
 # Stories management
 
-_Last updated: 2026-07-17_
+_Last updated: 2026-08-04_
 
 ## Context
 
@@ -21,6 +21,7 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 - `GET /api/admin/stories/[storyId]/chapters/[chapterNumber]`
 - `POST /api/admin/stories/[storyId]/feature`
 - `POST /api/admin/stories/[storyId]/restart`
+- `POST /api/workflows/[runId]/retry`
 - `POST /api/stories/[storyId]/generate-pdfs`
 - `POST /api/admin/stories/[storyId]/generate-audiobook`
 - `GET /api/admin/stories/[storyId]/audio/[chapterIndex]`
@@ -34,6 +35,7 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
   - `story_collaborators`
   - `share_links`
   - `characters`, `story_characters`
+  - `story_generation_requests` (durable restart dispatch and retry state)
 - **workflows_db**
   - `story_generation_runs`
   - `story_generation_steps`
@@ -46,3 +48,5 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 - Story reading routes return only the latest stored version of each chapter and disable response caching. Chapter, cover, and back-cover image URIs are validated before rendering, `gs://` URIs are converted to HTTPS, and mutable absolute image URLs receive a per-request cache key so regenerated artwork is shown immediately.
 - Relative story image paths are resolved against `https://storage.googleapis.com/mythoria-generated-stories/`, never the admin site's origin. Persisted query strings and fragments are removed from these versioned storage paths before rendering.
 - Chapter illustrations are horizontally centered within the story reader at every screen size.
+- Admin story UI, failed-workflow retry UI, and MCP restarts share one durable dispatcher. A restart is corrective, records zero credits, never debits the author, and does not pre-create a workflow run. Immediate Pub/Sub failure returns a visible `retrying` state for the existing WebApp outbox drain.
+- When the regenerated run completes, SGW sends `story-created` again using the new `runId` as the notification idempotency key. See `storyGenerationRestarts.md` for the cross-service contract and live verification checklist.

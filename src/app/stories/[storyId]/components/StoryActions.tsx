@@ -85,9 +85,13 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
       });
 
       if (response.ok) {
-        await response.json();
+        const result = await response.json();
         setIsRestartModalOpen(false);
-        alert('Story generation has been restarted successfully!');
+        alert(
+          result.dispatchFailed
+            ? 'Story restart queued. Immediate dispatch failed, so an automatic retry is scheduled.'
+            : 'Story generation has been restarted successfully!',
+        );
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -211,7 +215,9 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
                   <li>Create a new workflow run for this story</li>
                   <li>Trigger the story generation workflow again</li>
                   <li>The story will stay in its current status</li>
+                  <li>No credits will be deducted from the customer</li>
                   <li>Any previous generation progress may be overwritten</li>
+                  <li>The customer will receive a new email when regeneration completes</li>
                 </ul>
               </div>
             </div>

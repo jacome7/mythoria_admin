@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
-import { publishStoryRequest } from '@/lib/pubsub';
 import { ALLOWED_DOMAINS } from '@/config/auth';
+import {
+  restartStoryGeneration,
+  StoryGenerationRestartError,
+} from '@/services/story-generation-restart';
 
 // POST /api/workflows/[runId]/retry - Retry a failed workflow
 export async function POST(
@@ -40,40 +43,33 @@ export async function POST(
       );
     }
 
-    // Generate a new runId for workflow tracking.
-    // Only persist the retry run after Pub/Sub publish succeeds, to avoid orphan queued runs.
-    const { randomUUID } = await import('crypto');
-    const newRunId = randomUUID();
+    const result = await restartStoryGeneration({
+      storyId: originalRun.storyId,
+      source: 'mythoria-admin',
+      requestedBy: session.user.email,
+    });
+    const retryScheduled = result.status === 'retrying';
 
-    try {
-      await publishStoryRequest({
-        storyId: originalRun.storyId,
-        runId: newRunId,
-        timestamp: new Date().toISOString(),
-      });
-
-      const workflowRun = await adminService.createWorkflowRun(
-        originalRun.storyId,
-        undefined,
-        newRunId,
-      );
-
-      console.log(
-        `Workflow retry request published for story ${originalRun.storyId}, run ${newRunId}`,
-      );
-
-      return NextResponse.json({
+    return NextResponse.json(
+      {
         success: true,
-        message: 'Workflow retry initiated',
-        newRunId: workflowRun.runId,
+        message: retryScheduled
+          ? 'Workflow retry queued; immediate dispatch failed and an automatic retry is scheduled'
+          : 'Workflow retry dispatched successfully',
+        ...result,
+        newRunId: result.runId,
         originalRunId: runId,
-      });
-    } catch (pubsubError) {
-      console.error('Failed to publish workflow retry request:', pubsubError);
-
-      return NextResponse.json({ error: 'Failed to retry workflow' }, { status: 500 });
-    }
+        dispatchFailed: retryScheduled,
+      },
+      { status: retryScheduled ? 202 : 200 },
+    );
   } catch (error) {
+    if (error instanceof StoryGenerationRestartError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.status },
+      );
+    }
     console.error('Error retrying workflow:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

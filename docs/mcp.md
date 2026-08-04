@@ -48,7 +48,7 @@ The MCP Server implements 10 main business domain groups directly mapped into ou
     If `workflows_db` is unavailable, `warnings` may include a note and AI fields will be zeroed.
 - `get_server_status`: Query active instances for Mythoria health metrics.
 
-_Last updated: 2026-07-01 - added fiscal document list/detail/issue-count/retry tools for KeyInvoice operations. Prior: 2026-06-14 - list tools serialize arrays inside named object keys for SDK result validation. Prior: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE. Prior: 2026-05-03 - blog translation upserts now update existing locale rows by `(post_id, locale)` when `contentMdx` is supplied. Prior: 2026-04-05 - per-session MCP server for concurrent SSE; Bearer on POST `/api/mcp/messages`; document no trailing slash (308 + Authorization)._
+_Last updated: 2026-08-04 - `restart_story_workflow` now uses the same durable, zero-credit Pub/Sub dispatcher as the Admin UI and exposes `published` or `retrying`. Prior: 2026-07-01 - added fiscal document list/detail/issue-count/retry tools for KeyInvoice operations. Prior: 2026-06-14 - list tools serialize arrays inside named object keys for SDK result validation. Prior: 2026-05-17 - `/api/mcp` now supports streamable HTTP `POST` for Codex clients while preserving legacy SSE._
 
 ### C. User Management
 
@@ -60,7 +60,7 @@ _Last updated: 2026-07-01 - added fiscal document list/detail/issue-count/retry 
 
 - `list_stories`: Survey the master catalog for published and drafted materials. Tool text serializes as `{ "stories": [...] }`.
 - `get_story_details`: Explore deep content routing values.
-- `restart_story_workflow`: Immediately kick off new Cloud Workflow generations to unstick stalled process assets.
+- `restart_story_workflow`: Correct a failed story generation without charging the author. The tool persists a zero-credit durable request, attempts Pub/Sub delivery, and returns `published` or `retrying`; completion sends the customer a fresh story email.
 
 ### E. Tickets
 
