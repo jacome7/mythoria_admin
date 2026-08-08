@@ -108,7 +108,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
     <>
       {(story.status === 'writing' || story.status === 'published') && (
         <button className="btn btn-warning" onClick={() => setIsRestartModalOpen(true)}>
-          Restart Story Generation
+          Restart
         </button>
       )}
       {story.isPublic && !story.isFeatured && (
@@ -122,7 +122,7 @@ export function StoryActions({ story, storyId, onStoryUpdate }: StoryActionsProp
         </button>
       )}
       <Link href="/stories" className="btn btn-outline">
-        Back to Stories
+        Back
       </Link>
 
       {isFeatureModalOpen && (

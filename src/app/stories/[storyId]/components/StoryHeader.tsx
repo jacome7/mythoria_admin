@@ -10,8 +10,8 @@ interface StoryHeaderProps {
 
 export function StoryHeader({ title, children }: StoryHeaderProps) {
   return (
-    <div className="flex justify-between items-center mb-6">
-      <div>
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
         <div className="breadcrumbs text-sm">
           <ul>
             <li>
@@ -20,9 +20,9 @@ export function StoryHeader({ title, children }: StoryHeaderProps) {
             <li>Story Details</li>
           </ul>
         </div>
-        <h1 className="text-3xl font-bold">{title}</h1>
+        <h1 className="break-words text-3xl font-bold">{title}</h1>
       </div>
-      {children && <div className="flex gap-2">{children}</div>}
+      {children && <div className="flex flex-wrap gap-2 sm:justify-end">{children}</div>}
     </div>
   );
 }
