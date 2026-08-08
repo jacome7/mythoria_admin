@@ -30,6 +30,8 @@ This guide condenses how the admin portal is wired today and merges the useful c
 | `workflows_db`  | Story generation runs, workflow steps, token/cost telemetry.              | `src/db/schema/workflows`, `src/services/workflow-monitor.ts` |
 | `backoffice_db` | Admin accounts, audit logs, tickets, system config.                       | `src/db/schema/backoffice`, `TicketService`, audit utilities  |
 
+The read-only `mythoria_db` analytics schema mirrors the Web App owner contract, including immutable first-touch attribution, latest sanitized page context, and outbox attribution/page fields. Admin does not author or apply migrations for these shared tables.
+
 Pools are lazy-loaded in `src/db/index.ts`, allowing build/test phases to skip live DB access. Health endpoints rely on `Promise.allSettled` against lightweight selects to avoid locking hot tables.
 
 ## Request and data flow
