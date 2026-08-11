@@ -1,6 +1,6 @@
 # Stories management
 
-_Last updated: 2026-08-08_
+_Last updated: 2026-08-11_
 
 ## Context
 
@@ -51,3 +51,4 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 - Admin story UI, failed-workflow retry UI, and MCP restarts share one durable dispatcher. A restart is corrective, records zero credits, never debits the author, and does not pre-create a workflow run. Immediate Pub/Sub failure returns a visible `retrying` state for the existing WebApp outbox drain.
 - When the regenerated run completes, SGW sends `story-created` again using the new `runId` as the notification idempotency key. See `storyGenerationRestarts.md` for the cross-service contract and live verification checklist.
 - On mobile, the detail header stacks management actions below the story title, which wraps rather than competing for horizontal space. The restart and return controls use the concise labels `Restart` and `Back`.
+- The story detail Author card links both the display name and full author ID to `/users/[authorId]`. Story Actions omits unavailable PDF rows, and Audio Narration uses a compact disclosure that starts collapsed.

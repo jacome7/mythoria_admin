@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import { formatAdminDateTime } from '@/lib/date-utils';
@@ -105,7 +106,9 @@ export default function StoryDetailPage() {
               <div className="space-y-3">
                 <div>
                   <span className="font-semibold">Name:</span>
-                  <span className="ml-2">{story.author.displayName}</span>
+                  <Link href={`/users/${story.author.authorId}`} className="link link-primary ml-2">
+                    {story.author.displayName}
+                  </Link>
                 </div>
                 <div>
                   <span className="font-semibold">Email:</span>
@@ -113,7 +116,12 @@ export default function StoryDetailPage() {
                 </div>
                 <div>
                   <span className="font-semibold">Author ID:</span>
-                  <span className="ml-2 text-sm opacity-70">{story.author.authorId}</span>
+                  <Link
+                    href={`/users/${story.author.authorId}`}
+                    className="link link-primary ml-2 text-sm break-all"
+                  >
+                    {story.author.authorId}
+                  </Link>
                 </div>
               </div>
             </div>

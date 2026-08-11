@@ -74,6 +74,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-07-02: Cloud Run cleanup scripts now separate `gcloud` stderr from JSON output and fail `cleanup-all.ps1` on the first cleanup step error (see `docs/deployment.md`).
 - 2026-07-17: Story readers now validate image URIs, resolve relative image paths against the generated-stories storage bucket, center chapter illustrations, and bypass stale chapter, cover, and back-cover image caches (see `docs/features/storiesManagement.md`).
 - 2026-08-04: Admin story UI, failed-workflow retry UI, and MCP restarts now share a durable zero-credit dispatcher, expose Pub/Sub retry state, and resend the completion email per regeneration run (see `docs/features/storiesManagement.md`).
+- 2026-08-11: Story details now link author identity to the author page, omit unavailable PDF rows, and keep Audio Narration collapsed by default (see `docs/features/storiesManagement.md`).
 
 ---
 
@@ -83,4 +84,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-08-04_
+_Index refreshed: 2026-08-11_

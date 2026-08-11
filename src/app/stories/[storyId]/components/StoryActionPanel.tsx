@@ -96,7 +96,7 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
   };
 
   const audioAvailable = hasAudiobook(story.audiobookUri) || story.hasAudio;
-  const [narrationPanelOpen, setNarrationPanelOpen] = useState(!audioAvailable);
+  const [narrationPanelOpen, setNarrationPanelOpen] = useState(false);
   const [listenPanelOpen, setListenPanelOpen] = useState(audioAvailable);
 
   const [selectedVoice, setSelectedVoice] = useState(getDefaultVoice());
@@ -277,99 +277,103 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
           </div>
         </div>
 
-        <div className="divider" />
+        {(story.interiorPdfUri || story.coverPdfUri || story.featureImageUri) && (
+          <>
+            <div className="divider" />
 
-        <div className="space-y-3">
-          <div>
-            <span className="font-semibold">Interior PDF:</span>
-            {story.interiorPdfUri ? (
-              <a
-                href={story.interiorPdfUri}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-sm btn-outline ml-2"
-              >
-                View Interior
-              </a>
-            ) : (
-              <span className="ml-2 text-base-content/50">Not available</span>
-            )}
-          </div>
-          <div>
-            <span className="font-semibold">Cover PDF:</span>
-            {story.coverPdfUri ? (
-              <a
-                href={story.coverPdfUri}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-sm btn-outline ml-2"
-              >
-                View Cover Spread
-              </a>
-            ) : (
-              <span className="ml-2 text-base-content/50">Not available</span>
-            )}
-          </div>
-          {story.featureImageUri && (
-            <div>
-              <span className="font-semibold">Feature Image:</span>
-              <div className="ml-2 mt-2">
-                <Image
-                  src={story.featureImageUri}
-                  alt="Feature"
-                  width={120}
-                  height={120}
-                  className="object-cover rounded"
-                />
-              </div>
+            <div className="space-y-3">
+              {story.interiorPdfUri && (
+                <div>
+                  <span className="font-semibold">Interior PDF:</span>
+                  <a
+                    href={story.interiorPdfUri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-outline ml-2"
+                  >
+                    View Interior
+                  </a>
+                </div>
+              )}
+              {story.coverPdfUri && (
+                <div>
+                  <span className="font-semibold">Cover PDF:</span>
+                  <a
+                    href={story.coverPdfUri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-outline ml-2"
+                  >
+                    View Cover Spread
+                  </a>
+                </div>
+              )}
+              {story.featureImageUri && (
+                <div>
+                  <span className="font-semibold">Feature Image:</span>
+                  <div className="ml-2 mt-2">
+                    <Image
+                      src={story.featureImageUri}
+                      alt="Feature"
+                      width={120}
+                      height={120}
+                      className="object-cover rounded"
+                    />
+                  </div>
+                </div>
+              )}
+              {story.interiorPdfUri && story.coverPdfUri && (
+                <div className="mt-4 pt-2 border-t border-base-300">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setIsPrintModalOpen(true)}
+                  >
+                    Request Print
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-          {story.interiorPdfUri && story.coverPdfUri && (
-            <div className="mt-4 pt-2 border-t border-base-300">
-              <button className="btn btn-primary btn-sm" onClick={() => setIsPrintModalOpen(true)}>
-                Request Print
-              </button>
-            </div>
-          )}
-        </div>
+          </>
+        )}
 
-        <div className="divider" />
-
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-lg font-semibold">Audio Narration</p>
-              <p className="text-sm text-base-content/70">
-                Admin narration ignores billing. Kick it off, then refresh manually to check
-                progress.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                className="btn btn-ghost btn-xs"
-                onClick={() => setNarrationPanelOpen((prev) => !prev)}
-              >
-                {narrationPanelOpen ? 'Hide form' : 'Show form'}
-              </button>
+        <section className="rounded-xl border border-base-300 overflow-hidden">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-base-200"
+            aria-expanded={narrationPanelOpen}
+            aria-controls="audio-narration-panel"
+            aria-label={`${narrationPanelOpen ? 'Collapse' : 'Expand'} Audio Narration`}
+            onClick={() => setNarrationPanelOpen((prev) => !prev)}
+          >
+            <span className="text-lg font-semibold">Audio Narration</span>
+            <span className="flex items-center gap-2">
               <span className={`badge ${statusBadgeClass} capitalize`}>
                 {statusLabel.replace('_', ' ')}
               </span>
-              <button
-                className={`btn btn-ghost btn-xs ${isRefreshing ? 'loading' : ''}`}
-                onClick={handleRefreshStatus}
-              >
-                {isRefreshing ? 'Refreshing' : 'Refresh status'}
-              </button>
-            </div>
-          </div>
-          {lastRefreshAt && (
-            <p className="text-xs text-base-content/60 mt-1">
-              Last checked at {lastRefreshAt.toLocaleTimeString()}
-            </p>
-          )}
+              <span aria-hidden="true" className="text-lg">
+                {narrationPanelOpen ? '−' : '+'}
+              </span>
+            </span>
+          </button>
 
           {narrationPanelOpen && (
-            <div className="mt-4 space-y-4 bg-base-200 rounded-xl p-4">
+            <div id="audio-narration-panel" className="space-y-4 border-t border-base-300 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-base-content/70">
+                  Generate a new narration or refresh its current status.
+                </p>
+                <button
+                  className={`btn btn-ghost btn-xs ${isRefreshing ? 'loading' : ''}`}
+                  onClick={handleRefreshStatus}
+                >
+                  {isRefreshing ? 'Refreshing' : 'Refresh status'}
+                </button>
+              </div>
+              {lastRefreshAt && (
+                <p className="text-xs text-base-content/60">
+                  Last checked at {lastRefreshAt.toLocaleTimeString()}
+                </p>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <label className="form-control w-full">
                   <span className="label-text font-semibold mb-2">Voice</span>
@@ -411,14 +415,6 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
                 <p className="text-sm text-base-content/80">{narrationMessage}</p>
               )}
             </div>
-          )}
-
-          {!narrationPanelOpen && (
-            <p className="mt-3 text-sm text-base-content/70">
-              {audioAvailable
-                ? 'Need an alternate take? Open the form to fire another narration run.'
-                : 'No audio yet. Tap "Narrate Story" above to start a run.'}
-            </p>
           )}
         </section>
 
