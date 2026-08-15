@@ -34,6 +34,7 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 - **Project**: oceanic-beach-460916-n5
 - **Service Name**: mythoria-admin
 - **Container Registry**: Google Container Registry (GCR)
+- **Release traceability**: Cloud Build tags each image with the exact Git SHA, deploys that immutable tag, and records the `git-sha` and Cloud Build ID on the Cloud Run revision.
 
 ## Prerequisites
 
@@ -337,8 +338,9 @@ gcloud builds triggers create github \
 # Navigate to project directory
 cd c:\Mythoria\mythoria_admin
 
-# Submit build to Cloud Build
-gcloud builds submit --config cloudbuild.yaml
+# Submit the checked-out commit to Cloud Build
+$gitSha = (git rev-parse HEAD).Trim()
+gcloud builds submit --config cloudbuild.yaml --substitutions "_GIT_SHA=$gitSha"
 
 # Monitor build progress
 gcloud builds list --limit=5

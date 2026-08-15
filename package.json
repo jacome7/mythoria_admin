@@ -14,7 +14,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "logs": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\logs.ps1",
-    "test": "jest",
+    "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "db:generate": "drizzle-kit generate",

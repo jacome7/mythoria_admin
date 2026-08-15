@@ -82,6 +82,18 @@ try {
     }
     Write-Host "[OK] Authenticated as: $account"
 
+    $worktreeStatus = & git status --porcelain
+    if ($worktreeStatus) {
+        Write-Host "[ERR] Deployment requires a clean Git worktree so the image can be traced to a commit." -ForegroundColor Red
+        exit 1
+    }
+    $gitSha = (& git rev-parse HEAD).Trim()
+    if ($gitSha -notmatch '^[0-9a-f]{40}$') {
+        Write-Host "[ERR] Unable to resolve the source commit SHA." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "[OK] Source revision: $gitSha"
+
     # Enable required APIs
     Write-Host "[INFO] Enabling required Google Cloud APIs..."
     $apis = @(
@@ -167,10 +179,10 @@ try {
     Write-Host "[INFO] This may take several minutes..."
     
     if ($VerboseLogging) {
-        & $gcloudPath beta builds submit --config cloudbuild.yaml --verbosity=debug
+        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions "_GIT_SHA=$gitSha" --verbosity=debug
     }
     else {
-        & $gcloudPath beta builds submit --config cloudbuild.yaml
+        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions "_GIT_SHA=$gitSha"
     }
     
     if ($LASTEXITCODE -ne 0) {

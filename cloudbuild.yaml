@@ -7,14 +7,21 @@ steps:
       - '--build-arg'
       - 'NODE_VERSION=$_NODE_VERSION'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_GIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest'
       - '.'
 
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_GIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
@@ -24,7 +31,7 @@ steps:
       - 'deploy'
       - '$_SERVICE_NAME'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_GIT_SHA'
       - '--region'
       - '$_REGION'
       - '--platform'
@@ -53,6 +60,8 @@ steps:
       - 'default'
       - '--vpc-egress'
       - 'all-traffic'
+      - '--update-labels'
+      - 'git-sha=${_GIT_SHA},cloud-build-id=$BUILD_ID'
       - '--set-env-vars'
       - 'NODE_ENV=production,GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},NEXTAUTH_URL=${_NEXTAUTH_URL},AUTH_URL=${_NEXTAUTH_URL},DB_PORT=${_DB_PORT},MYTHORIA_DB=${_MYTHORIA_DB},WORKFLOWS_DB=${_WORKFLOWS_DB_NAME},BACKOFFICE_DB=${_BACKOFFICE_DB_NAME},GOOGLE_CLOUD_PROJECT_ID=${_GOOGLE_CLOUD_PROJECT_ID},WEBAPP_URL=${_WEBAPP_URL},ADMIN_URL=${_ADMIN_URL},NEXT_PUBLIC_ADMIN_URL=${_ADMIN_URL},NEXT_PUBLIC_APP_URL=${_WEBAPP_URL},STORY_GENERATION_WORKFLOW_URL=${_STORY_GENERATION_WORKFLOW_URL},NOTIFICATION_ENGINE_URL=${_NOTIFICATION_ENGINE_URL},DB_MAX_CONNECTIONS=${_DB_MAX_CONNECTIONS}'
       - '--set-secrets'
@@ -61,6 +70,7 @@ steps:
 # Default substitutions
 substitutions:
   _SERVICE_NAME: 'mythoria-admin'
+  _GIT_SHA: 'unknown'
   _REGION: 'europe-west9'
   _NODE_VERSION: '24.18.1'
   # Non-sensitive configuration variables
@@ -83,3 +93,6 @@ options:
   diskSizeGb: '100'
 
 timeout: '1200s'
+
+images:
+  - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$_GIT_SHA'
