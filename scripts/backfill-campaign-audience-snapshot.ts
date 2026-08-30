@@ -1,10 +1,13 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { config as loadEnvironment } from 'dotenv';
-import { getBackofficeDb } from '@/db';
 import { marketingCampaigns } from '@/db/schema/campaigns';
-import { campaignService } from '@/db/services/campaigns';
 
 loadEnvironment({ path: '.env.local', quiet: true });
+
+const [{ getBackofficeDb }, { campaignService }] = await Promise.all([
+  import('@/db'),
+  import('@/db/services/campaigns'),
+]);
 
 const campaignId = process.argv[2];
 if (!campaignId) throw new Error('Usage: npm run campaign:snapshot -- <campaign-id>');
