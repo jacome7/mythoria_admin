@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiKeyService } from '@/lib/auth/api-key-service';
-import { adminService } from '@/db/services';
+import { markEmailBounced } from '@/db/services/emailDeliverability';
 
 /**
  * POST /api/admin/leads/bounce
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { email, emailStatus } = body;
+    const { email, emailStatus, bounceType } = body;
 
     // Validate required fields
     if (!email || typeof email !== 'string') {
@@ -51,42 +51,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!emailStatus || typeof emailStatus !== 'string') {
-      return NextResponse.json(
-        { error: 'Missing or invalid required field: emailStatus' },
-        { status: 400 },
-      );
+    const resolvedBounceType =
+      bounceType === 'hard' || bounceType === 'soft'
+        ? bounceType
+        : emailStatus === 'hard_bounce'
+          ? 'hard'
+          : emailStatus === 'soft_bounce'
+            ? 'soft'
+            : null;
+
+    if (!resolvedBounceType) {
+      return NextResponse.json({ error: 'bounceType must be hard or soft' }, { status: 400 });
     }
 
-    // Validate email status
-    const validStatuses = ['ready', 'sent', 'open', 'click', 'soft_bounce', 'hard_bounce', 'unsub'];
-    if (!validStatuses.includes(emailStatus)) {
-      return NextResponse.json(
-        {
-          error: `Invalid email status. Must be one of: ${validStatuses.join(', ')}`,
-        },
-        { status: 400 },
-      );
-    }
-
-    // Find lead by email using adminService
-    const lead = await adminService.getLeadByEmail(email);
-
-    if (!lead) {
-      return NextResponse.json({ error: `Lead not found with email: ${email}` }, { status: 404 });
-    }
-
-    // Update the lead status using adminService
-    const updatedLead = await adminService.updateLeadStatus(lead.id, emailStatus);
-
-    if (!updatedLead) {
-      return NextResponse.json({ error: 'Failed to update lead status' }, { status: 500 });
-    }
+    const result = await markEmailBounced(email, resolvedBounceType);
 
     return NextResponse.json({
       success: true,
-      message: `Lead email status updated to: ${emailStatus}`,
-      lead: updatedLead,
+      ...result,
     });
   } catch (error) {
     console.error('Error updating lead bounce status:', error);

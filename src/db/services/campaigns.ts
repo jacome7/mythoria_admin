@@ -5,7 +5,8 @@ import {
   marketingCampaignBatches,
   marketingCampaignRecipients,
 } from '../schema/campaigns';
-import { and, count, desc, eq, gte, sql, asc } from 'drizzle-orm';
+import { and, count, desc, eq, gte, sql, asc, inArray } from 'drizzle-orm';
+import { authors, paymentEvents, paymentOrders } from '../schema';
 import type {
   CampaignStatus,
   CampaignAudienceSource,
@@ -39,6 +40,15 @@ function isValidTransition(current: CampaignStatus, next: CampaignStatus): boole
 const DUPLICATE_SUFFIX = ' - copy';
 const MAX_CAMPAIGN_TITLE_LENGTH = 255;
 const DEFAULT_USER_NOTIFICATION_PREFERENCES = ['news', 'inspiration'] as const;
+const METRICS_QUERY_CHUNK_SIZE = 1000;
+
+function chunkValues<T>(values: T[], size = METRICS_QUERY_CHUNK_SIZE): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
 
 function buildDuplicateTitle(title: string): string {
   const maxBaseLength = MAX_CAMPAIGN_TITLE_LENGTH - DUPLICATE_SUFFIX.length;
@@ -379,12 +389,29 @@ export const campaignService = {
       );
     }
 
+    let audienceSnapshot: { audienceTotalSnapshot?: number; audienceSnapshotAt?: Date } = {};
+    if (newStatus === 'active' && existing.audienceTotalSnapshot == null) {
+      const estimate = await campaignService.getEstimatedAudienceCount(
+        id,
+        existing.audienceSource,
+        existing.filterTree as FilterTree | null,
+        existing.userNotificationPreferences,
+        existing.attachmentType,
+      );
+      const progress = await campaignService.getCampaignProgress(id);
+      audienceSnapshot = {
+        audienceTotalSnapshot: progress.total + estimate.total,
+        audienceSnapshotAt: new Date(),
+      };
+    }
+
     const [updated] = await db
       .update(marketingCampaigns)
       .set({
         status: newStatus,
         updatedBy: adminEmail,
         updatedAt: new Date(),
+        ...audienceSnapshot,
       })
       .where(eq(marketingCampaigns.id, id))
       .returning();
@@ -567,16 +594,234 @@ export const campaignService = {
       .where(eq(marketingCampaignRecipients.campaignId, campaignId))
       .groupBy(marketingCampaignRecipients.status);
 
-    const result = { sent: 0, failed: 0, skipped: 0, queued: 0, total: 0 };
+    const [campaign] = await db
+      .select({
+        audienceTotalSnapshot: marketingCampaigns.audienceTotalSnapshot,
+        audienceSnapshotAt: marketingCampaigns.audienceSnapshotAt,
+      })
+      .from(marketingCampaigns)
+      .where(eq(marketingCampaigns.id, campaignId))
+      .limit(1);
+
+    const result = {
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      queued: 0,
+      total: 0,
+      audienceTotalSnapshot: campaign?.audienceTotalSnapshot ?? null,
+      audienceSnapshotAt: campaign?.audienceSnapshotAt ?? null,
+    };
     for (const row of statuses) {
-      const key = row.status as keyof typeof result;
-      if (key in result) {
-        result[key] = row.count;
+      if (
+        row.status === 'sent' ||
+        row.status === 'failed' ||
+        row.status === 'skipped' ||
+        row.status === 'queued'
+      ) {
+        result[row.status] = row.count;
       }
       result.total += row.count;
     }
 
     return result;
+  },
+
+  async getCampaignSuccessMetrics(campaignId: string) {
+    const backofficeDb = getBackofficeDb();
+    const mythoriaDb = getMythoriaDb();
+    const sentRecipients = await backofficeDb
+      .select({
+        id: marketingCampaignRecipients.id,
+        campaignId: marketingCampaignRecipients.campaignId,
+        recipientType: marketingCampaignRecipients.recipientType,
+        email: marketingCampaignRecipients.email,
+        processedAt: marketingCampaignRecipients.processedAt,
+        trackingEnabledAt: marketingCampaignRecipients.trackingEnabledAt,
+        openedAt: marketingCampaignRecipients.openedAt,
+        clickedAt: marketingCampaignRecipients.clickedAt,
+      })
+      .from(marketingCampaignRecipients)
+      .where(
+        and(
+          eq(marketingCampaignRecipients.campaignId, campaignId),
+          eq(marketingCampaignRecipients.status, 'sent'),
+        ),
+      );
+
+    const tracked = sentRecipients.filter((row) => row.trackingEnabledAt != null);
+    const historical = sentRecipients.filter((row) => row.trackingEnabledAt == null);
+    const emails = Array.from(new Set(sentRecipients.map((row) => row.email.trim().toLowerCase())));
+    const allRelatedRecipients = (
+      await Promise.all(
+        chunkValues(emails).map((emailChunk) =>
+          backofficeDb
+            .select({
+              id: marketingCampaignRecipients.id,
+              campaignId: marketingCampaignRecipients.campaignId,
+              recipientType: marketingCampaignRecipients.recipientType,
+              email: marketingCampaignRecipients.email,
+              processedAt: marketingCampaignRecipients.processedAt,
+              trackingEnabledAt: marketingCampaignRecipients.trackingEnabledAt,
+              clickedAt: marketingCampaignRecipients.clickedAt,
+            })
+            .from(marketingCampaignRecipients)
+            .where(
+              and(
+                eq(marketingCampaignRecipients.status, 'sent'),
+                inArray(sql`lower(${marketingCampaignRecipients.email})`, emailChunk),
+              ),
+            ),
+        ),
+      )
+    ).flat();
+
+    const authorRows = (
+      await Promise.all(
+        chunkValues(emails).map((emailChunk) =>
+          mythoriaDb
+            .select({
+              authorId: authors.authorId,
+              email: authors.email,
+              createdAt: authors.createdAt,
+              acquisitionCampaignRecipientId: authors.acquisitionCampaignRecipientId,
+            })
+            .from(authors)
+            .where(inArray(sql`lower(${authors.email})`, emailChunk)),
+        ),
+      )
+    ).flat();
+    const authorIds = authorRows.map((row) => row.authorId);
+    const completedOrders = (
+      await Promise.all(
+        chunkValues(authorIds).map((authorIdChunk) =>
+          mythoriaDb
+            .select({
+              orderId: paymentOrders.orderId,
+              authorId: paymentOrders.authorId,
+              emailCampaignRecipientId: paymentOrders.emailCampaignRecipientId,
+              completedAt: paymentEvents.createdAt,
+            })
+            .from(paymentOrders)
+            .innerJoin(
+              paymentEvents,
+              and(
+                eq(paymentEvents.orderId, paymentOrders.orderId),
+                eq(paymentEvents.eventType, 'payment_completed'),
+              ),
+            )
+            .where(
+              and(
+                eq(paymentOrders.status, 'completed'),
+                inArray(paymentOrders.authorId, authorIdChunk),
+              ),
+            ),
+        ),
+      )
+    ).flat();
+
+    const recipientById = new Map(allRelatedRecipients.map((row) => [row.id, row]));
+    const currentRecipientIds = new Set(sentRecipients.map((row) => row.id));
+    const exactAccountIds = new Set<string>();
+    const exactBuyerIds = new Set<string>();
+    const estimatedAccountIds = new Set<string>();
+    const estimatedBuyerIds = new Set<string>();
+    const windowMs = 30 * 24 * 60 * 60 * 1000;
+
+    for (const author of authorRows) {
+      const exactRecipient = author.acquisitionCampaignRecipientId
+        ? recipientById.get(author.acquisitionCampaignRecipientId)
+        : undefined;
+      if (
+        exactRecipient?.campaignId === campaignId &&
+        exactRecipient.clickedAt &&
+        exactRecipient.recipientType === 'lead' &&
+        exactRecipient.email.trim().toLowerCase() === author.email.trim().toLowerCase() &&
+        author.createdAt >= exactRecipient.clickedAt &&
+        author.createdAt.getTime() <= exactRecipient.clickedAt.getTime() + windowMs
+      ) {
+        exactAccountIds.add(author.authorId);
+      } else {
+        const conversionTime = author.createdAt.getTime();
+        const latest = allRelatedRecipients
+          .filter(
+            (row) =>
+              row.trackingEnabledAt == null &&
+              row.recipientType === 'lead' &&
+              row.email.trim().toLowerCase() === author.email.trim().toLowerCase() &&
+              row.processedAt &&
+              row.processedAt.getTime() <= conversionTime &&
+              conversionTime <= row.processedAt.getTime() + windowMs,
+          )
+          .sort((a, b) => (b.processedAt?.getTime() ?? 0) - (a.processedAt?.getTime() ?? 0))[0];
+        if (latest?.campaignId === campaignId) estimatedAccountIds.add(author.authorId);
+      }
+    }
+
+    const authorById = new Map(authorRows.map((row) => [row.authorId, row]));
+    for (const order of completedOrders) {
+      const exactRecipient = order.emailCampaignRecipientId
+        ? recipientById.get(order.emailCampaignRecipientId)
+        : undefined;
+      if (
+        exactRecipient?.campaignId === campaignId &&
+        exactRecipient.clickedAt &&
+        authorById.get(order.authorId)?.email.trim().toLowerCase() ===
+          exactRecipient.email.trim().toLowerCase() &&
+        order.completedAt >= exactRecipient.clickedAt &&
+        order.completedAt.getTime() <= exactRecipient.clickedAt.getTime() + windowMs
+      ) {
+        exactBuyerIds.add(order.authorId);
+        continue;
+      }
+      if (order.emailCampaignRecipientId) continue;
+      const author = authorById.get(order.authorId);
+      if (!author) continue;
+      const completedAt = order.completedAt.getTime();
+      const latest = allRelatedRecipients
+        .filter(
+          (row) =>
+            row.trackingEnabledAt == null &&
+            row.email.trim().toLowerCase() === author.email.trim().toLowerCase() &&
+            row.processedAt &&
+            row.processedAt.getTime() <= completedAt &&
+            completedAt <= row.processedAt.getTime() + windowMs,
+        )
+        .sort((a, b) => (b.processedAt?.getTime() ?? 0) - (a.processedAt?.getTime() ?? 0))[0];
+      if (latest?.campaignId === campaignId) estimatedBuyerIds.add(order.authorId);
+    }
+
+    const metric = (value: number, denominator: number) => ({
+      value,
+      denominator,
+      rate: denominator > 0 ? value / denominator : null,
+    });
+    const trackedLeadCount = tracked.filter((row) => row.recipientType === 'lead').length;
+    const historicalLeadCount = historical.filter((row) => row.recipientType === 'lead').length;
+
+    return {
+      trackingStartedAt:
+        tracked
+          .map((row) => row.trackingEnabledAt)
+          .filter((value): value is Date => value != null)
+          .sort((a, b) => a.getTime() - b.getTime())[0] ?? null,
+      measured: {
+        sent: tracked.length,
+        opens: metric(tracked.filter((row) => row.openedAt != null).length, tracked.length),
+        clicks: metric(tracked.filter((row) => row.clickedAt != null).length, tracked.length),
+        accounts: metric(exactAccountIds.size, trackedLeadCount),
+        creditBuyers: metric(exactBuyerIds.size, tracked.length),
+      },
+      historicalEstimate: {
+        sent: historical.length,
+        accounts: metric(estimatedAccountIds.size, historicalLeadCount),
+        creditBuyers: metric(estimatedBuyerIds.size, historical.length),
+        method: 'last_send_30d' as const,
+      },
+      diagnostics: {
+        currentRecipients: currentRecipientIds.size,
+      },
+    };
   },
 
   async getBatchHistory(campaignId: string, page = 1, limit = 20) {
@@ -654,6 +899,7 @@ export const campaignService = {
         // Default suppression: only users with allowed notification preferences
         const userConditions: string[] = [
           `notification_preference IN (${preferences.map((value) => `'${String(value).replace(/'/g, "''")}'`).join(', ')})`,
+          `email_status NOT IN ('unsub', 'hard_bounce')`,
         ];
 
         // Apply filter tree

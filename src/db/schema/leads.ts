@@ -1,19 +1,9 @@
-import { pgTable, uuid, varchar, timestamp, index, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
+import { emailStatusEnum } from './enums';
 
 // -----------------------------------------------------------------------------
 // Email Marketing Leads domain
 // -----------------------------------------------------------------------------
-
-// Email status enum for lead tracking through the email marketing funnel
-export const emailStatusEnum = pgEnum('email_status', [
-  'ready',
-  'sent',
-  'open',
-  'click',
-  'soft_bounce',
-  'hard_bounce',
-  'unsub',
-]);
 
 // Leads table for email marketing campaigns
 export const leads = pgTable(

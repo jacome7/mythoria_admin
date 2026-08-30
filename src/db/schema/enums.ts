@@ -44,6 +44,16 @@ export const creditEventTypeEnum = pgEnum('credit_event_type', [
   'imageEdit',
 ]);
 
+export const emailStatusEnum = pgEnum('email_status', [
+  'ready',
+  'sent',
+  'open',
+  'click',
+  'soft_bounce',
+  'hard_bounce',
+  'unsub',
+]);
+
 // Sharing functionality enums
 export const accessLevelEnum = pgEnum('access_level', ['view', 'edit']);
 export const collaboratorRoleEnum = pgEnum('collaborator_role', ['editor', 'viewer']);

@@ -68,6 +68,8 @@ export const marketingCampaigns = pgTable(
     skipPrintQa: boolean('skip_print_qa').default(false).notNull(),
     startAt: timestamp('start_at', { withTimezone: true }),
     endAt: timestamp('end_at', { withTimezone: true }),
+    audienceTotalSnapshot: integer('audience_total_snapshot'),
+    audienceSnapshotAt: timestamp('audience_snapshot_at', { withTimezone: true }),
     createdBy: varchar('created_by', { length: 255 }).notNull(),
     updatedBy: varchar('updated_by', { length: 255 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -167,6 +169,9 @@ export const marketingCampaignRecipients = pgTable(
     status: campaignRecipientStatusEnum('status').default('queued').notNull(),
     lastError: text('last_error'),
     processedAt: timestamp('processed_at', { withTimezone: true }),
+    trackingEnabledAt: timestamp('tracking_enabled_at', { withTimezone: true }),
+    openedAt: timestamp('opened_at', { withTimezone: true }),
+    clickedAt: timestamp('clicked_at', { withTimezone: true }),
     attachmentContext: jsonb('attachment_context').$type<{
       storyId: string;
       storyTitle?: string;
@@ -187,6 +192,18 @@ export const marketingCampaignRecipients = pgTable(
     campaignProcessedIdx: index('idx_campaign_recipients_campaign_processed').on(
       table.campaignId,
       table.processedAt,
+    ),
+    campaignTrackingIdx: index('idx_campaign_recipients_campaign_tracking').on(
+      table.campaignId,
+      table.trackingEnabledAt,
+    ),
+    campaignOpenedIdx: index('idx_campaign_recipients_campaign_opened').on(
+      table.campaignId,
+      table.openedAt,
+    ),
+    campaignClickedIdx: index('idx_campaign_recipients_campaign_clicked').on(
+      table.campaignId,
+      table.clickedAt,
     ),
   }),
 );

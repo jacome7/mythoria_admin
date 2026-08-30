@@ -24,12 +24,13 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     // Also fetch batch history and progress
-    const [progress, batchHistory] = await Promise.all([
+    const [progress, batchHistory, successMetrics] = await Promise.all([
       campaignService.getCampaignProgress(id),
       campaignService.getBatchHistory(id, 1, 10),
+      campaignService.getCampaignSuccessMetrics(id),
     ]);
 
-    return NextResponse.json({ ...campaign, progress, batchHistory });
+    return NextResponse.json({ ...campaign, progress, batchHistory, successMetrics });
   } catch (error) {
     console.error('Error fetching campaign:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

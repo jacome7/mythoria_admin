@@ -661,6 +661,7 @@ export default function CampaignDetailPage() {
             <h3 className="card-title text-sm mb-3">Campaign Progress</h3>
             <CampaignProgress
               progress={campaign.progress}
+              successMetrics={campaign.successMetrics}
               batches={campaign.batchHistory.batches}
               totalBatches={campaign.batchHistory.total}
             />

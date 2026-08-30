@@ -31,6 +31,7 @@ export interface CampaignDetailResponse extends MarketingCampaign {
     page: number;
     limit: number;
   };
+  successMetrics: CampaignSuccessMetrics;
 }
 
 export interface CampaignProgress {
@@ -39,6 +40,31 @@ export interface CampaignProgress {
   skipped: number;
   queued: number;
   total: number;
+  audienceTotalSnapshot: number | null;
+  audienceSnapshotAt: string | null;
+}
+
+export interface CampaignMetric {
+  value: number;
+  denominator: number;
+  rate: number | null;
+}
+
+export interface CampaignSuccessMetrics {
+  trackingStartedAt: string | null;
+  measured: {
+    sent: number;
+    opens: CampaignMetric;
+    clicks: CampaignMetric;
+    accounts: CampaignMetric;
+    creditBuyers: CampaignMetric;
+  };
+  historicalEstimate: {
+    sent: number;
+    accounts: CampaignMetric;
+    creditBuyers: CampaignMetric;
+    method: 'last_send_30d';
+  };
 }
 
 export interface AudienceCount {

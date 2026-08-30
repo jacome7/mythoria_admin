@@ -94,6 +94,7 @@ export const paymentOrders = pgTable(
     provider: paymentProviderEnum('provider').notNull(),
     providerOrderId: varchar('provider_order_id', { length: 255 }), // Stripe Checkout Session ID or legacy provider order ID
     providerPublicId: varchar('provider_public_id', { length: 255 }), // Stripe PaymentIntent ID or legacy public ID
+    emailCampaignRecipientId: uuid('email_campaign_recipient_id'),
     creditBundle: jsonb('credit_bundle').notNull(), // { credits: number, price: number, bonusCredits?: number }
     metadata: jsonb('metadata'), // Additional data
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -105,6 +106,9 @@ export const paymentOrders = pgTable(
     statusIdx: index('payment_orders_status_idx').on(table.status),
     providerOrderIdIdx: index('payment_orders_provider_order_id_idx').on(table.providerOrderId),
     createdAtIdx: index('payment_orders_created_at_idx').on(table.createdAt),
+    emailCampaignRecipientIdx: index('payment_orders_email_campaign_recipient_idx').on(
+      table.emailCampaignRecipientId,
+    ),
   }),
 );
 

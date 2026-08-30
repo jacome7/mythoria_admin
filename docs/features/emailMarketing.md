@@ -471,3 +471,15 @@ For `selfprint` campaigns the evaluator additionally:
 - [API Reference](../api-reference.md) — full route map
 - [Architecture](../ARCHITECTURE.md) — database topology and service boundaries
 - [Notification Engine AGENTS.md](../../../notification-engine/AGENTS.md) — dispatch service details
+
+---
+
+## Engagement and conversion reporting (2026-08-30)
+
+Real campaign recipients now store `tracking_enabled_at`, first `opened_at`, and latest `clicked_at`. The Admin funnel reports unique opens, clicks, newly created accounts, and unique credit buyers. Every metric includes its explicit denominator; opens are labelled approximate; user-only campaigns show account conversion as not applicable.
+
+Measured conversion uses a 30-day last-email-click recipient ID. Historical pre-tracking sends use a separately labelled normalized-email `last_send_30d` estimate and never receive retroactive open counts. Completed payment events are the authoritative purchase source.
+
+Campaign activation freezes `audience_total_snapshot`. Progress is processed recipients divided by that snapshot, not sent divided by already-processed rows. For an older active campaign, run `npm run campaign:snapshot -- <campaign-id>` once after applying `scripts/email-campaign-engagement-migration.sql`.
+
+Hard-bounced users and leads are excluded by default. Soft-bounced recipients remain eligible for a later campaign attempt.

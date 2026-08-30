@@ -367,3 +367,9 @@ curl -X GET https://admin.mythoria.pt/api/ping \
 ## Support
 
 For implementation questions or issues, contact the Mythoria development team at **@mythoria.pt** or **@caravanconcierge.com**.
+
+## Unified bounce behavior (2026-08-30)
+
+The canonical operational interface is the Admin MCP tool `mark_email_bounced` with `{ "email": "recipient@example.com", "bounceType": "hard" | "soft" }`. The REST endpoint also accepts this shape and retains compatibility with `emailStatus: "hard_bounce" | "soft_bounce"`.
+
+Matching trims and lowercases the address and updates every match in both `leads` and `authors`. Unsubscribed or hard-bounced records are never downgraded; soft bounces may escalate to hard. A no-match response is successful with `found: false`, allowing Ops agents to report it without retry loops.

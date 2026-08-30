@@ -29,7 +29,11 @@
     "seed:world-book-day": "tsx -r dotenv/config ./scripts/seed-world-book-day-2026.ts",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1",
     "deploy:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1 -Fast",
-    "check:env": "tsx ./scripts/check-env-parity.ts"
+    "check:env": "tsx ./scripts/check-env-parity.ts",
+    "campaign:migrate-engagement": "tsx -r dotenv/config ./scripts/apply-email-campaign-engagement-migration.ts",
+    "campaign:migration-preflight": "tsx ./scripts/verify-email-campaign-engagement-migration.ts",
+    "campaign:migration-postflight": "tsx ./scripts/verify-email-campaign-engagement-migration.ts --postflight",
+    "campaign:snapshot": "tsx -r dotenv/config ./scripts/backfill-campaign-audience-snapshot.ts"
   },
   "sideEffects": false,
   "dependencies": {

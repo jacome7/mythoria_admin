@@ -14,6 +14,7 @@ import {
 } from '@/lib/fiscal-documents';
 import type { CreateCampaignInput, UpdateCampaignInput } from '@/lib/schemas/campaigns';
 import { FiscalDocumentRetryHttpError } from '@/services/fiscal-document-retry';
+import { createHash } from 'node:crypto';
 
 function toolErr(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -514,6 +515,33 @@ export function registerMcpTools(server: McpServer) {
   // -----------------------------------------------------
   // Group G: Email Marketing
   // -----------------------------------------------------
+  server.tool(
+    'mark_email_bounced',
+    'Mark an email address as hard or soft bounced everywhere it exists in leads and registered users. Matching is case-insensitive. Repeated calls are safe.',
+    {
+      email: z.string().trim().email().max(255),
+      bounceType: z.enum(['hard', 'soft']),
+    },
+    async ({ email, bounceType }) => {
+      try {
+        const { markEmailBounced } = await import('@/db/services/emailDeliverability');
+        const result = await markEmailBounced(email, bounceType);
+        console.log('[MCP AUDIT] mark_email_bounced', {
+          emailHash: createHash('sha256').update(result.normalizedEmail).digest('hex'),
+          bounceType,
+          found: result.found,
+          leadsMatched: result.leadsMatched,
+          usersMatched: result.usersMatched,
+          updated: result.updated,
+          unchanged: result.unchanged,
+        });
+        return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      } catch (e: unknown) {
+        return { isError: true, content: [{ type: 'text', text: `Error: ${toolErr(e)}` }] };
+      }
+    },
+  );
+
   server.tool(
     'list_campaigns',
     'List email marketing campaigns.',

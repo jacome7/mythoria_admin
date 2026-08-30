@@ -1,6 +1,10 @@
 'use client';
 
-import type { CampaignProgress as CampaignProgressType } from '@/lib/campaignClient';
+import type {
+  CampaignProgress as CampaignProgressType,
+  CampaignSuccessMetrics,
+  CampaignMetric,
+} from '@/lib/campaignClient';
 import type { MarketingCampaignBatch } from '@/db/schema/campaigns';
 import { FiBarChart2, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 
@@ -8,14 +12,18 @@ interface CampaignProgressProps {
   progress: CampaignProgressType;
   batches: MarketingCampaignBatch[];
   totalBatches: number;
+  successMetrics: CampaignSuccessMetrics;
 }
 
 export default function CampaignProgress({
   progress,
   batches,
   totalBatches,
+  successMetrics,
 }: CampaignProgressProps) {
-  const sentPercent = progress.total > 0 ? Math.round((progress.sent / progress.total) * 100) : 0;
+  const progressPercent = progress.audienceTotalSnapshot
+    ? Math.min(100, Math.round((progress.total / progress.audienceTotalSnapshot) * 100))
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -39,14 +47,57 @@ export default function CampaignProgress({
         </div>
       </div>
 
+      <div>
+        <h4 className="text-sm font-medium mb-2">Measured campaign funnel</h4>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <MetricCard title="Unique opens" metric={successMetrics.measured.opens} approximate />
+          <MetricCard title="Unique clicks" metric={successMetrics.measured.clicks} />
+          <MetricCard title="Accounts created" metric={successMetrics.measured.accounts} />
+          <MetricCard title="Credit buyers" metric={successMetrics.measured.creditBuyers} />
+        </div>
+        <p className="text-xs text-base-content/50 mt-2">
+          Measured from {successMetrics.measured.sent.toLocaleString()} tracking-enabled sends.
+          Opens are approximate because mail clients may preload images.
+        </p>
+      </div>
+
+      {successMetrics.historicalEstimate.sent > 0 && (
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
+          <h4 className="text-sm font-medium">Historical association — estimated</h4>
+          <p className="text-xs text-base-content/60 mt-1 mb-3">
+            Same normalized email, assigned to the most recent send within 30 days. This is an
+            association, not proof that the email caused the conversion. Historical opens are not
+            available.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <MetricCard
+              title="Estimated accounts"
+              metric={successMetrics.historicalEstimate.accounts}
+            />
+            <MetricCard
+              title="Estimated credit buyers"
+              metric={successMetrics.historicalEstimate.creditBuyers}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Progress bar */}
-      {progress.total > 0 && (
+      {progress.audienceTotalSnapshot != null && progress.audienceTotalSnapshot > 0 && (
         <div>
           <div className="flex justify-between text-xs text-base-content/60 mb-1">
             <span>Delivery progress</span>
-            <span>{sentPercent}%</span>
+            <span>{progressPercent}%</span>
           </div>
-          <progress className="progress progress-success w-full" value={sentPercent} max="100" />
+          <progress
+            className="progress progress-success w-full"
+            value={progressPercent}
+            max="100"
+          />
+          <p className="text-xs text-base-content/50 mt-1">
+            {progress.total.toLocaleString()} processed of{' '}
+            {progress.audienceTotalSnapshot.toLocaleString()} in the frozen audience snapshot.
+          </p>
         </div>
       )}
 
@@ -112,6 +163,28 @@ export default function CampaignProgress({
           No batches sent yet. Activate the campaign to start sending.
         </p>
       )}
+    </div>
+  );
+}
+
+function MetricCard({
+  title,
+  metric,
+  approximate = false,
+}: {
+  title: string;
+  metric: CampaignMetric;
+  approximate?: boolean;
+}) {
+  const percentage = metric.rate == null ? '—' : `${(metric.rate * 100).toFixed(1)}%`;
+  return (
+    <div className="stat bg-base-100 border border-base-200 rounded-lg py-3 px-4">
+      <div className="stat-title text-xs">{title}</div>
+      <div className="stat-value text-lg">{metric.value.toLocaleString()}</div>
+      <div className="stat-desc">
+        {approximate ? '≈ ' : ''}
+        {percentage} of {metric.denominator.toLocaleString()}
+      </div>
     </div>
   );
 }

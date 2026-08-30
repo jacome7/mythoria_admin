@@ -7,6 +7,7 @@ import {
   primaryGoalEnum,
   audienceForStoriesEnum,
   notificationPreferenceEnum,
+  emailStatusEnum,
 } from './enums';
 
 // -----------------------------------------------------------------------------
@@ -47,6 +48,11 @@ export const authors = pgTable(
       .default('inspiration'),
     // Timestamp when the welcome email was sent (for idempotency and audit)
     welcomeEmailSentAt: timestamp('welcome_email_sent_at', { withTimezone: true }),
+    emailStatus: emailStatusEnum('email_status').notNull().default('ready'),
+    emailStatusUpdatedAt: timestamp('email_status_updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    acquisitionCampaignRecipientId: uuid('acquisition_campaign_recipient_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
@@ -55,6 +61,10 @@ export const authors = pgTable(
     emailIdx: index('authors_email_idx').on(table.email),
     lastLoginAtIdx: index('authors_last_login_at_idx').on(table.lastLoginAt),
     createdAtIdx: index('authors_created_at_idx').on(table.createdAt),
+    emailStatusIdx: index('authors_email_status_idx').on(table.emailStatus),
+    acquisitionCampaignRecipientIdx: index('authors_acquisition_campaign_recipient_idx').on(
+      table.acquisitionCampaignRecipientId,
+    ),
   }),
 );
 

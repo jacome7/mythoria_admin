@@ -80,6 +80,7 @@ _Last updated: 2026-08-04 - `restart_story_workflow` now uses the same durable, 
 - `create_campaign` / `edit_campaign` / `get_campaign_details`: Directly manage Handlebars templates inside DB layers.
 - `pause_campaign`: Securely dispatch "paused" lifecycle transitions explicitly halting notification service aggregations.
 - `resume_campaign`: Transition a **paused** campaign back to **active** (same `id` + `adminEmail` audit fields as `pause_campaign`).
+- `mark_email_bounced`: Mark an email as `hard` or `soft` bounced across both leads and registered users. Matching is case-insensitive; the tool is idempotent and returns separate lead/user match counts. Never use a sender or forwarding address from a bounce notice as the recipient key.
 
 ### H. FAQs
 
