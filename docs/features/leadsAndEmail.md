@@ -1,6 +1,6 @@
 # Leads and email marketing
 
-_Last updated: 2026-02-08_
+_Last updated: 2026-08-31_
 
 ## Context
 
@@ -8,10 +8,23 @@ Lead acquisition and outbound campaign setup is split between `/leads` (data hyg
 
 ## UI workflow
 
-1. `/leads` supports searching, bulk status updates, CSV import, and lead detail edits.
-2. Import modal submits CSV files and receives row-level validation outcomes.
-3. Bulk controls update email status flags used for targeting.
-4. `/email-marketing` loads list size stats and dispatches campaign batches through Notification Engine proxies.
+1. `/leads` shows global delivery-status cards above the management controls: total leads, hard bounces, soft bounces, and unsubscribes. Each status card includes its count and its percentage of all leads.
+2. `/leads` supports searching, bulk status updates, CSV import, and lead detail edits.
+3. Import modal submits CSV files and receives row-level validation outcomes.
+4. Use the Status filter to inspect individual hard-bounced, soft-bounced, or unsubscribed leads. Filters affect the table only; the summary cards remain global totals.
+5. Bulk controls update email status flags used for targeting.
+6. `/email-marketing` loads list size stats and dispatches campaign batches through Notification Engine proxies.
+
+## Delivery-status definitions
+
+| Metric       | Definition                                                          |
+| ------------ | ------------------------------------------------------------------- |
+| Total leads  | All records in `mythoria_db.leads`.                                 |
+| Hard bounces | `email_status = hard_bounce`; excluded from future marketing sends. |
+| Soft bounces | `email_status = soft_bounce`; eligible for a later retry.           |
+| Unsubscribes | `email_status = unsub`; excluded from future marketing sends.       |
+
+The cards use the authenticated `GET /api/admin/leads/stats` endpoint. They refresh together with the lead table and are not scoped by its search or language filters.
 
 ## Backend and API touchpoints
 

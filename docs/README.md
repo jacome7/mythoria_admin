@@ -17,6 +17,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 | `docs/csv-import-guide.md`         | Uploading and validating lead CSV files from the admin UI.                |
 | `docs/bounceAPI.md`                | Updating lead email statuses from external providers (bounce tracking).   |
 | `docs/postmaster-setup.md`         | Reading Google Postmaster metrics through the admin portal.               |
+| `docs/features/leadsAndEmail.md`   | Managing marketing leads, delivery-status metrics, and email operations.  |
 | `docs/TICKETING_IMPLEMENTATION.md` | Operating and extending the ticketing stack (form ingestion + admin UI).  |
 
 ## Reference (lookup)
@@ -75,6 +76,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 - 2026-07-17: Story readers now validate image URIs, resolve relative image paths against the generated-stories storage bucket, center chapter illustrations, and bypass stale chapter, cover, and back-cover image caches (see `docs/features/storiesManagement.md`).
 - 2026-08-04: Admin story UI, failed-workflow retry UI, and MCP restarts now share a durable zero-credit dispatcher, expose Pub/Sub retry state, and resend the completion email per regeneration run (see `docs/features/storiesManagement.md`).
 - 2026-08-11: Story details now link author identity to the author page, omit unavailable PDF rows, and keep Audio Narration collapsed by default (see `docs/features/storiesManagement.md`).
+- 2026-08-31: Leads management now shows global total, hard-bounce, soft-bounce, and unsubscribe metrics; each status metric includes its share of all leads (see `docs/features/leadsAndEmail.md`).
 
 ---
 
@@ -84,4 +86,4 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-08-11_
+_Index refreshed: 2026-08-31_

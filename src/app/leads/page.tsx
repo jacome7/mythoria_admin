@@ -30,6 +30,13 @@ interface LeadsResponse {
   pagination: PaginationData;
 }
 
+interface LeadStatistics {
+  totalLeads: number;
+  softBounceCount: number;
+  hardBounceCount: number;
+  unsubCount: number;
+}
+
 type SortField =
   | 'name'
   | 'email'
@@ -63,6 +70,7 @@ export default function LeadsPage() {
   const { session, loading } = useAdminAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
+  const [statistics, setStatistics] = useState<LeadStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,13 +107,24 @@ export default function LeadsPage() {
           sortOrder: sortOrder,
         });
 
-        const response = await fetch(`/api/admin/leads?${params.toString()}`);
-        if (response.ok) {
-          const data: LeadsResponse = await response.json();
+        const [leadsResponse, statisticsResponse] = await Promise.all([
+          fetch(`/api/admin/leads?${params.toString()}`),
+          fetch('/api/admin/leads/stats'),
+        ]);
+
+        if (leadsResponse.ok) {
+          const data: LeadsResponse = await leadsResponse.json();
           setLeads(data.data);
           setPagination(data.pagination);
         } else {
           console.error('Failed to fetch leads');
+        }
+
+        if (statisticsResponse.ok) {
+          const data: LeadStatistics = await statisticsResponse.json();
+          setStatistics(data);
+        } else {
+          console.error('Failed to fetch lead statistics');
         }
       } catch (error) {
         console.error('Error fetching leads:', error);
@@ -159,6 +178,15 @@ export default function LeadsPage() {
       newSelection.add(id);
     }
     setSelectedLeads(newSelection);
+  };
+
+  const formatStatistic = (value: number | undefined) => (value ?? 0).toLocaleString();
+
+  const formatPercentage = (value: number | undefined) => {
+    const totalLeads = statistics?.totalLeads ?? 0;
+    if (totalLeads === 0) return '0.0%';
+
+    return `${(((value ?? 0) / totalLeads) * 100).toFixed(1)}%`;
   };
 
   const handleBulkDelete = async () => {
@@ -364,6 +392,59 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
+
+        <section
+          className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 xl:grid-cols-4"
+          aria-label="Lead statistics"
+        >
+          <div className="stats bg-base-100 shadow-sm">
+            <div className="stat">
+              <div className="stat-title">Total leads</div>
+              <div className="stat-value text-primary">
+                {statistics ? formatStatistic(statistics.totalLeads) : '...'}
+              </div>
+            </div>
+          </div>
+          <div className="stats bg-base-100 shadow-sm">
+            <div className="stat">
+              <div className="stat-title">Hard bounces</div>
+              <div className="stat-value text-error">
+                {statistics ? formatStatistic(statistics.hardBounceCount) : '...'}
+              </div>
+              <div className="stat-desc">
+                {statistics
+                  ? `${formatPercentage(statistics.hardBounceCount)} of total leads`
+                  : 'Loading...'}
+              </div>
+            </div>
+          </div>
+          <div className="stats bg-base-100 shadow-sm">
+            <div className="stat">
+              <div className="stat-title">Soft bounces</div>
+              <div className="stat-value text-warning">
+                {statistics ? formatStatistic(statistics.softBounceCount) : '...'}
+              </div>
+              <div className="stat-desc">
+                {statistics
+                  ? `${formatPercentage(statistics.softBounceCount)} of total leads`
+                  : 'Loading...'}
+              </div>
+            </div>
+          </div>
+          <div className="stats bg-base-100 shadow-sm">
+            <div className="stat">
+              <div className="stat-title">Unsubscribes</div>
+              <div className="stat-value text-neutral">
+                {statistics ? formatStatistic(statistics.unsubCount) : '...'}
+              </div>
+              <div className="stat-desc">
+                {statistics
+                  ? `${formatPercentage(statistics.unsubCount)} of total leads`
+                  : 'Loading...'}
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Upload Result Banner */}
         {uploadResult && (
