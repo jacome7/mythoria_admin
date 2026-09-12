@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateMcpAuth } from '@/lib/mcp/auth';
-import { activeTransports } from '@/lib/mcp/server';
+import { validateMcpAuth, getMcpPrincipal } from '@/lib/mcp/auth';
+import { activeTransports, transportPrincipals } from '@/lib/mcp/server';
 
 function getPayloadAuditSummary(payload: unknown) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     const transport = activeTransports.get(sessionId);
+    if (transportPrincipals.get(sessionId) !== getMcpPrincipal(request)?.id)
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     if (!transport) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });

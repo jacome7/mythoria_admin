@@ -66,3 +66,7 @@ Every admin API enforces:
 
 **Architecture Version**: 2.2.4  
 **Last Updated**: June 14, 2026
+
+## Referral platform v1 (2026-09-09)
+
+See the [referral implementation and operations guide](referrals.md) for this service's responsibilities, updated contracts, configuration, schema ownership and validation. The feature is implemented locally; production migration, deployment and pilot activation require their separate rollout checkpoints.

@@ -26,6 +26,32 @@ export interface EnvVarDescriptor {
 }
 
 export const envManifest: EnvVarDescriptor[] = [
+  {
+    name: 'REFERRAL_IMPERSONATE_SERVICE_ACCOUNT',
+    required: false,
+    scopes: ['dev'],
+    note: 'Development-only referral OIDC impersonation using local ADC; requires IAM permission to generate ID tokens for this service account. Ignored in production.',
+  },
+  {
+    name: 'REFERRAL_INTERNAL_AUDIENCE',
+    required: false,
+    scopes: ['runtime', 'dev', 'prod'],
+    note: 'Referral v1; see docs/referrals.md. Feature flags default to false.',
+  },
+  {
+    name: 'REFERRAL_MCP_MANAGEMENT_KEY',
+    required: false,
+    scopes: ['runtime', 'dev', 'prod'],
+    secret: true,
+    note: 'Referral v1; see docs/referrals.md. Feature flags default to false.',
+  },
+  {
+    name: 'REFERRAL_MCP_FINANCE_KEY',
+    required: false,
+    scopes: ['runtime', 'dev', 'prod'],
+    secret: true,
+    note: 'Referral v1; see docs/referrals.md. Feature flags default to false.',
+  },
   // Core environment
   {
     name: 'NODE_ENV',

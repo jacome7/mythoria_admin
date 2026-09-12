@@ -12,8 +12,8 @@ export default defineConfig({
   schema: [
     './src/db/schema/auth.ts',
     './src/db/schema/tickets.ts',
-    './src/db/schema/credits.ts',
     './src/db/schema/managers.ts',
+    './src/db/schema/referral-rbac.ts',
     './src/db/schema/campaigns.ts',
   ],
   out: './drizzle',

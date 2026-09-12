@@ -10,7 +10,8 @@ param(
     
     [switch]$Force = $false,
     [switch]$VerboseLogging = $false,
-    [switch]$Fast = $false
+    [switch]$Fast = $false,
+    [switch]$ReferralMcp = $false
 )
 
 # Set error action preference
@@ -175,14 +176,20 @@ try {
     }
 
     # Build and deploy with Cloud Build (cloudbuild.yaml)
+    # Referral runtime audience/identity defaults live in cloudbuild.yaml.
+    # Optional MCP credentials must already exist in Secret Manager.
+    $buildSubstitutions = "^|^_GIT_SHA=$gitSha"
+    if ($ReferralMcp) {
+        $buildSubstitutions += '|_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest'
+    }
     Write-Host "[INFO] Starting Cloud Build production deployment..."
     Write-Host "[INFO] This may take several minutes..."
     
     if ($VerboseLogging) {
-        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions "_GIT_SHA=$gitSha" --verbosity=debug
+        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions --verbosity=debug
     }
     else {
-        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions "_GIT_SHA=$gitSha"
+        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions
     }
     
     if ($LASTEXITCODE -ne 0) {

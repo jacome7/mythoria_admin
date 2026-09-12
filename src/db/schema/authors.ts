@@ -19,6 +19,7 @@ export const authors = pgTable(
   'authors',
   {
     authorId: uuid('author_id').primaryKey().defaultRandom(),
+    accountClosedAt: timestamp('account_closed_at', { withTimezone: true }),
     clerkUserId: varchar('clerk_user_id', { length: 255 }).notNull().unique(), // Clerk User ID
     displayName: varchar('display_name', { length: 120 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),

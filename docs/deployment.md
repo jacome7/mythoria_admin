@@ -651,3 +651,7 @@ gcloud run services update mythoria-admin \
 **Deployment Guide Version**: 1.0.3  
 **Last Updated**: June 15, 2026  
 **Service**: Mythoria Admin Portal v0.3.0+
+
+## Referral platform v1 (2026-09-09)
+
+See the [referral implementation and operations guide](referrals.md) for this service's responsibilities, updated contracts, configuration, schema ownership and validation. The feature is implemented locally; production migration, deployment and pilot activation require their separate rollout checkpoints.

@@ -3,7 +3,8 @@
 
 param(
     [switch]$Force = $false,
-    [switch]$Verbose = $false
+    [switch]$Verbose = $false,
+    [switch]$ReferralMcp = $false
 )
 
 # Configuration
@@ -47,10 +48,13 @@ if (-not $Force) {
 Write-Host "[INFO] Starting Cloud Build deployment with enhanced logging..."
 Write-Host "[INFO] This may take several minutes..."
 
+$buildSubstitutions = '^|^_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest'
+# Both referral MCP credentials are bound by default for production.
+# Referral runtime audience/identity defaults live in cloudbuild.yaml.
 if ($Verbose) {
-    gcloud beta builds submit --config cloudbuild.yaml --verbosity=debug
+    gcloud beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions --verbosity=debug
 } else {
-    gcloud beta builds submit --config cloudbuild.yaml
+    gcloud beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions
 }
 
 if ($LASTEXITCODE -eq 0) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createMcpServer, activeTransports } from '@/lib/mcp/server';
-import { validateMcpAuth } from '@/lib/mcp/auth';
+import { createMcpServer, activeTransports, transportPrincipals } from '@/lib/mcp/server';
+import { validateMcpAuth, getMcpPrincipal } from '@/lib/mcp/auth';
 import { NextSSETransport } from '@/lib/mcp/NextSSETransport';
 
 export const dynamic = 'force-dynamic';
@@ -52,7 +52,7 @@ async function handleStreamableHttpRequest(request: NextRequest) {
   const transport = new WebStandardStreamableHTTPServerTransport({
     enableJsonResponse: true,
   });
-  const server = createMcpServer();
+  const server = createMcpServer(getMcpPrincipal(request)!);
 
   transport.onerror = (error) => {
     console.error('[MCP SERVER ERROR] Streamable HTTP transport:', error);
@@ -83,12 +83,14 @@ export async function GET(request: NextRequest) {
   const transport = new NextSSETransport('/api/mcp/messages');
 
   activeTransports.set(transport.sessionId, transport);
+  transportPrincipals.set(transport.sessionId, getMcpPrincipal(request)!.id);
 
   transport.onclose = () => {
     activeTransports.delete(transport.sessionId);
+    transportPrincipals.delete(transport.sessionId);
   };
 
-  const server = createMcpServer();
+  const server = createMcpServer(getMcpPrincipal(request)!);
   await server.connect(transport);
 
   return new NextResponse(transport.responseStream, {

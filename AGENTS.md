@@ -69,3 +69,7 @@ After Phase 3, marketing templates are stored in `backoffice_db` campaign assets
 
 - `__tests__/db/services/campaigns.test.ts` validates campaign service CRUD, transitions, assets, and progress aggregation.
 - `__tests__/api/email-campaigns.test.ts` validates campaign API route lifecycle, auth guards, and proxy behavior.
+
+## Referral platform v1 (2026-09-09)
+
+See the [referral implementation and operations guide](docs/referrals.md) for this service's responsibilities, updated contracts, configuration, schema ownership and validation. The feature is implemented locally; production migration, deployment and pilot activation require their separate rollout checkpoints.

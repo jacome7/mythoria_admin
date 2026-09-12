@@ -26,7 +26,7 @@ export const keyInvoiceCustomers = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     authorId: uuid('author_id')
       .notNull()
-      .references(() => authors.authorId, { onDelete: 'cascade' }),
+      .references(() => authors.authorId, { onDelete: 'restrict' }),
     vatin: varchar('vatin', { length: 40 }).notNull(),
     keyInvoiceClientId: varchar('keyinvoice_client_id', { length: 80 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
@@ -55,10 +55,10 @@ export const fiscalDocuments = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     orderId: uuid('order_id')
       .notNull()
-      .references(() => paymentOrders.orderId, { onDelete: 'cascade' }),
+      .references(() => paymentOrders.orderId, { onDelete: 'restrict' }),
     authorId: uuid('author_id')
       .notNull()
-      .references(() => authors.authorId, { onDelete: 'cascade' }),
+      .references(() => authors.authorId, { onDelete: 'restrict' }),
     provider: fiscalDocumentProviderEnum('provider').notNull().default('keyinvoice'),
     status: fiscalDocumentStatusEnum('status').notNull().default('pending'),
     docType: varchar('doc_type', { length: 20 }).notNull(),
@@ -106,11 +106,11 @@ export const fiscalDocumentEvents = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     fiscalDocumentId: uuid('fiscal_document_id').references(() => fiscalDocuments.id, {
-      onDelete: 'cascade',
+      onDelete: 'restrict',
     }),
     orderId: uuid('order_id')
       .notNull()
-      .references(() => paymentOrders.orderId, { onDelete: 'cascade' }),
+      .references(() => paymentOrders.orderId, { onDelete: 'restrict' }),
     eventType: varchar('event_type', { length: 100 }).notNull(),
     requestPayload: jsonb('request_payload'),
     responsePayload: jsonb('response_payload'),

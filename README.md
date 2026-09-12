@@ -60,3 +60,7 @@ We organize documentation with the Diátaxis taxonomy so humans and agents can j
 [^1]: https://diataxis.fr/
 
 [^2]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
+
+## Referral platform v1 (2026-09-09)
+
+See the [referral implementation and operations guide](docs/referrals.md) for this service's responsibilities, updated contracts, configuration, schema ownership and validation. The feature is implemented locally; production migration, deployment and pilot activation require their separate rollout checkpoints.

@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { eq, isNotNull } from 'drizzle-orm';
 import { authors } from './authors';
+import { referralAssignments, referralOwners } from './referrals';
 import type { WritingPersonaSettings } from '@/types/writing-persona';
 import {
   storyStatusEnum,
@@ -34,6 +35,15 @@ export const stories = pgTable(
   'stories',
   {
     storyId: uuid('story_id').primaryKey().defaultRandom(),
+    referralAssignmentId: uuid('referral_assignment_id').references(
+      () => referralAssignments.assignmentId,
+      { onDelete: 'restrict' },
+    ),
+    referralOwnerId: uuid('referral_owner_id').references(() => referralOwners.referralOwnerId, {
+      onDelete: 'restrict',
+    }),
+    referralCodeSnapshot: varchar('referral_code_snapshot', { length: 32 }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
     authorId: uuid('author_id')
       .notNull()
       .references(() => authors.authorId, { onDelete: 'cascade' }),

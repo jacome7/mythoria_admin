@@ -47,6 +47,7 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "google-auth-library": "^10.9.0",
     "googleapis": "^173.0.0",
     "handlebars": "^4.7.9",
     "jsdom": "^29.1.1",

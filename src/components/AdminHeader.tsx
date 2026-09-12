@@ -166,6 +166,11 @@ export default function AdminHeader() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/referrals" onClick={closeDropdown}>
+                    Referrals
+                  </Link>
+                </li>
+                <li>
                   <Link href="/partners" onClick={closeDropdown}>
                     Partners
                   </Link>
@@ -370,6 +375,11 @@ export default function AdminHeader() {
                     <li>
                       <Link href="/users" onClick={closeDrawer}>
                         Users
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/referrals" onClick={closeDrawer}>
+                        Referrals
                       </Link>
                     </li>
                     <li>

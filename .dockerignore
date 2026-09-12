@@ -8,11 +8,11 @@ yarn-error.log*
 # Testing
 coverage
 .nyc_output
-__tests__
-*.test.ts
-*.test.tsx
-*.spec.ts
-*.spec.tsx
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
 jest.config.*
 jest.setup.*
 
