@@ -69,6 +69,20 @@ steps:
       - '--set-secrets'
       - 'AUTH_SECRET=mythoria-auth-secret:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,DB_HOST=mythoria-db-host:latest,DB_USER=mythoria-db-user:latest,DB_PASSWORD=mythoria-db-password:latest,ADMIN_API_KEY=ADMIN_API_KEY:latest,NOTIFICATION_ENGINE_API_KEY=NOTIFICATION_ENGINE_API_KEY:latest,STORY_GENERATION_WORKFLOW_API_KEY=STORY_GENERATION_WORKFLOW_API_KEY:latest,MCP_SECRET_KEY=MCP_SECRET_KEY:latest,GOOGLE_ANALYTICS_API_SECRET=GOOGLE_ANALYTICS_API_SECRET:latest,NEXT_PUBLIC_GA_MEASUREMENT_ID=mythoria-ga-measurement-id:latest${_REFERRAL_MCP_SECRET_BINDINGS}'
 
+  # Promote explicitly: a service pinned to an older revision can retain that traffic
+  # even when the new revision was created successfully.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'services'
+      - 'update-traffic'
+      - '$_SERVICE_NAME'
+      - '--to-latest'
+      - '--region'
+      - '$_REGION'
+      - '--quiet'
+
 # Default substitutions
 substitutions:
   _ADMIN_SERVICE_ACCOUNT: '803421888801-compute@developer.gserviceaccount.com'

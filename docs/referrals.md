@@ -21,3 +21,11 @@ The seven referral pages live under /referrals. The REST facade under /api/admin
 Explicit role rows are required in referral_admin_roles. Roles are referral_viewer, referral_manager, finance and super_admin. A manager's existing free-form role field does not grant referral access. Review scripts/referral-roles.sql, generated from the new Drizzle schema, before applying it to backoffice_db; ignored historical migration files are not a portable deployment chain. Seed no privileges without an identified grantor.
 
 REFERRAL_INTERNAL_AUDIENCE and existing WEBAPP_URL select the canonical backend. REFERRAL_MCP_MANAGEMENT_KEY and REFERRAL_MCP_FINANCE_KEY are distinct Secret Manager keys. Legacy MCP credentials receive no referral tools. SSE sessions are bound to the initiating principal; each authorized tool uses the same WebApp API as the UI. Run npm run sync-mythoria-db-schema after upstream schema changes, followed by format/lint/typecheck/build/test.
+
+## Production release — 2026-09-12
+
+Verified revision: `mythoria-admin-00088-wz5`; image source: `12e16f56bef4dd3e77e851decc570e5f18b2788b`. The revision passed HTTP 200 health and serves 100% of traffic. The release includes the referral implementation and the other reviewed local changes. See the WebApp's `docs/referrals-release-2026-09-12.md` for cross-service proof and remaining operating work.
+
+Referral Scheduler jobs and the external signup/Checkout/email/settlement journey matrix remain outstanding. Package audit warnings remain documented in that release record. Runtime health is a bounded check, not proof of payment or email delivery.
+
+Both MCP secrets are deployed and their distinct management/finance permissions and authenticated WebApp reads were verified on the production URL. Cloud Build now explicitly promotes latest traffic after deployment. Recursive Docker test exclusions and explicit TypeScript test globals keep clean production builds consistent with local validation.
