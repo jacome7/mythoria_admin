@@ -48,7 +48,8 @@ if (-not $Force) {
 Write-Host "[INFO] Starting Cloud Build deployment with enhanced logging..."
 Write-Host "[INFO] This may take several minutes..."
 
-$buildSubstitutions = '^|^_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest'
+# Literal double quotes keep cmd.exe (gcloud.cmd) from consuming "^" and treating "|" as a pipe.
+$buildSubstitutions = '"^|^_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest"'
 # Both referral MCP credentials are bound by default for production.
 # Referral runtime audience/identity defaults live in cloudbuild.yaml.
 if ($Verbose) {
