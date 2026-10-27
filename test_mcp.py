@@ -3,8 +3,8 @@ import argparse
 from contextlib import AsyncExitStack
 
 async def main():
-    parser = argparse.ArgumentParser(description="Test Mythoria Admin MCP Server using SSE")
-    parser.add_argument("--url", default="https://admin.mythoria.com/api/mcp", help="The URL of the MCP SSE endpoint (e.g., https://admin.mythoria.com/api/mcp)")
+    parser = argparse.ArgumentParser(description="Test Mythoria Admin MCP Server using Streamable HTTP")
+    parser.add_argument("--url", default="https://mythoria-admin-803421888801.europe-west9.run.app/api/mcp", help="The URL of the MCP HTTP endpoint")
     parser.add_argument("--token", required=True, help="The Bearer token (MCP_SECRET_KEY)")
     
     args = parser.parse_args()
@@ -17,7 +17,7 @@ async def main():
     
     try:
         from mcp import ClientSession
-        from mcp.client.sse import sse_client
+        from mcp.client.streamable_http import streamablehttp_client
         import httpx
     except ImportError:
         print("Error: The 'mcp' Python SDK is not installed.")
@@ -26,11 +26,11 @@ async def main():
 
     try:
         async with AsyncExitStack() as stack:
-            # Initialize SSE connection with the Authorization header
-            read_stream, write_stream = await stack.enter_async_context(
-                sse_client(url=args.url, headers=headers)
+            # Initialize Streamable HTTP with the Authorization header.
+            read_stream, write_stream, _ = await stack.enter_async_context(
+                streamablehttp_client(url=args.url, headers=headers)
             )
-            print("SSE Connection established.")
+            print("Streamable HTTP connection established.")
             
             # Start the client session
             session = await stack.enter_async_context(ClientSession(read_stream, write_stream))

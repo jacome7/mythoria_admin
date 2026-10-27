@@ -1,4 +1,13 @@
-import { pgTable, uuid, varchar, timestamp, jsonb, index, text } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  text,
+  boolean,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import {
   addressTypeEnum,
@@ -28,6 +37,7 @@ export const authors = pgTable(
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     preferredLocale: varchar('preferred_locale', { length: 5 }).default('en'), // CHAR(5)
     countryOfOrigin: varchar('country_of_origin', { length: 2 }),
+    experimentalFeaturesEnabled: boolean('experimental_features_enabled').notNull().default(false),
     // Onboarding profile fields (all optional besides displayName which we reuse as preferred name)
     gender: genderEnum('gender'),
     literaryAge: literaryAgeEnum('literary_age'),

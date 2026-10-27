@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 type Item = Record<string, unknown>;
 type Props = { view: string; id?: string; permissions: string[] };
 async function api(path: string, body?: unknown, method = 'POST') {
@@ -15,6 +16,7 @@ async function api(path: string, body?: unknown, method = 'POST') {
   return result.data;
 }
 export default function ReferralAdmin({ view, id, permissions }: Props) {
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [owner, setOwner] = useState<Item | null>(null);
   const [ownerSummary, setOwnerSummary] = useState<Item | null>(null);
@@ -150,7 +152,7 @@ export default function ReferralAdmin({ view, id, permissions }: Props) {
                   legalName,
                   countryCode: country || undefined,
                 });
-                window.location.href = `/referrals/owners/${created.referralOwnerId}`;
+                router.push(`/referrals/owners/${created.referralOwnerId}`);
               }
             });
           }}

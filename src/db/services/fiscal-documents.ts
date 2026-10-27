@@ -33,12 +33,7 @@ import {
 } from '@/lib/fiscal-documents';
 
 export type FiscalSort =
-  | 'attention'
-  | 'createdAt'
-  | 'updatedAt'
-  | 'attemptCount'
-  | 'nextRetryAt'
-  | 'issuedAt';
+  'attention' | 'createdAt' | 'updatedAt' | 'attemptCount' | 'nextRetryAt' | 'issuedAt';
 
 export interface FiscalDocumentListParams {
   page?: number;

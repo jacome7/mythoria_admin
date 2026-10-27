@@ -14,17 +14,10 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const status = searchParams.get('status') as
-      | 'queued'
-      | 'running'
-      | 'failed'
-      | 'completed'
-      | 'cancelled'
-      | null;
+      'queued' | 'running' | 'failed' | 'completed' | 'cancelled' | null;
     const search = searchParams.get('search');
     const sortBy = (searchParams.get('sortBy') || 'createdAt') as
-      | 'createdAt'
-      | 'startedAt'
-      | 'endedAt';
+      'createdAt' | 'startedAt' | 'endedAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get workflows

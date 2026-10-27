@@ -190,7 +190,9 @@ The deployment runtime is pinned to Node.js `24.18.1` LTS. Keep `_NODE_VERSION`,
 
 The local deployment script reads `.node-version` and `package.json` `packageManager`, then runs install, lint, typecheck, test, and build commands through those pinned Node.js and npm versions. On Windows it also prefers `gcloud.cmd` and sets `CLOUDSDK_PYTHON` to a real Python executable when available, avoiding PowerShell wrapper and Windows Store Python alias failures.
 
-The production Admin deployment must keep Cloud Run request timeout at `3600s`. MCP uses long-lived SSE connections on `/api/mcp`, and the Cloud Run default `300s` timeout causes noisy truncated-response warnings even when the client reconnects. The deploy scripts run `scripts/verify-cloud-run-timeout.ps1` after Cloud Build completes and fail the deploy if the live service timeout drifts from `3600s`.
+Runtime cost update (2026-10-27): the production Admin deployment uses a `300s` request timeout and explicit `--cpu-throttling` for request-based billing. MCP uses finite JSON POST responses; optional GET streams return `405`, and legacy SSE has been retired. Keep 1 vCPU, 512 MiB, minimum instances 0, maximum instances 5 and concurrency 80 while measuring the transport change. The deploy scripts run `scripts/verify-cloud-run-timeout.ps1` after Cloud Build completes and fail the deploy if the live service timeout drifts from `300s`.
+
+Migrate SSE-only clients before rollout and smoke-test initialization, tool discovery and an authorized read-only tool with each real client. See the [MCP migration, validation and rollback guide](mcp.md#validation-and-rollback). Run `pwsh -NoProfile -File ./scripts/check-mcp-costs.ps1 -Days 7` after seven complete UTC days following deployment to compare successful streaming GETs and billable instance-hours with the pre-change baseline. This is a read-only check; it does not deploy, change billing settings or create alerts.
 
 ### 3. Next.js Configuration (`next.config.ts`)
 

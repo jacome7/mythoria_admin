@@ -1,9 +1,5 @@
 import type { NextConfig } from 'next';
 
-if (!process.env.NEXT_PRIVATE_SKIP_TURBOPACK) {
-  process.env.NEXT_PRIVATE_SKIP_TURBOPACK = '1';
-}
-
 const nextConfig: NextConfig = {
   // Enable standalone output for better Docker performance
   output: 'standalone',
@@ -31,14 +27,19 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Turbopack configuration (moved from experimental.turbo)
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
+  // Keep gRPC-based Google Cloud clients out of the bundle (resolved from node_modules at runtime)
+  serverExternalPackages: [
+    '@google-cloud/pubsub',
+    '@google-cloud/storage',
+    '@google-cloud/workflows',
+    'google-gax',
+    '@grpc/grpc-js',
+    '@grpc/proto-loader',
+  ],
+
+  // Email templates are read from disk at runtime; include them in the standalone trace
+  outputFileTracingIncludes: {
+    '/api/email-campaigns/[id]/generate-assets': ['./src/templates/email/**/*'],
   },
 
   // Headers for security
@@ -62,14 +63,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-  },
-
-  // Webpack configuration
-  webpack: (config) => {
-    // Ignore source maps warnings for better build performance
-    config.ignoreWarnings = [{ module: /node_modules/ }];
-
-    return config;
   },
 };
 

@@ -38,9 +38,10 @@ curl -X PATCH https://admin.mythoria.pt/api/admin/leads/{id} \
 Mark a specific lead email as bounced (soft or hard bounce).
 
 **URL Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | string (UUID) | Yes | Lead ID |
+
+| Parameter | Type          | Required | Description |
+| --------- | ------------- | -------- | ----------- |
+| `id`      | string (UUID) | Yes      | Lead ID     |
 
 **Request Headers:**
 
@@ -129,11 +130,12 @@ Content-Type: application/json
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `action` | string | Yes | Must be `"changeStatus"` |
-| `ids` | array[string] | Yes | Array of lead UUIDs |
-| `emailStatus` | string | Yes | Target email status (see list above) |
+
+| Field         | Type          | Required | Description                          |
+| ------------- | ------------- | -------- | ------------------------------------ |
+| `action`      | string        | Yes      | Must be `"changeStatus"`             |
+| `ids`         | array[string] | Yes      | Array of lead UUIDs                  |
+| `emailStatus` | string        | Yes      | Target email status (see list above) |
 
 **Success Response (200 OK):**
 
@@ -194,11 +196,12 @@ curl -X POST https://admin.mythoria.pt/api/admin/leads/bulk \
 Find a lead by email address before marking as bounced.
 
 **Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `search` | string | Yes | Email address to search |
-| `page` | integer | No | Page number (default: 1) |
-| `limit` | integer | No | Results per page (default: 50) |
+
+| Parameter | Type    | Required | Description                    |
+| --------- | ------- | -------- | ------------------------------ |
+| `search`  | string  | Yes      | Email address to search        |
+| `page`    | integer | No       | Page number (default: 1)       |
+| `limit`   | integer | No       | Results per page (default: 50) |
 
 **Request Headers:**
 

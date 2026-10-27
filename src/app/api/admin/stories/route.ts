@@ -29,10 +29,7 @@ export async function GET(request: Request) {
     const novelStyle = searchParams.get('novel_style') || '';
     const graphicalStyle = searchParams.get('graphical_style') || '';
     const sortBy = (searchParams.get('sortBy') || 'createdAt') as
-      | 'title'
-      | 'createdAt'
-      | 'updatedAt'
-      | 'status';
+      'title' | 'createdAt' | 'updatedAt' | 'status';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get stories data with author information

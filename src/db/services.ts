@@ -2128,11 +2128,7 @@ export const adminService = {
     faqKey?: string,
     isPublishedFilter?: string,
     sortField:
-      | 'questionSortOrder'
-      | 'section'
-      | 'locale'
-      | 'title'
-      | 'faqKey' = 'questionSortOrder',
+      'questionSortOrder' | 'section' | 'locale' | 'title' | 'faqKey' = 'questionSortOrder',
     sortOrder: 'asc' | 'desc' = 'asc',
   ) {
     const db = getMythoriaDb();

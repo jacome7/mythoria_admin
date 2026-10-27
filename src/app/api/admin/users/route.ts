@@ -24,10 +24,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const search = searchParams.get('search') || '';
     const sortBy = (searchParams.get('sortBy') || 'createdAt') as
-      | 'displayName'
-      | 'email'
-      | 'createdAt'
-      | 'lastLoginAt';
+      'displayName' | 'email' | 'createdAt' | 'lastLoginAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get users data

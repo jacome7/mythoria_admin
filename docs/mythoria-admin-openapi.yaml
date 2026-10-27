@@ -51,6 +51,81 @@ tags:
   - name: Stories
     description: Story-level operations exposed outside the admin namespace.
 paths:
+  /api/mcp:
+    post:
+      tags: [MCP]
+      summary: Execute an authenticated stateless MCP request
+      description: Accepts JSON-RPC over Streamable HTTP and returns finite JSON responses. Authentication and tool permissions are evaluated for each request. No SSE stream or persistent session is created.
+      security:
+        - McpBearerKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: JSON-RPC response, including protocol or tool errors.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '202':
+          description: Notification accepted with no response body.
+        '400':
+          description: Invalid JSON or JSON-RPC request.
+        '401':
+          description: Missing or invalid MCP bearer credential.
+        '406':
+          description: The Accept header must support application/json and text/event-stream.
+        '415':
+          description: Content-Type must be application/json.
+        '500':
+          description: Internal protocol server error.
+    get:
+      tags: [MCP]
+      summary: Decline optional MCP event streams
+      security:
+        - McpBearerKey: []
+      responses:
+        '401':
+          description: Missing or invalid MCP bearer credential.
+        '405':
+          description: Event streams are not offered. Use POST on this endpoint.
+          headers:
+            Allow:
+              schema:
+                type: string
+                const: POST
+    delete:
+      tags: [MCP]
+      summary: Decline session termination for stateless MCP
+      security:
+        - McpBearerKey: []
+      responses:
+        '401':
+          description: Missing or invalid MCP bearer credential.
+        '405':
+          description: No persistent MCP session exists. Use POST on this endpoint.
+          headers:
+            Allow:
+              schema:
+                type: string
+                const: POST
+  /api/mcp/messages:
+    post:
+      tags: [MCP]
+      summary: Report retirement of the legacy SSE message endpoint
+      security:
+        - McpBearerKey: []
+      responses:
+        '401':
+          description: Missing or invalid MCP bearer credential.
+        '410':
+          description: Legacy SSE is retired. Use HTTP POST /api/mcp.
   /api/health:
     get:
       tags: [Health]
@@ -2585,6 +2660,11 @@ paths:
           $ref: '#/components/responses/InternalError'
 components:
   securitySchemes:
+    McpBearerKey:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: An existing MCP_SECRET_KEY, REFERRAL_MCP_MANAGEMENT_KEY or REFERRAL_MCP_FINANCE_KEY credential. Each retains its scoped MCP tool permissions.
     AdminSession:
       type: apiKey
       in: cookie

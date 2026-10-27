@@ -24,10 +24,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const searchTerm = searchParams.get('search') || '';
     const sortBy = (searchParams.get('sortBy') || 'serviceCode') as
-      | 'serviceCode'
-      | 'credits'
-      | 'isActive'
-      | 'createdAt';
+      'serviceCode' | 'credits' | 'isActive' | 'createdAt';
     const sortOrder = (searchParams.get('sortOrder') || 'asc') as 'asc' | 'desc';
 
     // Get services data

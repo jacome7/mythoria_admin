@@ -162,8 +162,7 @@ interface PartnerFormData {
 }
 
 type ValidationResult =
-  | { valid: true; parsed: z.infer<typeof partnerFormSchema> }
-  | { valid: false; message: string };
+  { valid: true; parsed: z.infer<typeof partnerFormSchema> } | { valid: false; message: string };
 
 const emptyFormData: PartnerFormData = {
   name: '',

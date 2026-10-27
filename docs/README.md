@@ -25,7 +25,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 | Doc                                        | Scope                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------ |
 | `docs/api-reference.md`                    | REST route map, accepted query params, and response shapes.                          |
-| `docs/mcp.md`                              | Model Context Protocol server (streamable HTTP + SSE), auth, tools, and statistics.  |
+| `docs/mcp.md`                              | Stateless MCP HTTP transport, client migration, auth, tools and cost validation.     |
 | `docs/mythoria-admin-openapi.yaml`         | Machine-readable OpenAPI spec (sync this when routes change).                        |
 | `docs/features/*.md`                       | Per-page feature deep dives (context, UI workflow, DB structures).                   |
 | `docs/features/fiscalDocuments.md`         | Fiscal document monitoring, retry, PDF access, and KeyInvoice audit trail behavior.  |
@@ -58,6 +58,8 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 ## Recent behavior notes
 
+- 2026-10-27: MCP now uses finite, stateless HTTP POST responses. Optional GET streams return `405`, legacy message requests return `410`, client bridges use HTTP, and deployment safeguards require a `300s` timeout with request-based billing. The read-only `scripts/check-mcp-costs.ps1` checks streaming GETs and billable instance-hours (see `docs/mcp.md` and `docs/deployment.md`).
+
 - 2026-02-08: Email campaign audience estimation now uses draft filters and metadata from the detail page (see `docs/features/emailMarketing.md`).
 - 2026-02-09: Added a dependency update prompt for upgrading packages and running quality gates (see `.github/prompts/update-dependencies.prompt.md`).
 - 2026-03-11: Stories management now supports filtering by target audience, novel style, and graphical style, and exposes those attributes in the admin table (see `docs/features/storiesManagement.md`).
@@ -86,7 +88,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 [^3]: https://docs.github.com/en/copilot/get-started/what-is-github-copilot
 
-_Index refreshed: 2026-08-31_
+_Index refreshed: 2026-10-27_
 
 ## Referral platform v1 (2026-09-09)
 

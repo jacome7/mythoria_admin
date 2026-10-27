@@ -3,13 +3,7 @@
  */
 
 export type EmailStatus =
-  | 'ready'
-  | 'sent'
-  | 'open'
-  | 'click'
-  | 'soft_bounce'
-  | 'hard_bounce'
-  | 'unsub';
+  'ready' | 'sent' | 'open' | 'click' | 'soft_bounce' | 'hard_bounce' | 'unsub';
 
 export interface Lead {
   id: string;

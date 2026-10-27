@@ -4,10 +4,7 @@ import { managers } from '@/db/schema/managers';
 import { referralAdminRoles } from '@/db/schema/referral-rbac';
 import { authenticateAdmin } from '@/lib/api-helpers';
 export type ReferralPermission =
-  | 'referrals:view'
-  | 'referrals:manage'
-  | 'referrals:review'
-  | 'referrals:settle';
+  'referrals:view' | 'referrals:manage' | 'referrals:review' | 'referrals:settle';
 export type ReferralActor = {
   type: 'admin_ui' | 'admin_mcp';
   id: string;

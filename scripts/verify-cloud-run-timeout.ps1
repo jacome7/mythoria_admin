@@ -8,7 +8,7 @@ param(
     [string]$Region = "europe-west9",
 
     [Parameter(Mandatory = $false)]
-    [int]$ExpectedTimeoutSeconds = 3600
+    [int]$ExpectedTimeoutSeconds = 300
 )
 
 $ErrorActionPreference = "Stop"

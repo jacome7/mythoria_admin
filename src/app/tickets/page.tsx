@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -29,6 +30,7 @@ interface TicketMetrics {
 }
 
 export default function TicketsPage() {
+  const router = useRouter();
   const { session, loading } = useAdminAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
@@ -289,7 +291,7 @@ export default function TicketsPage() {
                         key={ticket.id}
                         className="cursor-pointer hover"
                         onClick={() => {
-                          window.location.href = `/tickets/${ticket.id}`;
+                          router.push(`/tickets/${ticket.id}`);
                         }}
                       >
                         <td className="font-mono text-sm">{getFormattedTicketNumber(ticket.id)}</td>

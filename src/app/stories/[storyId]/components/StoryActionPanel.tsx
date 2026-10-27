@@ -10,7 +10,7 @@ import {
   hasAudiobook,
   getAudioChapters,
 } from '@/components/audio-player';
-import { getAvailableVoices, getDefaultVoice } from '@/lib/voice-options';
+import { getAvailableVoices, getRecommendedVoice, getTTSProvider } from '@/lib/voice-options';
 
 interface StoryActionPanelProps {
   story: StoryDetail;
@@ -99,10 +99,13 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
   const [narrationPanelOpen, setNarrationPanelOpen] = useState(false);
   const [listenPanelOpen, setListenPanelOpen] = useState(audioAvailable);
 
-  const [selectedVoice, setSelectedVoice] = useState(getDefaultVoice());
+  const [selectedVoice, setSelectedVoice] = useState(
+    getRecommendedVoice(getTTSProvider(), story.targetAudience),
+  );
   const [includeBackgroundMusic, setIncludeBackgroundMusic] = useState(true);
 
   const voiceOptions = useMemo(() => getAvailableVoices(), []);
+  const recommendedVoice = getRecommendedVoice(getTTSProvider(), story.targetAudience);
 
   const audioEndpoint = `/api/admin/stories/${storyId}/audio`;
   const audioChapters = useMemo(
@@ -384,7 +387,8 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
                   >
                     {voiceOptions.map((voice) => (
                       <option key={voice.value} value={voice.value}>
-                        {voice.label}
+                        {voice.label} — {voice.description}
+                        {voice.value === recommendedVoice ? ' (recommended)' : ''}
                       </option>
                     ))}
                   </select>

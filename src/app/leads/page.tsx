@@ -38,12 +38,7 @@ interface LeadStatistics {
 }
 
 type SortField =
-  | 'name'
-  | 'email'
-  | 'language'
-  | 'emailStatus'
-  | 'lastEmailSentAt'
-  | 'lastUpdatedAt';
+  'name' | 'email' | 'language' | 'emailStatus' | 'lastEmailSentAt' | 'lastUpdatedAt';
 type SortOrder = 'asc' | 'desc';
 
 const EMAIL_STATUS_LABELS: Record<Lead['emailStatus'], string> = {

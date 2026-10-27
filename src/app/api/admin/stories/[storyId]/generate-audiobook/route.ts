@@ -4,7 +4,12 @@ import { auth } from '@/auth';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 import { adminService } from '@/db/services';
 import { publishAudiobookRequest } from '@/lib/pubsub';
-import { getDefaultVoice, isValidVoice } from '@/lib/voice-options';
+import {
+  getAvailableVoices,
+  getRecommendedVoice,
+  getTTSProvider,
+  isValidVoice,
+} from '@/lib/voice-options';
 
 export async function POST(request: Request, { params }: { params: Promise<{ storyId: string }> }) {
   try {
@@ -27,8 +32,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
     const requestedVoice = typeof body.voice === 'string' ? body.voice : undefined;
     const includeBackgroundMusic = body.includeBackgroundMusic !== false;
 
-    const voice =
-      requestedVoice && isValidVoice(requestedVoice) ? requestedVoice : getDefaultVoice();
+    if (requestedVoice && !isValidVoice(requestedVoice)) {
+      return NextResponse.json(
+        {
+          error: `Invalid voice "${requestedVoice}". Allowed voices: ${getAvailableVoices()
+            .map((option) => option.value)
+            .join(', ')}`,
+        },
+        { status: 400 },
+      );
+    }
 
     const story = await adminService.getStoryByIdWithAuthor(storyId);
     if (!story) {
@@ -41,6 +54,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
         { status: 400 },
       );
     }
+
+    const voice = requestedVoice || getRecommendedVoice(getTTSProvider(), story.targetAudience);
 
     const runId = uuidv4();
 

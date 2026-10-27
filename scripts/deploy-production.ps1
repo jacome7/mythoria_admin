@@ -73,7 +73,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  - Region: $REGION"
     Write-Host "  - URL: $serviceUrl"
 
-    & (Join-Path $PSScriptRoot "verify-cloud-run-timeout.ps1") -ServiceName $SERVICE_NAME -Region $REGION -ExpectedTimeoutSeconds 3600
+    & (Join-Path $PSScriptRoot "verify-cloud-run-timeout.ps1") -ServiceName $SERVICE_NAME -Region $REGION -ExpectedTimeoutSeconds 300
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERR] Post-deploy timeout verification failed"
         exit 1

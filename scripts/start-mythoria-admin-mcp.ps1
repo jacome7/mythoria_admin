@@ -24,4 +24,4 @@ if (-not $secret) {
 
 $env:MYTHORIA_ADMIN_MCP_SECRET = $secret
 
-& npx -y mcp-remote@0.1.38 $Endpoint --transport sse-only --header "Authorization: Bearer ${MYTHORIA_ADMIN_MCP_SECRET}"
+& npx -y mcp-remote@0.1.38 $Endpoint --transport http-only --header "Authorization: Bearer ${MYTHORIA_ADMIN_MCP_SECRET}"

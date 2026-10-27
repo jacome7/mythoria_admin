@@ -34,11 +34,7 @@ export async function GET(request: Request) {
     const statusFilter = searchParams.get('status') || 'all';
     const languageFilter = searchParams.get('language') || 'all';
     const sortBy = (searchParams.get('sortBy') || 'lastEmailSentAt') as
-      | 'name'
-      | 'email'
-      | 'language'
-      | 'emailStatus'
-      | 'lastEmailSentAt';
+      'name' | 'email' | 'language' | 'emailStatus' | 'lastEmailSentAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Get leads data

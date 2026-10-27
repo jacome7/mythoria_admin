@@ -4,11 +4,13 @@ The Mythoria Admin application exposes a fully functional **Model Context Protoc
 
 ## Integration Architecture
 
-We implement the official `@modelcontextprotocol/sdk` on Next.js App Router route handlers. The primary `/api/mcp` endpoint supports streamable HTTP `POST` requests for modern MCP clients such as Codex. The same path keeps the legacy HTTP Server-Sent Events (SSE) `GET` transport, with JSON-RPC messages posted to `/api/mcp/messages`, so existing SSE clients can continue to connect.
+We implement the official `@modelcontextprotocol/sdk` on Next.js App Router route handlers. The `/api/mcp` endpoint uses stateless Streamable HTTP `POST` requests with finite JSON responses. Each request authenticates its principal, creates an isolated protocol server and closes it after the response is ready. No background SSE connection or in-memory session registry is required.
+
+Transport update: 2026-10-27. Legacy SSE has been retired to let request-based Cloud Run billing stop between requests. Authenticated `GET` and `DELETE` requests return `405` with `Allow: POST`; optional GET streams are not offered. Authenticated requests to the old `POST /api/mcp/messages` endpoint return `410` with migration instructions. Missing or invalid credentials still return `401` on these routes.
 
 ## Endpoints
 
-- **Connection Types**: Streamable HTTP (`POST /api/mcp`) and legacy SSE (`GET /api/mcp` + `POST /api/mcp/messages`)
+- **Connection type**: Stateless Streamable HTTP (`POST /api/mcp`), with JSON responses and `202` for accepted notifications
 - **Local Endpoint**: `http://localhost:3001/api/mcp`
 - **Production Endpoint**: `https://<admin-domain>/api/mcp`
 
@@ -17,9 +19,9 @@ We implement the official `@modelcontextprotocol/sdk` on Next.js App Router rout
 Due to the highly sensitive domain of admin tools, the MCP server forces strict authorization rules automatically on every connection and message attempt:
 
 1. **API Key Generation Requirement**: The system expects a secure passkey to be defined using the `.env` variable `MCP_SECRET_KEY`.
-2. **Bearer Verification**: Streamable HTTP `POST`, SSE `GET`, and SSE message `POST` must send `Authorization: Bearer <your-secret-key>` (same value as `MCP_SECRET_KEY`).
+2. **Bearer verification**: Every MCP request must send `Authorization: Bearer <your-secret-key>`. `MCP_SECRET_KEY` grants the existing admin tools; the separate referral management and finance credentials retain their scoped permissions. See [referrals](referrals.md).
 3. **Timing-Safe Evaluation**: Verification utilizes constant-time string comparisons (`crypto.timingSafeEqual`) to prevent brute-force timing attacks against the secret configuration length.
-4. **Audit Trails**: Mutative execution tasks are heavily logged. Tools stream structured logs prefixed with `[MCP AUDIT] Session <id> executing payload:` for external tracing within Google Cloud Logging.
+4. **Audit trails**: Requests log an `[MCP AUDIT] Streamable HTTP message` summary containing the method, message ID and top-level keys, without logging credentials or the full payload. Existing tool-level audit behavior is unchanged.
 
 ### Codex and streamable HTTP clients
 
@@ -27,12 +29,21 @@ Due to the highly sensitive domain of admin tools, the MCP server forces strict 
 - Codex config should use the exact `/api/mcp` URL with `bearer_token_env_var = "MYTHORIA_ADMIN_MCP_SECRET"` and should not include a trailing slash.
 - Initialization returns `application/json` in JSON response mode so clients do not receive the framework HTML fallback for unsupported methods.
 
-### OpenClaw and other SSE clients
+### Migrating clients and local bridges
 
-- Transport is **SSE**: connect with `GET /api/mcp` and header `Authorization: Bearer <MCP_SECRET_KEY>`.
+- Configure clients for Streamable HTTP at `/api/mcp`, using their existing bearer credential. Optional GET attempts receive `405`; a compatible client continues to use POST without reconnecting a stream.
+- The bundled `scripts/start-mythoria-admin-mcp.ps1` bridge now uses `mcp-remote --transport http-only`. Restart existing bridge processes after updating the script.
+- SSE-only clients must migrate before rollout. There is no legacy streaming endpoint enabled by default or as an automatic fallback.
 - **URL shape**: Use exactly `/api/mcp` with **no trailing slash**. A request to `/api/mcp/` receives **308** to `/api/mcp`; many HTTP stacks drop or alter `Authorization` on redirect, which shows up as **401 Unauthorized** on the follow-up request.
 - The bearer value must match **`MCP_SECRET_KEY` configured on the Cloud Run (or hosting) environment** for this admin deployment. Store the same value in Google Secret Manager and inject it into OpenClaw (for example `MYTHORIA_ADMIN_MCP_SECRET` on the OpenClaw VM). A mismatch produces **401 Unauthorized**.
-- The `/api/mcp/messages` endpoint is tied to the session established on the SSE connection; clients must follow the MCP SSE flow end to end and include the **same Bearer token** on every `POST`.
+- `test_mcp.py` uses the Python SDK's Streamable HTTP client for read-only initialization and tool discovery.
+
+### Validation and rollback
+
+- Local regression coverage: `npm test -- --runInBand __tests__/api/mcp-transport.test.ts` uses the real MCP client and transport SDK, a read-only fixture tool and synthetic credentials. It checks admin, management and finance request isolation, initialization, optional GET handling, tool discovery, tool calls, authentication and protocol cleanup without accessing databases or paid APIs.
+- Before promotion, smoke-test initialization, `tools/list` and an authorized read-only tool with each real client. Check that unauthenticated requests remain `401`, optional authenticated GET requests return promptly with `405`, POST responses are JSON and no `Mcp-Session-Id` is issued.
+- After deployment, allow existing requests on the previous revision to drain, then use `scripts/check-mcp-costs.ps1 -Days 1` after a complete UTC day and `-Days 7` after seven complete days. Target zero successful streaming GET responses and less than one billable instance-hour per day, while checking tool failures and latency. These are acceptance targets, not measured savings. The script only reads logs and Monitoring metrics using `gcloud` credentials and reports incomplete or unavailable evidence as an error.
+- Roll back to the previous known-good revision if real clients fail required read-only operations. The previous revision restores SSE and its one-hour timeout, so the previous cost exposure also returns. Restore matching client transport settings if those clients require SSE. A shorter timeout alone does not stop a reconnect loop.
 
 ## Supplied Services
 

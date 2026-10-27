@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createMcpServer, activeTransports, transportPrincipals } from '@/lib/mcp/server';
-import { validateMcpAuth, getMcpPrincipal } from '@/lib/mcp/auth';
-import { NextSSETransport } from '@/lib/mcp/NextSSETransport';
+import { createMcpServer } from '@/lib/mcp/server';
+import { getMcpPrincipal } from '@/lib/mcp/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +24,9 @@ function getPayloadAuditSummary(payload: unknown) {
   };
 }
 
-async function handleStreamableHttpRequest(request: NextRequest) {
-  if (!validateMcpAuth(request)) {
+export async function POST(request: NextRequest) {
+  const principal = getMcpPrincipal(request);
+  if (!principal) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -51,16 +51,16 @@ async function handleStreamableHttpRequest(request: NextRequest) {
 
   const transport = new WebStandardStreamableHTTPServerTransport({
     enableJsonResponse: true,
+    sessionIdGenerator: undefined,
   });
-  const server = createMcpServer(getMcpPrincipal(request)!);
+  const server = createMcpServer(principal);
 
   transport.onerror = (error) => {
     console.error('[MCP SERVER ERROR] Streamable HTTP transport:', error);
   };
 
-  await server.connect(transport);
-
   try {
+    await server.connect(transport);
     return await transport.handleRequest(request, { parsedBody: payload });
   } catch (error) {
     console.error('[MCP SERVER ERROR] Streamable HTTP request:', error);
@@ -72,40 +72,36 @@ async function handleStreamableHttpRequest(request: NextRequest) {
       },
       { status: 500 },
     );
+  } finally {
+    // JSON responses are complete here; release the per-request protocol state.
+    try {
+      await server.close();
+    } catch (error) {
+      console.error('[MCP SERVER ERROR] Closing streamable HTTP request:', error);
+    }
   }
 }
 
-export async function GET(request: NextRequest) {
-  if (!validateMcpAuth(request)) {
+function rejectStreamingRequest(request: NextRequest) {
+  if (!getMcpPrincipal(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const transport = new NextSSETransport('/api/mcp/messages');
-
-  activeTransports.set(transport.sessionId, transport);
-  transportPrincipals.set(transport.sessionId, getMcpPrincipal(request)!.id);
-
-  transport.onclose = () => {
-    activeTransports.delete(transport.sessionId);
-    transportPrincipals.delete(transport.sessionId);
-  };
-
-  const server = createMcpServer(getMcpPrincipal(request)!);
-  await server.connect(transport);
-
-  return new NextResponse(transport.responseStream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
+  // Optional client GET streams would keep request-based Cloud Run billing active.
+  // MCP clients support 405 here and continue using the stateless POST transport.
+  return NextResponse.json(
+    { error: 'Method not allowed. Use HTTP POST /api/mcp.' },
+    {
+      status: 405,
+      headers: { Allow: 'POST', 'Cache-Control': 'no-store' },
     },
-  });
+  );
 }
 
-export async function POST(request: NextRequest) {
-  return handleStreamableHttpRequest(request);
+export async function GET(request: NextRequest) {
+  return rejectStreamingRequest(request);
 }
 
 export async function DELETE(request: NextRequest) {
-  return handleStreamableHttpRequest(request);
+  return rejectStreamingRequest(request);
 }

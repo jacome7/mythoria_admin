@@ -85,11 +85,11 @@ export class PostmasterClient {
       let keyPath = serviceAccountKeyPath;
       if (!isAbsolute(keyPath)) {
         // Resolve relative to project root
-        keyPath = resolve(process.cwd(), keyPath);
+        keyPath = resolve(/*turbopackIgnore: true*/ process.cwd(), keyPath);
       }
 
       // Read and parse service account key
-      const keyFileContent = readFileSync(keyPath, 'utf-8');
+      const keyFileContent = readFileSync(/*turbopackIgnore: true*/ keyPath, 'utf-8');
       const serviceAccountKey: ServiceAccountKey = JSON.parse(keyFileContent);
 
       // Create JWT auth client with Postmaster API scope

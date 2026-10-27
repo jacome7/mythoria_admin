@@ -20,7 +20,7 @@ The seven referral pages live under /referrals. The REST facade under /api/admin
 
 Explicit role rows are required in referral_admin_roles. Roles are referral_viewer, referral_manager, finance and super_admin. A manager's existing free-form role field does not grant referral access. Review scripts/referral-roles.sql, generated from the new Drizzle schema, before applying it to backoffice_db; ignored historical migration files are not a portable deployment chain. Seed no privileges without an identified grantor.
 
-REFERRAL_INTERNAL_AUDIENCE and existing WEBAPP_URL select the canonical backend. REFERRAL_MCP_MANAGEMENT_KEY and REFERRAL_MCP_FINANCE_KEY are distinct Secret Manager keys. Legacy MCP credentials receive no referral tools. SSE sessions are bound to the initiating principal; each authorized tool uses the same WebApp API as the UI. Run npm run sync-mythoria-db-schema after upstream schema changes, followed by format/lint/typecheck/build/test.
+REFERRAL_INTERNAL_AUDIENCE and existing WEBAPP_URL select the canonical backend. REFERRAL_MCP_MANAGEMENT_KEY and REFERRAL_MCP_FINANCE_KEY are distinct Secret Manager keys. Legacy MCP credentials receive no referral tools. Each stateless MCP HTTP request is bound to its authenticated principal; each authorized tool uses the same WebApp API as the UI. The 2026-10-27 transport update retires legacy SSE without changing referral credentials or permissions; see [MCP client migration](mcp.md#migrating-clients-and-local-bridges). Run npm run sync-mythoria-db-schema after upstream schema changes, followed by format/lint/typecheck/build/test.
 
 ## Production release — 2026-09-12
 

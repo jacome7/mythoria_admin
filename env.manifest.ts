@@ -118,6 +118,13 @@ export const envManifest: EnvVarDescriptor[] = [
 
   // Public facing (rare for admin - only admin base and app base for story links)
   {
+    name: 'NEXT_PUBLIC_TTS_PROVIDER',
+    required: false,
+    scopes: ['build', 'public', 'dev'],
+    default: 'google-genai',
+    note: 'Audiobook voice list provider (google-genai | openai); mirrors the webapp. Inlined at build time.',
+  },
+  {
     name: 'NEXT_PUBLIC_ADMIN_URL',
     required: false,
     scopes: ['prod', 'build', 'public', 'dev'],

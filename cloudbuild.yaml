@@ -49,11 +49,10 @@ steps:
       - '5'
       - '--concurrency'
       - '80'
-      # MCP SSE connections can stay open for long periods; keep Cloud Run
-      # above the default 300s cutoff so the admin transport does not get
-      # terminated mid-stream.
+      # Keep request-based billing explicit. MCP uses finite JSON POST responses.
+      - '--cpu-throttling'
       - '--timeout'
-      - '3600'
+      - '300'
       - '--network'
       - 'default'
       - '--subnet'

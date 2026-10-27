@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     let templateHtml: string;
     try {
-      templateHtml = await readFile(templatePath, 'utf-8');
+      templateHtml = await readFile(/*turbopackIgnore: true*/ templatePath, 'utf-8');
     } catch {
       console.error(`Failed to read email template at ${templatePath}`);
       return NextResponse.json({ error: 'Failed to load email template' }, { status: 500 });
