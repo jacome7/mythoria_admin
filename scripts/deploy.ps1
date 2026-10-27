@@ -178,8 +178,11 @@ try {
     # Build and deploy with Cloud Build (cloudbuild.yaml)
     # Referral runtime audience/identity defaults live in cloudbuild.yaml.
     # Optional MCP credentials must already exist in Secret Manager.
-    $buildSubstitutions = "^|^_GIT_SHA=$gitSha"
+    # The custom "^|^" delimiter is only needed when a value contains commas; cmd.exe (gcloud.cmd)
+    # treats "|" as a pipe, so keep the plain form for the default deploy.
+    $buildSubstitutions = "_GIT_SHA=$gitSha"
     if ($ReferralMcp) {
+        $buildSubstitutions = "^|^_GIT_SHA=$gitSha"
         $buildSubstitutions += '|_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest'
     }
     Write-Host "[INFO] Starting Cloud Build production deployment..."
