@@ -5,8 +5,20 @@ import {
   marketingCampaignBatches,
   marketingCampaignRecipients,
 } from '../schema/campaigns';
-import { and, count, desc, eq, gte, sql, asc, inArray } from 'drizzle-orm';
-import { authors, paymentEvents, paymentOrders } from '../schema';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  sql,
+  asc,
+  inArray,
+  isNull,
+  notInArray,
+  type SQL,
+} from 'drizzle-orm';
+import { authors, paymentEvents, paymentOrders, surveyInvitations } from '../schema';
 import type {
   CampaignStatus,
   CampaignAudienceSource,
@@ -14,6 +26,11 @@ import type {
   MarketingCampaign,
   MarketingCampaignAsset,
 } from '../schema/campaigns';
+import { SURVEY_AUDIENCE_SOURCE } from '@/lib/schemas/campaigns';
+import {
+  findMissingSurveyAssetVariables,
+  SurveyAssetValidationError,
+} from '@/lib/surveys/asset-requirements';
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,
@@ -155,6 +172,61 @@ function buildFilterSql(
   return buildNode(filterTree);
 }
 
+export type SurveyAudienceScope = {
+  studyId: string;
+  cohortKey: string;
+  mode: 'invite' | 'reminder';
+};
+
+/** Extract the survey scope of a campaign row (null for non-survey campaigns). */
+export function surveyScopeOf(
+  campaign: Pick<
+    MarketingCampaign,
+    'audienceSource' | 'surveyStudyId' | 'surveyCohortKey' | 'surveyAudienceMode'
+  >,
+): SurveyAudienceScope | null {
+  if (
+    campaign.audienceSource !== SURVEY_AUDIENCE_SOURCE ||
+    !campaign.surveyStudyId ||
+    !campaign.surveyCohortKey ||
+    !campaign.surveyAudienceMode
+  ) {
+    return null;
+  }
+  return {
+    studyId: campaign.surveyStudyId,
+    cohortKey: campaign.surveyCohortKey,
+    mode: campaign.surveyAudienceMode,
+  };
+}
+
+async function countSurveyAudience(conditions: SQL[], campaignId: string | null): Promise<number> {
+  const finalConditions = [...conditions];
+  if (campaignId) {
+    // Mirror notification-engine getExcludedRecipientIds: every recipient with a row for this
+    // campaign is already in the pipeline (sent, failed, skipped or queued), whatever its status.
+    const processed = await getBackofficeDb()
+      .select({ recipientId: marketingCampaignRecipients.recipientId })
+      .from(marketingCampaignRecipients)
+      .where(
+        and(
+          eq(marketingCampaignRecipients.campaignId, campaignId),
+          eq(marketingCampaignRecipients.recipientType, 'user'),
+        ),
+      );
+    const processedIds = processed.map((row) => row.recipientId);
+    if (processedIds.length > 0) {
+      finalConditions.push(notInArray(surveyInvitations.authorId, processedIds));
+    }
+  }
+  const [row] = await getMythoriaDb()
+    .select({ cnt: count() })
+    .from(surveyInvitations)
+    .innerJoin(authors, eq(authors.authorId, surveyInvitations.authorId))
+    .where(and(...finalConditions));
+  return Number(row?.cnt ?? 0);
+}
+
 // -----------------------------------------------------------------------------
 // Campaign service
 // -----------------------------------------------------------------------------
@@ -164,7 +236,9 @@ export const campaignService = {
   // ---------------------------------------------------------------------------
   async createCampaign(data: CreateCampaignInput, adminEmail: string): Promise<MarketingCampaign> {
     const db = getBackofficeDb();
-    const attachmentType = data.attachmentType ?? 'none';
+    const isSurvey = data.audienceSource === SURVEY_AUDIENCE_SOURCE;
+    // Survey campaigns never carry attachments or a filter tree (audience = survey invitations).
+    const attachmentType = isSurvey ? 'none' : (data.attachmentType ?? 'none');
     const [campaign] = await db
       .insert(marketingCampaigns)
       .values({
@@ -173,7 +247,10 @@ export const campaignService = {
         status: 'draft',
         audienceSource: data.audienceSource,
         userNotificationPreferences: data.userNotificationPreferences ?? null,
-        filterTree: data.filterTree ?? null,
+        filterTree: isSurvey ? null : (data.filterTree ?? null),
+        surveyStudyId: isSurvey ? (data.surveyStudyId ?? null) : null,
+        surveyCohortKey: isSurvey ? (data.surveyCohortKey ?? null) : null,
+        surveyAudienceMode: isSurvey ? (data.surveyAudienceMode ?? null) : null,
         dailySendLimit: data.dailySendLimit ?? null,
         attachmentType,
         skipPrintQa: attachmentType === 'selfprint' ? (data.skipPrintQa ?? false) : false,
@@ -264,6 +341,9 @@ export const campaignService = {
         audienceSource: campaign.audienceSource,
         userNotificationPreferences: campaign.userNotificationPreferences,
         filterTree: campaign.filterTree,
+        surveyStudyId: campaign.surveyStudyId,
+        surveyCohortKey: campaign.surveyCohortKey,
+        surveyAudienceMode: campaign.surveyAudienceMode,
         dailySendLimit: campaign.dailySendLimit,
         attachmentType: campaign.attachmentType,
         skipPrintQa: campaign.skipPrintQa,
@@ -299,7 +379,10 @@ export const campaignService = {
 
     // Only allow updates on draft campaigns
     const [existing] = await db
-      .select({ status: marketingCampaigns.status })
+      .select({
+        status: marketingCampaigns.status,
+        audienceSource: marketingCampaigns.audienceSource,
+      })
       .from(marketingCampaigns)
       .where(eq(marketingCampaigns.id, id))
       .limit(1);
@@ -310,6 +393,7 @@ export const campaignService = {
         `Cannot update campaign in '${existing.status}' status. Only draft campaigns can be edited.`,
       );
     }
+    const isSurvey = existing.audienceSource === SURVEY_AUDIENCE_SOURCE;
 
     const updateData: Record<string, unknown> = {
       updatedBy: adminEmail,
@@ -318,16 +402,23 @@ export const campaignService = {
 
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.audienceSource !== undefined) updateData.audienceSource = data.audienceSource;
+    // Survey campaigns keep their audience source/filter/attachment: the audience is the study cohort.
+    if (data.audienceSource !== undefined && !isSurvey)
+      updateData.audienceSource = data.audienceSource;
     if (data.userNotificationPreferences !== undefined)
       updateData.userNotificationPreferences = data.userNotificationPreferences;
-    if (data.filterTree !== undefined) updateData.filterTree = data.filterTree;
+    if (data.filterTree !== undefined && !isSurvey) updateData.filterTree = data.filterTree;
     if (data.dailySendLimit !== undefined) updateData.dailySendLimit = data.dailySendLimit;
-    if (data.attachmentType !== undefined) updateData.attachmentType = data.attachmentType;
-    if (data.skipPrintQa !== undefined) updateData.skipPrintQa = data.skipPrintQa;
+    if (data.attachmentType !== undefined && !isSurvey)
+      updateData.attachmentType = data.attachmentType;
+    if (data.skipPrintQa !== undefined && !isSurvey) updateData.skipPrintQa = data.skipPrintQa;
     // Coerce skipPrintQa to false when the effective attachmentType isn't 'selfprint'.
     const effectiveAttachmentType = data.attachmentType;
-    if (effectiveAttachmentType !== undefined && effectiveAttachmentType !== 'selfprint') {
+    if (
+      !isSurvey &&
+      effectiveAttachmentType !== undefined &&
+      effectiveAttachmentType !== 'selfprint'
+    ) {
       updateData.skipPrintQa = false;
     }
     if (data.startAt !== undefined)
@@ -397,6 +488,7 @@ export const campaignService = {
         existing.filterTree as FilterTree | null,
         existing.userNotificationPreferences,
         existing.attachmentType,
+        surveyScopeOf(existing),
       );
       const progress = await campaignService.getCampaignProgress(id);
       audienceSnapshot = {
@@ -430,7 +522,10 @@ export const campaignService = {
 
     // Check campaign exists and is in draft
     const [campaign] = await db
-      .select({ status: marketingCampaigns.status })
+      .select({
+        status: marketingCampaigns.status,
+        audienceSource: marketingCampaigns.audienceSource,
+      })
       .from(marketingCampaigns)
       .where(eq(marketingCampaigns.id, campaignId))
       .limit(1);
@@ -440,6 +535,12 @@ export const campaignService = {
       throw new Error(
         `Cannot modify assets for campaign in '${campaign.status}' status. Only draft or active campaigns allow asset edits.`,
       );
+    }
+
+    // Survey emails must carry the survey link plus the unsubscribe/address compliance footer.
+    if (campaign.audienceSource === SURVEY_AUDIENCE_SOURCE) {
+      const missing = findMissingSurveyAssetVariables(data);
+      if (missing.length > 0) throw new SurveyAssetValidationError(missing, data.language);
     }
 
     // Try to find existing asset for this locale
@@ -874,6 +975,93 @@ export const campaignService = {
   },
 
   // ---------------------------------------------------------------------------
+  // Survey campaigns
+  // ---------------------------------------------------------------------------
+  /** All survey campaigns (invite + reminder) of a study, oldest first. */
+  async listSurveyCampaigns(studyId: string): Promise<MarketingCampaign[]> {
+    return getBackofficeDb()
+      .select()
+      .from(marketingCampaigns)
+      .where(eq(marketingCampaigns.surveyStudyId, studyId))
+      .orderBy(asc(marketingCampaigns.createdAt));
+  },
+
+  // ---------------------------------------------------------------------------
+  // Survey audience estimation
+  // ---------------------------------------------------------------------------
+  /**
+   * Estimates how many people a survey campaign would email right now.
+   * Mirrors the notification-engine resolution (docs/SURVEYS.md): non-holdout invitations of the
+   * study cohort that are not submitted/expired, with the standard author suppression. Reminder
+   * campaigns are limited to people already sent by the sibling invite campaign. The study
+   * status/closing date is not checked so the estimate is useful while the study is still draft.
+   * Reads the synced mythoria_db survey_invitations table read-only.
+   */
+  async getSurveyAudienceCount(
+    campaignId: string | null,
+    scope: SurveyAudienceScope,
+    userNotificationPreferences?: string[] | null,
+  ): Promise<number> {
+    const preferences =
+      userNotificationPreferences && userNotificationPreferences.length > 0
+        ? userNotificationPreferences
+        : [...DEFAULT_USER_NOTIFICATION_PREFERENCES];
+
+    const conditions: SQL[] = [
+      eq(surveyInvitations.studyId, scope.studyId),
+      eq(surveyInvitations.cohortKey, scope.cohortKey),
+      eq(surveyInvitations.isHoldout, false),
+      notInArray(surveyInvitations.status, ['submitted', 'expired']),
+      isNull(authors.accountClosedAt),
+      notInArray(authors.emailStatus, ['unsub', 'hard_bounce']),
+      inArray(
+        authors.notificationPreference,
+        preferences as Array<(typeof authors.notificationPreference.enumValues)[number]>,
+      ),
+    ];
+
+    if (scope.mode === 'reminder') {
+      const backofficeDb = getBackofficeDb();
+      const siblings = await backofficeDb
+        .select({ id: marketingCampaigns.id })
+        .from(marketingCampaigns)
+        .where(
+          and(
+            eq(marketingCampaigns.surveyStudyId, scope.studyId),
+            eq(marketingCampaigns.surveyCohortKey, scope.cohortKey),
+            eq(marketingCampaigns.surveyAudienceMode, 'invite'),
+          ),
+        );
+      if (siblings.length === 0) return 0;
+      const invited = await backofficeDb
+        .select({ recipientId: marketingCampaignRecipients.recipientId })
+        .from(marketingCampaignRecipients)
+        .where(
+          and(
+            inArray(
+              marketingCampaignRecipients.campaignId,
+              siblings.map((row) => row.id),
+            ),
+            eq(marketingCampaignRecipients.status, 'sent'),
+          ),
+        );
+      const invitedIds = [...new Set(invited.map((row) => row.recipientId))];
+      if (invitedIds.length === 0) return 0;
+      let total = 0;
+      // Chunks are disjoint, so the per-chunk counts add up.
+      for (const chunk of chunkValues(invitedIds)) {
+        total += await countSurveyAudience(
+          [...conditions, inArray(surveyInvitations.authorId, chunk)],
+          campaignId,
+        );
+      }
+      return total;
+    }
+
+    return countSurveyAudience(conditions, campaignId);
+  },
+
+  // ---------------------------------------------------------------------------
   // Audience count estimation
   // ---------------------------------------------------------------------------
   async getEstimatedAudienceCount(
@@ -882,7 +1070,19 @@ export const campaignService = {
     filterTree: FilterTree | null | undefined,
     userNotificationPreferences?: string[] | null,
     attachmentType: CampaignAttachmentType = 'none',
+    survey?: SurveyAudienceScope | null,
   ): Promise<{ users: number; leads: number; total: number }> {
+    if (audienceSource === SURVEY_AUDIENCE_SOURCE) {
+      const users = survey
+        ? await campaignService.getSurveyAudienceCount(
+            campaignId,
+            survey,
+            userNotificationPreferences,
+          )
+        : 0;
+      return { users, leads: 0, total: users };
+    }
+
     const mythoriaDb = getMythoriaDb();
     let userCount = 0;
     let leadCount = 0;

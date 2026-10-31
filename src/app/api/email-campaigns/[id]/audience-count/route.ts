@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { authenticateAdmin } from '@/lib/api-helpers';
-import { campaignService } from '@/db/services/campaigns';
+import { campaignService, surveyScopeOf } from '@/db/services/campaigns';
 import type { CampaignAudienceSource, CampaignAttachmentType } from '@/db/schema/campaigns';
 import {
   audienceEstimateSchema,
@@ -34,6 +34,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       campaign.filterTree as FilterTree | null,
       campaign.userNotificationPreferences as string[] | null | undefined,
       campaign.attachmentType as CampaignAttachmentType,
+      surveyScopeOf(campaign),
     );
 
     return NextResponse.json(audienceCount);
@@ -77,9 +78,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
     const hasAttachmentType = Object.prototype.hasOwnProperty.call(body, 'attachmentType');
 
-    const audienceSource = hasAudienceSource
-      ? (parsed.data.audienceSource ?? campaign.audienceSource)
-      : campaign.audienceSource;
+    // Survey campaigns cannot change audience source; only preferences can be overridden.
+    const isSurveyCampaign = campaign.audienceSource === 'survey_invitations';
+    const audienceSource =
+      hasAudienceSource && !isSurveyCampaign
+        ? (parsed.data.audienceSource ?? campaign.audienceSource)
+        : campaign.audienceSource;
 
     const filterTree = hasFilterTree
       ? (parsed.data.filterTree as FilterTree | null | undefined)
@@ -104,6 +108,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       filterTree as FilterTree | null,
       userNotificationPreferences,
       attachmentType,
+      surveyScopeOf(campaign),
     );
 
     return NextResponse.json(audienceCount);

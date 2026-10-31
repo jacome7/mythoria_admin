@@ -15,6 +15,8 @@ interface CampaignAssetEditorProps {
   readOnly?: boolean;
   /** When true the delete button is hidden even if readOnly is false. */
   canDelete?: boolean;
+  /** Survey campaigns list the survey template variables. */
+  isSurveyCampaign?: boolean;
 }
 
 export default function CampaignAssetEditor({
@@ -23,6 +25,7 @@ export default function CampaignAssetEditor({
   onDelete,
   readOnly = false,
   canDelete = true,
+  isSurveyCampaign = false,
 }: CampaignAssetEditorProps) {
   const [activeLocale, setActiveLocale] = useState<string>(LOCALES[0]);
   const [isSaving, setIsSaving] = useState(false);
@@ -217,7 +220,7 @@ export default function CampaignAssetEditor({
 
         {/* Variables panel */}
         <div>
-          <VariablesPanel />
+          <VariablesPanel isSurveyCampaign={isSurveyCampaign} />
         </div>
       </div>
     </div>

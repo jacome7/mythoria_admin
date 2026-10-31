@@ -1,6 +1,7 @@
 // Auto-generated index file for mythoria-db schema
-// Last updated: 2026-09-09T00:00:42.419Z
+// Last updated: 2026-10-28T22:37:41.997Z
 
+export * from './admin-audit';
 export * from './ai-edits';
 export * from './analytics';
 export * from './auth';
@@ -26,5 +27,7 @@ export * from './referrals';
 export * from './relations';
 export * from './shipping';
 export * from './stories';
+export * from './survey-rbac';
+export * from './surveys';
 export * from './tickets';
 export * from './writing-personas';

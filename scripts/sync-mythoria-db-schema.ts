@@ -161,6 +161,9 @@ async function syncTypeFiles(): Promise<SyncResult> {
       file.endsWith('.ts') &&
       !file.endsWith('.d.ts') &&
       file !== 'clerk.ts' &&
+      // WebApp-only types that import the WebApp `@/constants/*` alias.
+      file !== 'sample-book.ts' &&
+      file !== 'story-template.ts' &&
       file !== 'translation-keys.d.ts',
   );
 

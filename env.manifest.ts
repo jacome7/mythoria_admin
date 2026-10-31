@@ -27,6 +27,18 @@ export interface EnvVarDescriptor {
 
 export const envManifest: EnvVarDescriptor[] = [
   {
+    name: 'SURVEY_IMPERSONATE_SERVICE_ACCOUNT',
+    required: false,
+    scopes: ['dev'],
+    note: 'Development-only survey OIDC impersonation using local ADC (same pattern as REFERRAL_IMPERSONATE_SERVICE_ACCOUNT). Ignored in production.',
+  },
+  {
+    name: 'SURVEY_INTERNAL_AUDIENCE',
+    required: false,
+    scopes: ['runtime', 'dev', 'prod'],
+    note: 'OIDC audience of the WebApp survey command API (POST /api/internal/surveys/command); see ../docs/SURVEYS.md.',
+  },
+  {
     name: 'REFERRAL_IMPERSONATE_SERVICE_ACCOUNT',
     required: false,
     scopes: ['dev'],

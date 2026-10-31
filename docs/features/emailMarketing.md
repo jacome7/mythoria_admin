@@ -140,7 +140,7 @@ The `marketing_campaign_recipients` table decouples campaign send status from th
 
 1. **Status filter tabs** — Filter by Draft, Active, Paused, Completed, Cancelled, or show All.
 2. **Campaign table** — Sortable columns: title, audience source, status, created date, and actions.
-3. **Create button** — Opens a modal to specify title, description, audience source, daily send limit, and start/end dates.
+3. **Create button** — Opens a modal to specify title, description, audience source, notification preferences and daily send limit. Start/end dates are not asked here; set them on the campaign detail page while the campaign is a draft.
 4. **Action buttons** — Per-row: Activate, Pause, Cancel, Duplicate, Delete (draft/cancelled only).
 5. **Pagination** — Page-based navigation.
 6. **Global settings panel** — Collapsible section showing batch size slider and current send window (proxied to Notification Engine).
@@ -483,3 +483,15 @@ Measured conversion uses a 30-day last-email-click recipient ID. Historical pre-
 Campaign activation freezes `audience_total_snapshot`. Progress is processed recipients divided by that snapshot, not sent divided by already-processed rows. For an older active campaign, run `npm run campaign:snapshot -- <campaign-id>` once after applying `scripts/email-campaign-engagement-migration.sql`.
 
 Hard-bounced users and leads are excluded by default. Soft-bounced recipients remain eligible for a later campaign attempt.
+
+## Survey campaigns (2026-10-28)
+
+Customer-research survey campaigns reuse this module with `audience_source = 'survey_invitations'` plus `survey_study_id`, `survey_cohort_key` (C1-C3) and `survey_audience_mode` (`invite` | `reminder`). `audience_source` is a Postgres enum (`campaign_audience_source`), so adding the value needs a migration (`ALTER TYPE ... ADD VALUE`). The filter tree, attachments and the audience-source selector do not apply to these campaigns; the audience is the study cohort's invitation snapshot (resolved by notification-engine, estimated in Admin from the synced `survey_invitations` table). Campaigns are created from the study page (`/surveys/studies/[studyId]` > Create campaigns, `POST /api/admin/surveys/studies/[studyId]/create-campaigns`), never through the generic create endpoint. See `../../../docs/SURVEYS.md`.
+
+**Template variables in the UI.** For survey campaigns the Template Variables panel next to the asset editor also lists `{{surveyLink}}` (tracked personal survey link), `{{surveyDeadline}}` (localized study close date), `{{surveyMinutes}}` (estimated minutes from the survey version), `{{rewardDeadline}}` (localized gift claim deadline, empty if none) and `{{privacyLink}}` (localized privacy policy URL). The Preview Email form shows a note that these are filled with sample values for sample sends; the survey link opens a sample page, not a real invitation.
+
+**Asset validation.** When the campaign is a survey campaign, saving an asset (`PATCH /api/email-campaigns/[id]` with `assets`, handled by `campaignService.upsertCampaignAsset`) is rejected with HTTP 400 unless `htmlBody` references `surveyLink`, `unsubscribeLink` and `physicalAddress`, and `textBody` references `surveyLink` and `unsubscribeLink` (`{{var}}` or `{{{var}}}`, whitespace allowed). The response carries `error` (human-readable), `missing` (e.g. `htmlBody: {{surveyLink}}`) and `language`; the asset editor shows the message. The rule lives in `src/lib/surveys/asset-requirements.ts`. Regular campaigns are not affected.
+
+**Start and end dates.** While a campaign is a draft, the detail page has `datetime-local` Start and End inputs (shown in the browser's local time, sent as ISO UTC; empty clears the date) saved with the other draft metadata. `createCampaignSchema` and `updateCampaignSchema` require `endAt` to be after `startAt` when both are set. For survey reminders the page shows a non-blocking warning when the start is before the sibling invite campaign's start (same study and cohort; `GET /api/email-campaigns/[id]` returns `surveyContext.siblingInviteStartAt` for reminders). There is no warning yet for an end date after the study close date.
+
+Admin env: `SURVEY_INTERNAL_AUDIENCE` (OIDC audience of the WebApp survey command API) and the dev-only `SURVEY_IMPERSONATE_SERVICE_ACCOUNT`.

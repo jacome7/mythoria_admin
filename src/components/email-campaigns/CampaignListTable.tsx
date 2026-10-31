@@ -7,12 +7,14 @@ import type {
   CampaignStatus,
   CampaignAudienceSource,
 } from '@/db/schema/campaigns';
+import SurveyCampaignBadge from '@/components/surveys/studies/SurveyCampaignBadge';
 import { FiEdit2, FiPlay, FiPause, FiXCircle, FiTrash2, FiUsers, FiCopy } from 'react-icons/fi';
 
 const AUDIENCE_LABELS: Record<CampaignAudienceSource, string> = {
   users: 'Users',
   leads: 'Leads',
   both: 'Both',
+  survey_invitations: 'Survey',
 };
 
 interface CampaignListTableProps {
@@ -103,9 +105,18 @@ export default function CampaignListTable({
                 )}
               </td>
               <td>
-                <span className="badge badge-sm badge-outline">
-                  {AUDIENCE_LABELS[campaign.audienceSource]}
-                </span>
+                {campaign.audienceSource === 'survey_invitations' ? (
+                  <SurveyCampaignBadge
+                    compact
+                    surveyStudyId={campaign.surveyStudyId}
+                    cohortKey={campaign.surveyCohortKey}
+                    mode={campaign.surveyAudienceMode}
+                  />
+                ) : (
+                  <span className="badge badge-sm badge-outline">
+                    {AUDIENCE_LABELS[campaign.audienceSource]}
+                  </span>
+                )}
               </td>
               <td className="text-sm text-base-content/70">
                 {new Date(campaign.createdAt).toLocaleDateString()}

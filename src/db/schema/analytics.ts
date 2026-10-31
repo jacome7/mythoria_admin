@@ -150,9 +150,80 @@ export const storyGenerationRequests = pgTable(
   }),
 );
 
+export type ProductGenerationAction = 'audiobook_generation' | 'self_print';
+export type ProductGenerationFundingSource = 'credits' | 'survey_reward';
+export type ProductGenerationStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
+
+/**
+ * Durable customer request that connects a paid WebApp action to its workflow run.
+ * Recipient details and story content deliberately do not belong in this table.
+ */
+export const productGenerationRequests = pgTable(
+  'product_generation_requests',
+  {
+    runId: uuid('run_id').primaryKey(),
+    actionType: varchar('action_type', { length: 32 }).$type<ProductGenerationAction>().notNull(),
+    storyId: uuid('story_id')
+      .notNull()
+      .references(() => stories.storyId, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => authors.authorId, { onDelete: 'cascade' }),
+    userId: varchar('user_id', { length: 255 }),
+    idempotencyKey: varchar('idempotency_key', { length: 255 }).notNull(),
+    creditsSpent: integer('credits_spent').notNull(),
+    attributionId: uuid('attribution_id').references(() => analyticsAttributions.attributionId, {
+      onDelete: 'set null',
+    }),
+    clientId: varchar('client_id', { length: 100 }),
+    sessionId: bigint('session_id', { mode: 'number' }),
+    consent: jsonb('consent').$type<AnalyticsConsent>(),
+    primaryIntent: varchar('primary_intent', { length: 120 }),
+    landingSlug: varchar('landing_slug', { length: 160 }),
+    pageLocation: varchar('page_location', { length: 2048 }),
+    pageReferrer: varchar('page_referrer', { length: 2048 }),
+    engagementTimeMsec: integer('engagement_time_msec'),
+    status: varchar('status', { length: 24 })
+      .$type<ProductGenerationStatus>()
+      .default('pending')
+      .notNull(),
+    queueReference: varchar('queue_reference', { length: 255 }),
+    queuedAt: timestamp('queued_at', { withTimezone: true }),
+    terminalAt: timestamp('terminal_at', { withTimezone: true }),
+    compensatedAt: timestamp('compensated_at', { withTimezone: true }),
+    failureStage: varchar('failure_stage', { length: 80 }),
+    failureCode: varchar('failure_code', { length: 80 }),
+    deliveryStatus: varchar('delivery_status', { length: 24 }),
+    fundingSource: varchar('funding_source', { length: 24 })
+      .$type<ProductGenerationFundingSource>()
+      .default('credits')
+      .notNull(),
+    // Logical reference to survey_reward_entitlements (no FK: avoids a circular schema import).
+    rewardEntitlementId: uuid('reward_entitlement_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    idempotencyKeyUnique: uniqueIndex('product_generation_requests_idempotency_key_unique').on(
+      table.idempotencyKey,
+    ),
+    terminalIdx: index('product_generation_requests_terminal_idx').on(
+      table.actionType,
+      table.status,
+      table.terminalAt,
+    ),
+    storyIdx: index('product_generation_requests_story_id_idx').on(table.storyId),
+    rewardEntitlementIdx: index('product_generation_requests_reward_entitlement_id_idx').on(
+      table.rewardEntitlementId,
+    ),
+  }),
+);
+
 export type AnalyticsAttribution = typeof analyticsAttributions.$inferSelect;
 export type NewAnalyticsAttribution = typeof analyticsAttributions.$inferInsert;
 export type AnalyticsOutboxEntry = typeof analyticsOutbox.$inferSelect;
 export type NewAnalyticsOutboxEntry = typeof analyticsOutbox.$inferInsert;
 export type StoryGenerationRequest = typeof storyGenerationRequests.$inferSelect;
 export type NewStoryGenerationRequest = typeof storyGenerationRequests.$inferInsert;
+export type ProductGenerationRequest = typeof productGenerationRequests.$inferSelect;
+export type NewProductGenerationRequest = typeof productGenerationRequests.$inferInsert;

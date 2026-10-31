@@ -1,7 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { authenticateAdmin } from '@/lib/api-helpers';
 import { campaignService } from '@/db/services/campaigns';
-import { updateCampaignSchema, campaignAssetSchema } from '@/lib/schemas/campaigns';
+import {
+  updateCampaignSchema,
+  campaignAssetSchema,
+  SURVEY_AUDIENCE_SOURCE,
+} from '@/lib/schemas/campaigns';
+import {
+  findMissingSurveyAssetVariables,
+  SurveyAssetValidationError,
+} from '@/lib/surveys/asset-requirements';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -30,7 +38,30 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       campaignService.getCampaignSuccessMetrics(id),
     ]);
 
-    return NextResponse.json({ ...campaign, progress, batchHistory, successMetrics });
+    // For survey reminders, expose the sibling invite's start so the UI can warn about ordering.
+    let surveyContext: { siblingInviteStartAt: string | null } | undefined;
+    if (
+      campaign.audienceSource === SURVEY_AUDIENCE_SOURCE &&
+      campaign.surveyAudienceMode === 'reminder' &&
+      campaign.surveyStudyId
+    ) {
+      const siblings = await campaignService.listSurveyCampaigns(campaign.surveyStudyId);
+      const invite = siblings.find(
+        (sibling) =>
+          sibling.surveyCohortKey === campaign.surveyCohortKey &&
+          sibling.surveyAudienceMode === 'invite' &&
+          sibling.status !== 'cancelled',
+      );
+      surveyContext = { siblingInviteStartAt: invite?.startAt?.toISOString() ?? null };
+    }
+
+    return NextResponse.json({
+      ...campaign,
+      progress,
+      batchHistory,
+      successMetrics,
+      ...(surveyContext ? { surveyContext } : {}),
+    });
   } catch (error) {
     console.error('Error fetching campaign:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -64,6 +95,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Handle asset upserts if included
     if (body.assets && Array.isArray(body.assets)) {
+      // Validate every asset before saving any, so a rejected locale never leaves a partial save.
+      const parsedAssets = [];
       for (const asset of body.assets) {
         const assetParsed = campaignAssetSchema.safeParse(asset);
         if (!assetParsed.success) {
@@ -76,7 +109,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             { status: 400 },
           );
         }
-        await campaignService.upsertCampaignAsset(id, assetParsed.data);
+        parsedAssets.push(assetParsed.data);
+      }
+      const existing = await campaignService.getCampaign(id);
+      if (existing?.audienceSource === 'survey_invitations') {
+        for (const asset of parsedAssets) {
+          const missing = findMissingSurveyAssetVariables(asset);
+          if (missing.length > 0) throw new SurveyAssetValidationError(missing, asset.language);
+        }
+      }
+      for (const asset of parsedAssets) {
+        await campaignService.upsertCampaignAsset(id, asset);
       }
     }
 
@@ -101,6 +144,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const campaign = await campaignService.getCampaign(id);
     return NextResponse.json(campaign);
   } catch (error) {
+    if (error instanceof SurveyAssetValidationError) {
+      return NextResponse.json(
+        { error: error.message, missing: error.missing, language: error.language },
+        { status: 400 },
+      );
+    }
     const message = error instanceof Error ? error.message : 'Internal server error';
     const status = message.includes('Cannot') ? 409 : 500;
     console.error('Error updating campaign:', error);

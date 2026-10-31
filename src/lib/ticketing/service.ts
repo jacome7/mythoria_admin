@@ -136,18 +136,91 @@ export class TicketService {
   }
 
   /**
+   * Lookup author by userId or email in mythoria database
+   */
+  private static async findAuthor(
+    userId?: string | null,
+    email?: string | null,
+  ): Promise<{
+    authorId: string;
+    displayName: string;
+    email: string;
+    mobilePhone: string | null;
+  } | null> {
+    try {
+      const { getMythoriaDb } = await import('@/db');
+      const mythoriaDb = getMythoriaDb();
+      const { authors } = await import('@/db/schema/authors');
+      const { sql, eq } = await import('drizzle-orm');
+
+      if (userId) {
+        const [user] = await mythoriaDb
+          .select({
+            authorId: authors.authorId,
+            displayName: authors.displayName,
+            email: authors.email,
+            mobilePhone: authors.mobilePhone,
+          })
+          .from(authors)
+          .where(eq(authors.authorId, userId))
+          .limit(1);
+
+        if (user) {
+          return user;
+        }
+      }
+
+      if (email && email.trim()) {
+        const [user] = await mythoriaDb
+          .select({
+            authorId: authors.authorId,
+            displayName: authors.displayName,
+            email: authors.email,
+            mobilePhone: authors.mobilePhone,
+          })
+          .from(authors)
+          .where(sql`lower(${authors.email}) = lower(${email.trim()})`)
+          .limit(1);
+
+        if (user) {
+          return user;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Failed to find author in mythoria database:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create a new ticket
    */
   static async createTicket(data: CreateTicketData): Promise<Ticket> {
     const db = getBackofficeDb();
 
+    let userId = data.userId || null;
+    const emailToLookup = data.metadata?.author?.email || data.metadata?.email;
+    if (!userId && emailToLookup) {
+      const authorRecord = await this.findAuthor(null, emailToLookup);
+      if (authorRecord) {
+        userId = authorRecord.authorId;
+      }
+    }
+
+    const metadata = data.metadata ? { ...data.metadata } : null;
+    if (userId && metadata?.author) {
+      metadata.author = { ...metadata.author, id: userId };
+    }
+
     const newTicket: NewTicket = {
-      userId: data.userId || null,
+      userId,
       category: data.category,
       subject: data.subject,
       description: data.description,
       priority: data.priority || 'medium',
-      metadata: data.metadata || null,
+      metadata,
       status: 'open',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -158,7 +231,7 @@ export class TicketService {
     // Trigger notification
     await this.triggerNotification(ticket.id, 'created');
 
-    return { ...ticket, metadata: data.metadata || null } as Ticket;
+    return { ...ticket, metadata: metadata || null } as Ticket;
   }
 
   /**
@@ -175,6 +248,7 @@ export class TicketService {
         email: data.email,
         name: data.name,
         author: {
+          id: data.userId,
           email: data.email,
           name: data.name,
         },
@@ -288,22 +362,47 @@ export class TicketService {
 
     // Extract author information from metadata if available
     let metadata = this.normalizeMetadata(ticket.metadata);
-    const author = metadata.author
-      ? {
-          id: metadata.author.id || ticket.userId || '',
-          name: metadata.author.name || '',
-          email: metadata.author.email || '',
-          phone: metadata.author.phone || undefined,
+    let resolvedUserId: string | null = ticket.userId || metadata.author?.id || null;
+    const emailToLookup =
+      metadata.author?.email ||
+      metadata.email ||
+      (ticket.category === 'print_request' ? metadata.enrichedUser?.email : undefined);
+
+    const authorRecord = await this.findAuthor(resolvedUserId, emailToLookup);
+    if (authorRecord) {
+      if (!resolvedUserId) {
+        resolvedUserId = authorRecord.authorId;
+        try {
+          await db.update(tickets).set({ userId: resolvedUserId }).where(eq(tickets.id, id));
+        } catch (updateError) {
+          console.error('Failed to backfill ticket userId:', updateError);
         }
-      : null;
+      }
+    }
+
+    const author =
+      metadata.author || authorRecord
+        ? {
+            id: resolvedUserId || metadata.author?.id || '',
+            name: metadata.author?.name || authorRecord?.displayName || metadata.name || '',
+            email: metadata.author?.email || authorRecord?.email || metadata.email || '',
+            phone:
+              metadata.author?.phone || metadata.phone || authorRecord?.mobilePhone || undefined,
+          }
+        : null;
+
+    if (resolvedUserId && metadata.author) {
+      metadata.author.id = resolvedUserId;
+    }
 
     // Enrich print request tickets with data from mythoria database
     if (ticket.category === 'print_request') {
-      metadata = await this.enrichPrintRequestMetadata(ticket.userId, metadata);
+      metadata = await this.enrichPrintRequestMetadata(resolvedUserId, metadata);
     }
 
     return {
       ...ticket,
+      userId: resolvedUserId,
       metadata,
       comments,
       author,

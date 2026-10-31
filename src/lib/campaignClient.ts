@@ -32,6 +32,8 @@ export interface CampaignDetailResponse extends MarketingCampaign {
     limit: number;
   };
   successMetrics: CampaignSuccessMetrics;
+  /** Survey reminders only: start of the sibling invite campaign (same study + cohort). */
+  surveyContext?: { siblingInviteStartAt: string | null };
 }
 
 export interface CampaignProgress {

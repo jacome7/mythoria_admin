@@ -171,6 +171,16 @@ export default function AdminHeader() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/surveys" onClick={closeDropdown}>
+                    Surveys
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/surveys/studies" onClick={closeDropdown} className="pl-6 text-sm">
+                    Survey studies
+                  </Link>
+                </li>
+                <li>
                   <Link href="/partners" onClick={closeDropdown}>
                     Partners
                   </Link>
@@ -380,6 +390,16 @@ export default function AdminHeader() {
                     <li>
                       <Link href="/referrals" onClick={closeDrawer}>
                         Referrals
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/surveys" onClick={closeDrawer}>
+                        Surveys
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/surveys/studies" onClick={closeDrawer} className="pl-6 text-sm">
+                        Survey studies
                       </Link>
                     </li>
                     <li>

@@ -13,6 +13,7 @@ const EURO_FORMATTER = new Intl.NumberFormat('en-US', { style: 'currency', curre
 
 interface Ticket {
   id: string;
+  userId?: string | null;
   category: 'contact' | 'print_request' | 'payment_request' | 'other';
   type: 'contact' | 'print_request' | 'buy_credits' | 'other';
   subject: string;
@@ -52,6 +53,7 @@ export default function TicketDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [mbwayActionStatus, setMbwayActionStatus] = useState<'idle' | 'confirming' | 'closing'>(
     'idle',
   );
@@ -66,23 +68,57 @@ export default function TicketDetailPage() {
 
         // Transform the ticket data if needed
         if (apiData && apiData.id) {
-          const transformedTicket = {
+          const directUserId =
+            apiData.userId ||
+            apiData.author?.id ||
+            apiData.metadata?.author?.id ||
+            apiData.metadata?.enrichedUser?.userId ||
+            null;
+
+          const customerEmail =
+            apiData.author?.email ||
+            apiData.metadata?.email ||
+            apiData.metadata?.author?.email ||
+            apiData.metadata?.enrichedUser?.email;
+
+          const customerName =
+            apiData.author?.name ||
+            apiData.metadata?.name ||
+            apiData.metadata?.author?.name ||
+            apiData.metadata?.enrichedUser?.displayName;
+
+          const transformedTicket: Ticket = {
             id: apiData.id.toString(),
+            userId: directUserId,
             category: apiData.category,
             type: apiData.category, // Map category to type
             subject: apiData.subject,
             status: apiData.status,
             priority: apiData.priority,
             description: apiData.description,
-            customerEmail: apiData.metadata?.email,
-            customerName: apiData.metadata?.name,
+            customerEmail,
+            customerName,
             metadata: apiData.metadata,
-            author: apiData.author || null,
+            author: apiData.author
+              ? {
+                  ...apiData.author,
+                  id: apiData.author.id || directUserId || '',
+                }
+              : directUserId && customerEmail
+                ? {
+                    id: directUserId,
+                    name: customerName || '',
+                    email: customerEmail,
+                  }
+                : null,
             createdAt: apiData.createdAt,
             updatedAt: apiData.updatedAt,
           };
 
           setTicket(transformedTicket);
+          if (directUserId) {
+            setResolvedUserId(directUserId);
+          }
 
           // Transform comments if available
           const transformedComments = (apiData.comments || []).map(
@@ -115,6 +151,51 @@ export default function TicketDetailPage() {
     }
   }, [loading, session, fetchTicket]);
 
+  useEffect(() => {
+    if (!ticket) return;
+
+    const directUserId =
+      ticket.userId ||
+      ticket.author?.id ||
+      ticket.metadata?.author?.id ||
+      ticket.metadata?.enrichedUser?.userId;
+
+    if (directUserId) {
+      if (resolvedUserId !== directUserId) {
+        setResolvedUserId(directUserId);
+      }
+      return;
+    }
+
+    const email = ticket.author?.email || ticket.customerEmail || ticket.metadata?.email;
+    if (!email) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/users?search=${encodeURIComponent(email.trim())}&limit=10`,
+        );
+        if (response.ok) {
+          const result = await response.json();
+          const match = (result.data || []).find(
+            (u: { email?: string; authorId?: string }) =>
+              u.email?.trim().toLowerCase() === email.trim().toLowerCase(),
+          );
+          if (match?.authorId && isMounted) {
+            setResolvedUserId(match.authorId);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to lookup user by email:', err);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ticket, resolvedUserId]);
+
   const updateTicket = async (updates: Partial<Ticket>) => {
     if (!ticket) return;
 
@@ -131,24 +212,58 @@ export default function TicketDetailPage() {
       if (response.ok) {
         const apiData = await response.json();
 
+        const directUserId =
+          apiData.userId ||
+          apiData.author?.id ||
+          apiData.metadata?.author?.id ||
+          apiData.metadata?.enrichedUser?.userId ||
+          null;
+
+        const customerEmail =
+          apiData.author?.email ||
+          apiData.metadata?.email ||
+          apiData.metadata?.author?.email ||
+          apiData.metadata?.enrichedUser?.email;
+
+        const customerName =
+          apiData.author?.name ||
+          apiData.metadata?.name ||
+          apiData.metadata?.author?.name ||
+          apiData.metadata?.enrichedUser?.displayName;
+
         // Transform the updated ticket data
-        const transformedTicket = {
+        const transformedTicket: Ticket = {
           id: apiData.id.toString(),
+          userId: directUserId,
           category: apiData.category,
           type: apiData.category, // Map category to type
           subject: apiData.subject,
           status: apiData.status,
           priority: apiData.priority,
           description: apiData.description,
-          customerEmail: apiData.metadata?.email,
-          customerName: apiData.metadata?.name,
+          customerEmail,
+          customerName,
           metadata: apiData.metadata,
-          author: apiData.author || null,
+          author: apiData.author
+            ? {
+                ...apiData.author,
+                id: apiData.author.id || directUserId || '',
+              }
+            : directUserId && customerEmail
+              ? {
+                  id: directUserId,
+                  name: customerName || '',
+                  email: customerEmail,
+                }
+              : null,
           createdAt: apiData.createdAt,
           updatedAt: apiData.updatedAt,
         };
 
         setTicket(transformedTicket);
+        if (directUserId) {
+          setResolvedUserId(directUserId);
+        }
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to update ticket:', {
@@ -606,15 +721,27 @@ export default function TicketDetailPage() {
     );
   };
 
+  const effectiveUserId =
+    resolvedUserId ||
+    ticket?.userId ||
+    ticket?.author?.id ||
+    ticket?.metadata?.author?.id ||
+    ticket?.metadata?.enrichedUser?.userId ||
+    null;
+
   const renderMetadata = (metadata: TicketMetadata) => {
     if (!metadata || Object.keys(metadata).length === 0) return null;
 
     const renderValue = (key: string, value: unknown) => {
       // Check if this is an email field and we have author ID
-      if (key === 'email' && typeof value === 'string' && metadata.author?.id) {
+      if (
+        (key === 'email' || key === 'customerEmail') &&
+        typeof value === 'string' &&
+        effectiveUserId
+      ) {
         return (
           <Link
-            href={`/users/${metadata.author.id}`}
+            href={`/users/${effectiveUserId}`}
             className="text-primary hover:text-primary-focus underline"
           >
             {value}
@@ -884,13 +1011,15 @@ export default function TicketDetailPage() {
                       </div>
                       <div>
                         <span className="font-medium">Email:</span>
-                        {ticket.author.id ? (
-                          <Link
-                            href={`/users/${ticket.author.id}`}
-                            className="text-primary hover:text-primary-focus underline"
-                          >
-                            {ticket.author.email}
-                          </Link>
+                        {effectiveUserId ? (
+                          <p>
+                            <Link
+                              href={`/users/${effectiveUserId}`}
+                              className="text-primary hover:text-primary-focus underline"
+                            >
+                              {ticket.author.email}
+                            </Link>
+                          </p>
                         ) : (
                           <p className="text-base-content/70">{ticket.author.email}</p>
                         )}
@@ -915,17 +1044,23 @@ export default function TicketDetailPage() {
                   {!ticket.author && ticket.customerEmail && (
                     <div>
                       <span className="font-medium">Email:</span>
-                      {ticket.metadata?.author?.id ? (
-                        <Link
-                          href={`/users/${ticket.metadata.author.id}`}
-                          className="text-primary hover:text-primary-focus underline"
-                        >
-                          {ticket.customerEmail}
-                        </Link>
+                      {effectiveUserId ? (
+                        <p>
+                          <Link
+                            href={`/users/${effectiveUserId}`}
+                            className="text-primary hover:text-primary-focus underline"
+                          >
+                            {ticket.customerEmail}
+                          </Link>
+                        </p>
                       ) : (
                         <p className="text-base-content/70">{ticket.customerEmail}</p>
                       )}
                     </div>
+                  )}
+
+                  {!ticket.author && (ticket.customerName || ticket.customerEmail) && (
+                    <div className="divider my-2"></div>
                   )}
 
                   {/* Display phone number from metadata if no author or author has no phone */}

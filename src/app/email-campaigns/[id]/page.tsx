@@ -18,6 +18,7 @@ import CampaignAssetEditor from '@/components/email-campaigns/CampaignAssetEdito
 import CampaignProgress from '@/components/email-campaigns/CampaignProgress';
 import SampleSendForm from '@/components/email-campaigns/SampleSendForm';
 import GenerateAssetsModal from '@/components/email-campaigns/GenerateAssetsModal';
+import SurveyCampaignBadge from '@/components/surveys/studies/SurveyCampaignBadge';
 import { FiSave, FiZap, FiCopy, FiCheck } from 'react-icons/fi';
 
 type NotificationPreference = (typeof NOTIFICATION_PREFERENCES)[number];
@@ -33,6 +34,22 @@ function normalizeNotificationPreferences(
   return values.filter((value): value is NotificationPreference =>
     NOTIFICATION_PREFERENCES.includes(value as NotificationPreference),
   );
+}
+
+/** ISO (UTC) -> value for <input type=datetime-local>, in the browser's local time. */
+function isoToLocalInput(iso: string | Date | null | undefined): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** <input type=datetime-local> value (browser local time) -> ISO UTC; empty or invalid = null. */
+function localInputToIso(value: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 export default function CampaignDetailPage() {
@@ -55,6 +72,8 @@ export default function CampaignDetailPage() {
     NotificationPreference[]
   >([...DEFAULT_USER_NOTIFICATION_PREFERENCES]);
   const [editDailyLimit, setEditDailyLimit] = useState('');
+  const [editStartAt, setEditStartAt] = useState('');
+  const [editEndAt, setEditEndAt] = useState('');
   const [editFilterTree, setEditFilterTree] = useState<FilterTree | null>(null);
   const [editAttachmentType, setEditAttachmentType] = useState<CampaignAttachmentType>('none');
   const [editSkipPrintQa, setEditSkipPrintQa] = useState(false);
@@ -87,6 +106,8 @@ export default function CampaignDetailPage() {
         normalizeNotificationPreferences(data.userNotificationPreferences),
       );
       setEditDailyLimit(data.dailySendLimit ? String(data.dailySendLimit) : '');
+      setEditStartAt(isoToLocalInput(data.startAt));
+      setEditEndAt(isoToLocalInput(data.endAt));
       setEditFilterTree(data.filterTree as FilterTree | null);
       setEditAttachmentType(data.attachmentType ?? 'none');
       setEditSkipPrintQa(Boolean(data.skipPrintQa));
@@ -190,6 +211,7 @@ export default function CampaignDetailPage() {
 
   // Save metadata
   async function handleSaveMetadata() {
+    const isSurveyCampaign = editAudienceSource === 'survey_invitations';
     if (editAudienceSource !== 'leads' && editUserNotificationPreferences.length === 0) {
       setMetaMessage('Select at least one user notification preference');
       return;
@@ -200,18 +222,35 @@ export default function CampaignDetailPage() {
       return;
     }
 
+    const startIso = localInputToIso(editStartAt);
+    const endIso = localInputToIso(editEndAt);
+    if (startIso && endIso && new Date(endIso).getTime() <= new Date(startIso).getTime()) {
+      setMetaMessage('Failed to save: the end date must be after the start date');
+      return;
+    }
+
     setIsSavingMeta(true);
     setMetaMessage(null);
     try {
       const updateData: UpdateCampaignInput = {
         title: editTitle,
         description: editDescription || null,
-        audienceSource: editAudienceSource,
+        // Survey campaigns keep their audience source, filter and attachments (study cohort).
+        ...(isSurveyCampaign
+          ? {}
+          : {
+              audienceSource: editAudienceSource as Exclude<
+                CampaignAudienceSource,
+                'survey_invitations'
+              >,
+              filterTree: editFilterTree,
+              attachmentType: editAttachmentType,
+              skipPrintQa: editAttachmentType === 'selfprint' ? editSkipPrintQa : false,
+            }),
         userNotificationPreferences: editUserNotificationPreferences,
         dailySendLimit: editDailyLimit ? parseInt(editDailyLimit, 10) : null,
-        filterTree: editFilterTree,
-        attachmentType: editAttachmentType,
-        skipPrintQa: editAttachmentType === 'selfprint' ? editSkipPrintQa : false,
+        startAt: startIso,
+        endAt: endIso,
       };
       await campaignClient.update(campaignId, updateData);
       await fetchCampaign();
@@ -261,15 +300,21 @@ export default function CampaignDetailPage() {
   }
 
   // Audience estimate
+  const isSurveyCampaignRow = campaign?.audienceSource === 'survey_invitations';
   async function handleEstimateAudience() {
     setIsEstimating(true);
     try {
-      const count = await campaignClient.getAudienceCount(campaignId, {
-        audienceSource: editAudienceSource,
-        userNotificationPreferences: editUserNotificationPreferences,
-        filterTree: editFilterTree,
-        attachmentType: editAttachmentType,
-      });
+      const count = await campaignClient.getAudienceCount(
+        campaignId,
+        isSurveyCampaignRow
+          ? { userNotificationPreferences: editUserNotificationPreferences }
+          : {
+              audienceSource: editAudienceSource,
+              userNotificationPreferences: editUserNotificationPreferences,
+              filterTree: editFilterTree,
+              attachmentType: editAttachmentType,
+            },
+      );
       setPreviousAudienceCount(audienceCount);
       setAudienceCount(count);
     } catch (err) {
@@ -300,6 +345,22 @@ export default function CampaignDetailPage() {
   if (!campaign) return null;
 
   const isDraft = campaign.status === 'draft';
+  const isSurvey = campaign.audienceSource === 'survey_invitations';
+  const scheduleWarnings: string[] = [];
+  if (isSurvey) {
+    const start = localInputToIso(editStartAt);
+    const siblingInviteStartAt = campaign.surveyContext?.siblingInviteStartAt;
+    if (
+      campaign.surveyAudienceMode === 'reminder' &&
+      start &&
+      siblingInviteStartAt &&
+      new Date(start).getTime() < new Date(siblingInviteStartAt).getTime()
+    ) {
+      scheduleWarnings.push(
+        `This reminder starts before its invite campaign (${new Date(siblingInviteStartAt).toLocaleString()}). Reminders are only sent to people already invited.`,
+      );
+    }
+  }
   const canEditAssets = isDraft || campaign.status === 'active';
   const canDeleteAssets = isDraft;
   const availableLocales = campaign.assets.map((a) => a.language);
@@ -332,6 +393,23 @@ export default function CampaignDetailPage() {
       )}
 
       <div className="space-y-6">
+        {/* Survey campaign marker (study / cohort / mode) */}
+        {isSurvey && (
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body py-3 px-4">
+              <SurveyCampaignBadge
+                surveyStudyId={campaign.surveyStudyId}
+                cohortKey={campaign.surveyCohortKey}
+                mode={campaign.surveyAudienceMode}
+              />
+              <p className="text-xs text-base-content/60">
+                The audience is the study cohort&apos;s invitation snapshot. Filters and attachments
+                do not apply to survey campaigns.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Campaign ID & Feedback Loop info */}
         <div className="card bg-base-100 shadow-sm border border-base-200">
           <div className="card-body py-3 px-4">
@@ -407,22 +485,24 @@ export default function CampaignDetailPage() {
                   />
                 </div>
 
-                <div className="form-control">
-                  <label className="label py-1">
-                    <span className="label-text text-sm">Audience Source</span>
-                  </label>
-                  <select
-                    className="select select-bordered select-sm w-full"
-                    value={editAudienceSource}
-                    onChange={(e) =>
-                      setEditAudienceSource(e.target.value as CampaignAudienceSource)
-                    }
-                  >
-                    <option value="leads">Leads only</option>
-                    <option value="users">Users only</option>
-                    <option value="both">Both</option>
-                  </select>
-                </div>
+                {!isSurvey && (
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text text-sm">Audience Source</span>
+                    </label>
+                    <select
+                      className="select select-bordered select-sm w-full"
+                      value={editAudienceSource}
+                      onChange={(e) =>
+                        setEditAudienceSource(e.target.value as CampaignAudienceSource)
+                      }
+                    >
+                      <option value="leads">Leads only</option>
+                      <option value="users">Users only</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </div>
+                )}
 
                 {editAudienceSource !== 'leads' && (
                   <div className="form-control md:col-span-2">
@@ -480,13 +560,54 @@ export default function CampaignDetailPage() {
                     min={1}
                   />
                 </div>
+
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text text-sm">Start</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="input input-bordered input-sm w-full"
+                    value={editStartAt}
+                    onChange={(e) => setEditStartAt(e.target.value)}
+                  />
+                  <label className="label py-1">
+                    <span className="label-text-alt text-base-content/60">
+                      Your local time. Leave empty for no start date.
+                    </span>
+                  </label>
+                </div>
+
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text text-sm">End</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="input input-bordered input-sm w-full"
+                    value={editEndAt}
+                    min={editStartAt || undefined}
+                    onChange={(e) => setEditEndAt(e.target.value)}
+                  />
+                  <label className="label py-1">
+                    <span className="label-text-alt text-base-content/60">
+                      Your local time. Leave empty for no end date.
+                    </span>
+                  </label>
+                </div>
               </div>
+
+              {scheduleWarnings.map((warning) => (
+                <div key={warning} className="alert alert-warning alert-sm py-2 mt-3">
+                  <span className="text-sm">{warning}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Attachments / Special offer (draft only) */}
-        {isDraft && (
+        {isDraft && !isSurvey && (
           <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body">
               <h3 className="card-title text-sm mb-3">Attachments / Special offer</h3>
@@ -558,7 +679,9 @@ export default function CampaignDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-base-content/50 text-xs">Audience</span>
-                  <p className="font-medium capitalize">{campaign.audienceSource}</p>
+                  <p className="font-medium capitalize">
+                    {isSurvey ? 'Survey invitations' : campaign.audienceSource}
+                  </p>
                 </div>
                 {campaign.audienceSource !== 'leads' && (
                   <div>
@@ -601,17 +724,40 @@ export default function CampaignDetailPage() {
           </div>
         )}
 
-        {/* Filters */}
-        <CampaignFilterEditor
-          audienceSource={editAudienceSource}
-          filterTree={editFilterTree}
-          onChange={setEditFilterTree}
-          onEstimate={handleEstimateAudience}
-          audienceCount={audienceCount}
-          audienceDeltaTotal={audienceDeltaTotal}
-          isEstimating={isEstimating}
-          readOnly={!isDraft}
-        />
+        {/* Filters (not applicable to survey campaigns) */}
+        {isSurvey ? (
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body">
+              <div className="flex items-center justify-between">
+                <h3 className="card-title text-sm">Survey audience</h3>
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={handleEstimateAudience}
+                  disabled={isEstimating}
+                >
+                  {isEstimating ? <span className="loading loading-spinner loading-xs" /> : null}
+                  Estimate audience
+                </button>
+              </div>
+              <p className="text-sm text-base-content/70">
+                {audienceCount
+                  ? `${audienceCount.total.toLocaleString()} people would be emailed now`
+                  : 'Run an estimate to see how many invitees match this campaign.'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <CampaignFilterEditor
+            audienceSource={editAudienceSource}
+            filterTree={editFilterTree}
+            onChange={setEditFilterTree}
+            onEstimate={handleEstimateAudience}
+            audienceCount={audienceCount}
+            audienceDeltaTotal={audienceDeltaTotal}
+            isEstimating={isEstimating}
+            readOnly={!isDraft}
+          />
+        )}
 
         {/* Assets */}
         <div className="card bg-base-100 shadow-sm border border-base-200">
@@ -633,6 +779,7 @@ export default function CampaignDetailPage() {
               onDelete={handleDeleteAsset}
               readOnly={!canEditAssets}
               canDelete={canDeleteAssets}
+              isSurveyCampaign={isSurvey}
             />
           </div>
         </div>
@@ -652,6 +799,7 @@ export default function CampaignDetailPage() {
             availableLocales={availableLocales}
             assets={campaign.assets}
             attachmentType={campaign.attachmentType}
+            isSurveyCampaign={isSurvey}
           />
         )}
 

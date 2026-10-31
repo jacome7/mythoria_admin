@@ -28,6 +28,8 @@ export const campaignAudienceSourceEnum = pgEnum('campaign_audience_source', [
   'users',
   'leads',
   'both',
+  // Survey campaigns: audience resolved by notification-engine from survey_invitations.
+  'survey_invitations',
 ]);
 
 export const campaignChannelEnum = pgEnum('campaign_channel', ['email']);
@@ -63,6 +65,12 @@ export const marketingCampaigns = pgTable(
     audienceSource: campaignAudienceSourceEnum('audience_source').notNull(),
     userNotificationPreferences: varchar('user_notification_preferences', { length: 20 }).array(),
     filterTree: jsonb('filter_tree'),
+    // Survey campaigns only (audience_source = 'survey_invitations'); see docs/SURVEYS.md.
+    surveyStudyId: uuid('survey_study_id'),
+    surveyCohortKey: varchar('survey_cohort_key', { length: 8 }),
+    surveyAudienceMode: varchar('survey_audience_mode', { length: 16 }).$type<
+      'invite' | 'reminder'
+    >(),
     dailySendLimit: integer('daily_send_limit'),
     attachmentType: campaignAttachmentTypeEnum('attachment_type').default('none').notNull(),
     skipPrintQa: boolean('skip_print_qa').default(false).notNull(),
@@ -82,6 +90,11 @@ export const marketingCampaigns = pgTable(
   (table) => ({
     statusIdx: index('idx_campaigns_status').on(table.status),
     createdAtIdx: index('idx_campaigns_created_at').on(table.createdAt),
+    surveyStudyIdx: index('idx_campaigns_survey_study').on(
+      table.surveyStudyId,
+      table.surveyCohortKey,
+      table.surveyAudienceMode,
+    ),
   }),
 );
 

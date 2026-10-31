@@ -25,6 +25,8 @@ interface SampleSendFormProps {
   availableLocales: string[];
   assets: MarketingCampaignAsset[];
   attachmentType?: string;
+  /** Survey campaigns: variables are filled with sample values by the notification engine. */
+  isSurveyCampaign?: boolean;
 }
 
 export default function SampleSendForm({
@@ -32,6 +34,7 @@ export default function SampleSendForm({
   availableLocales,
   assets,
   attachmentType,
+  isSurveyCampaign = false,
 }: SampleSendFormProps) {
   const isSelfprint = attachmentType === 'selfprint';
   const [locale, setLocale] = useState(availableLocales[0] ?? 'en-US');
@@ -133,6 +136,16 @@ export default function SampleSendForm({
               />
             </div>
           </div>
+
+          {isSurveyCampaign && (
+            <div className="alert alert-info py-2 text-xs">
+              <span>
+                Survey variables (surveyLink, surveyDeadline, surveyMinutes, rewardDeadline,
+                privacyLink) are filled with sample values. The survey link opens a sample page, not
+                a real invitation.
+              </span>
+            </div>
+          )}
 
           {isSelfprint && (
             <div className="alert alert-info py-2 text-xs">

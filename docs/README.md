@@ -93,3 +93,5 @@ _Index refreshed: 2026-10-27_
 ## Referral platform v1 (2026-09-09)
 
 See the [referral implementation and operations guide](referrals.md) for this service's responsibilities, updated contracts, configuration, schema ownership and validation. The feature is implemented locally; production migration, deployment and pilot activation require their separate rollout checkpoints.
+
+See the [survey analytics guide](survey-analytics.md) for the Surveys / Customer Research section (roles, audit log, analytics endpoints, metric definitions).

@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (parsed.data.audienceSource === 'survey_invitations') {
+      // Survey campaigns are created from a study (survey:manage permission + audit).
+      return NextResponse.json(
+        { error: 'Survey campaigns are created from the survey study page' },
+        { status: 400 },
+      );
+    }
+
     const campaign = await campaignService.createCampaign(parsed.data, result.email);
     return NextResponse.json(campaign, { status: 201 });
   } catch (error) {
