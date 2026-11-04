@@ -33,7 +33,8 @@
     "campaign:migrate-engagement": "tsx -r dotenv/config ./scripts/apply-email-campaign-engagement-migration.ts",
     "campaign:migration-preflight": "tsx ./scripts/verify-email-campaign-engagement-migration.ts",
     "campaign:migration-postflight": "tsx ./scripts/verify-email-campaign-engagement-migration.ts --postflight",
-    "campaign:snapshot": "tsx -r dotenv/config ./scripts/backfill-campaign-audience-snapshot.ts"
+    "campaign:snapshot": "tsx -r dotenv/config ./scripts/backfill-campaign-audience-snapshot.ts",
+    "postinstall": "patch-package"
   },
   "sideEffects": false,
   "dependencies": {
@@ -91,6 +92,7 @@
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.5.2",
     "js-yaml": "^5.5.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.3",
     "ts-jest": "^29.4.15",

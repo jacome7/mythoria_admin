@@ -18,6 +18,7 @@ FROM base AS deps
 
 # Copy package.json and package-lock.json
 COPY package.json package-lock.json* ./
+COPY patches ./patches
 
 # Install dependencies
 # Using --loglevel=error to suppress deprecation warnings from transitive dependencies
