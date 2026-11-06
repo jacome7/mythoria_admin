@@ -1,14 +1,19 @@
+import { randomUUID } from 'node:crypto';
+
 export interface NotificationPayload {
   recipients: string[];
   template: string;
   variables: Record<string, unknown>;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   metadata?: Record<string, unknown>;
+  entityId?: string;
+  idempotencyKey?: string;
 }
 
 export interface NotificationResponse {
   success: boolean;
   messageId?: string;
+  deliveryStatus?: 'pending' | 'sending' | 'sent' | 'failed' | 'unknown';
   error?: string;
 }
 
@@ -26,7 +31,9 @@ class NotificationClient {
    */
   async sendEmail(payload: NotificationPayload): Promise<NotificationResponse> {
     try {
-      const correlationId = `ticket-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      const correlationId =
+        payload.idempotencyKey ??
+        (payload.entityId ? `${payload.template}:${payload.entityId}` : randomUUID());
 
       const response = await fetch(`${this.baseUrl}/webhook/email`, {
         method: 'POST',
@@ -34,6 +41,7 @@ class NotificationClient {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
           'X-API-Key': this.apiKey, // Some implementations use this header
+          'Idempotency-Key': correlationId,
         },
         body: JSON.stringify({
           correlationId,
@@ -65,9 +73,16 @@ class NotificationClient {
       }
 
       const result = await response.json();
+      const outcome = result.result ?? result;
+      const success = result.success !== false && outcome.success !== false;
       return {
-        success: true,
-        messageId: result.messageId || result.correlationId,
+        success,
+        messageId:
+          outcome.data?.messageId ?? outcome.data?.id ?? result.messageId ?? result.correlationId,
+        deliveryStatus: outcome.data?.deliveryStatus ?? outcome.deliveryStatus,
+        ...(!success
+          ? { error: outcome.error?.message ?? outcome.error ?? 'Notification was not accepted' }
+          : {}),
       };
     } catch (error) {
       console.error('Failed to send notification:', error);
@@ -91,12 +106,14 @@ class NotificationClient {
     entityId?: string;
   }): Promise<NotificationResponse> {
     try {
+      const eventId = args.entityId ?? (args.templateId === 'welcome' ? args.authorId : undefined);
       const response = await fetch(`${this.baseUrl}/email/template`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
           'x-api-key': this.apiKey,
+          ...(eventId ? { 'Idempotency-Key': `${args.templateId}:${eventId}` } : {}),
         },
         body: JSON.stringify({
           templateId: args.templateId,
@@ -126,7 +143,18 @@ class NotificationClient {
         };
       }
       const json = await response.json();
-      return { success: true, messageId: (json as { data?: { id?: string } }).data?.id };
+      const data = json.data as
+        | {
+            id?: string;
+            messageId?: string;
+            deliveryStatus?: NotificationResponse['deliveryStatus'];
+          }
+        | undefined;
+      return {
+        success: json.success !== false,
+        messageId: data?.messageId ?? data?.id,
+        deliveryStatus: data?.deliveryStatus,
+      };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
@@ -141,6 +169,7 @@ class NotificationClient {
     credits: number;
     preferredLocale?: string | null;
     authorId?: string;
+    entityId: string;
   }): Promise<NotificationResponse> {
     const language = this.mapLocale(params.preferredLocale);
     return this.sendTemplatedEmail({
@@ -156,6 +185,7 @@ class NotificationClient {
         creditEventType: 'refund',
       },
       authorId: params.authorId,
+      entityId: params.entityId,
     });
   }
 
@@ -169,7 +199,7 @@ class NotificationClient {
     preferredLocale?: string | null;
     authorId?: string;
     source?: string; // e.g. 'voucher', 'mbway'
-    entityId?: string;
+    entityId: string;
   }): Promise<NotificationResponse> {
     const language = this.mapLocale(params.preferredLocale);
     return this.sendTemplatedEmail({
@@ -219,6 +249,7 @@ class NotificationClient {
     return this.sendEmail({
       recipients: [customerEmail],
       template: 'ticket-created',
+      entityId: ticket.id,
       variables: {
         customerName,
         ticketId: ticket.id,
@@ -258,6 +289,7 @@ class NotificationClient {
     return this.sendEmail({
       recipients: [customerEmail],
       template: 'ticket-status-updated',
+      entityId: `${ticket.id}:${ticket.updatedAt}`,
       variables: {
         customerName,
         ticketId: ticket.id,
@@ -293,6 +325,7 @@ class NotificationClient {
       status: string;
     },
     comment: {
+      id?: string;
       content: string;
       authorName: string;
       authorType: string;
@@ -302,6 +335,7 @@ class NotificationClient {
     return this.sendEmail({
       recipients: [customerEmail],
       template: 'ticket-comment-added',
+      entityId: comment.id,
       variables: {
         customerName,
         ticketId: ticket.id,

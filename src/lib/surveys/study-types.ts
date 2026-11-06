@@ -57,7 +57,11 @@ export interface SurveyAudiencePreview {
     string,
     { classified: number; emailEligible: number; suppressed: number; alreadyInvited: number }
   >;
-  unclassified: Record<string, number>;
+  /**
+   * Legacy excluded groups. Every author is now classified as C1/C2/C3, so current WebApp
+   * revisions omit this (or send `{}`); older ones may still send `U1`/`U2`, which are tolerated.
+   */
+  unclassified?: Record<string, number>;
   duplicateEmails: number;
   reconciles: boolean;
 }

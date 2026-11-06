@@ -1,5 +1,7 @@
 # Mythoria Admin Portal – Agent Guide
 
+For notification event IDs and accepted-versus-sent responses, see [email delivery](docs/email-delivery.md). Credit/refund helpers require the actual ledger or payment ID; sending schemas are owned by Notification Engine. Keep its historical cutover and unknown-send holds intact.
+
 Use this playbook whenever you script or automate changes in the repo.
 
 ## Mission control

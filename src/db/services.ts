@@ -980,12 +980,15 @@ export const adminService = {
 
     try {
       // Insert credit ledger entry
-      await db.insert(creditLedger).values({
-        authorId,
-        amount,
-        creditEventType: eventType,
-        // createdAt is automatically set by defaultNow()
-      });
+      const [ledgerEntry] = await db
+        .insert(creditLedger)
+        .values({
+          authorId,
+          amount,
+          creditEventType: eventType,
+          // createdAt is automatically set by defaultNow()
+        })
+        .returning({ id: creditLedger.id });
 
       // Update author credit balance (or insert if doesn't exist)
       await db
@@ -1003,7 +1006,7 @@ export const adminService = {
           },
         });
 
-      return true;
+      return ledgerEntry.id;
     } catch (error) {
       console.error('Error assigning credits:', error);
       throw error;

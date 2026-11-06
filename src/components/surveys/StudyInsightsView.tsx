@@ -89,8 +89,7 @@ function StudyOverviewSection({ overview }: { overview: Overview }) {
         Study overview by cohort
       </h2>
       <p className="text-sm text-base-content/70">
-        Eligible = people snapshotted into the study. Classified/unclassified population counts are
-        on the{' '}
+        Eligible = people snapshotted into the study. Population counts per cohort are on the{' '}
         <Link className="link" href={`/surveys/studies/${overview.study.studyId}`}>
           study page
         </Link>

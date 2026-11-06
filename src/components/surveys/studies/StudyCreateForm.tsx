@@ -227,8 +227,8 @@ export default function StudyCreateForm({ surveys, onCreated, onCancel }: StudyC
             ))}
           </div>
           <p className="text-xs text-base-content/60 mt-2">
-            Unclassified authors (U1: 2+ published stories and no purchase; U2: purchase but no
-            published story) are never invited.
+            Every author belongs to exactly one cohort: C1 (no story, no purchase), C2 (1+
+            published, no purchase) or C3 (any paid purchase).
           </p>
         </div>
 

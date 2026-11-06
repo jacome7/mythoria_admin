@@ -919,6 +919,7 @@ export class TicketService {
           status: ticket.status,
         },
         {
+          id: comment.id.toString(),
           content: comment.body,
           authorName: authorName,
           authorType: 'admin', // Comments from the admin interface are from admins

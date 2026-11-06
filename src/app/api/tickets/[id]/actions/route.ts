@@ -229,7 +229,7 @@ async function confirmMbwayPayment(
         preferredLocale: user.preferredLocale,
         authorId: authorId,
         source: 'mbway',
-        entityId: ticket.id,
+        entityId: orderId || `MBWAY-${ticket.id}`,
       });
     }
   } catch (error) {

@@ -287,7 +287,7 @@ export function registerMcpTools(server: McpServer) {
           };
         }
 
-        await adminService.assignCreditsToUser(authorId, amount, eventType);
+        const creditEventId = await adminService.assignCreditsToUser(authorId, amount, eventType);
 
         let warning: string | undefined;
 
@@ -298,6 +298,7 @@ export function registerMcpTools(server: McpServer) {
             credits: amount,
             preferredLocale: user.preferredLocale,
             authorId: user.authorId,
+            entityId: creditEventId,
           });
           if (!notifyResult.success) {
             warning = `Credits assigned but refund email failed: ${notifyResult.error}`;
@@ -310,7 +311,7 @@ export function registerMcpTools(server: McpServer) {
             preferredLocale: user.preferredLocale,
             authorId: user.authorId,
             source: 'voucher',
-            entityId: crypto.randomUUID(),
+            entityId: creditEventId,
           });
           if (!notifyResult.success) {
             warning = `Credits assigned but voucher email failed: ${notifyResult.error}`;

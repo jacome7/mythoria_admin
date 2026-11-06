@@ -86,9 +86,9 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       C2: {
         subject: 'How did your story end? Tell us, pick a gift',
         preheader:
-          'A few quick questions about your first story, and a free PDF or audiobook as thanks.',
+          'A few quick questions about your stories, and a free PDF or audiobook as thanks.',
         before: [
-          "You've written your first Mythoria story. Chapter one: done.",
+          "You've written your first Mythoria story, and maybe a few more. Chapter one (at least): done.",
           "Now we're curious how it went: what you loved, what fell flat, and what would bring you back for a sequel. It takes about {{surveyMinutes}} minutes.",
         ],
         cta: 'Share how it went',
@@ -98,8 +98,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
         subject: "Help write Mythoria's next chapter, gift inside",
         preheader: 'Help shape what comes next, and pick a free PDF or audiobook as thanks.',
         before: [
-          "You've created stories with Mythoria and backed us along the way. Thank you, truly.",
-          "Now we'd love your help writing our next chapter: what made Mythoria worth it for you, and what we should make better. It takes about {{surveyMinutes}} minutes.",
+          'You picked up credits on Mythoria, and that means a lot. Thank you, truly.',
+          "Now we'd love your help writing our next chapter: what made you decide to buy, how it went, and what would make Mythoria better for you. It takes about {{surveyMinutes}} minutes.",
         ],
         cta: 'Help write the next chapter',
         after: [
@@ -121,8 +121,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       title: 'Your thank-you gift',
       body: {
         C1: 'Finish the survey and, once you publish your first story, pick a free **print-ready PDF** or **narrated audiobook** of it. On us, no credits needed.',
-        C2: 'Finish the survey and pick a free **print-ready PDF** or **narrated audiobook** of your story. On us, no credits needed.',
-        C3: 'Finish the survey and pick a free **print-ready PDF** or **narrated audiobook** of one of your published stories. On us, no credits needed.',
+        C2: 'Finish the survey and pick a free **print-ready PDF** or **narrated audiobook** of one of your published stories. On us, no credits needed.',
+        C3: 'Finish the survey and pick a free **print-ready PDF** or **narrated audiobook** of one of your stories. No published story yet? No rush: the gift unlocks as soon as you publish one. On us, no credits needed.',
       },
     },
     deadlineNote: 'The survey is open until {{surveyDeadline}}.',
@@ -156,9 +156,9 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       C2: {
         subject: 'Como acabou a sua história? Conte-nos e escolha uma oferta',
         preheader:
-          'Umas perguntas rápidas sobre a sua primeira história e um PDF ou audiolivro grátis como agradecimento.',
+          'Umas perguntas rápidas sobre as suas histórias e um PDF ou audiolivro grátis como agradecimento.',
         before: [
-          'Já escreveu a sua primeira história na Mythoria. Capítulo um: concluído.',
+          'Já escreveu a sua primeira história na Mythoria, e talvez mais algumas. Capítulo um (pelo menos): concluído.',
           'Agora estamos curiosos para saber como correu: o que adorou, o que ficou aquém e o que lhe daria vontade de voltar para uma sequela. Demora cerca de {{surveyMinutes}} minutos.',
         ],
         cta: 'Contar como correu',
@@ -169,8 +169,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
         preheader:
           'Ajude a moldar o que vem a seguir e escolha um PDF ou audiolivro grátis como agradecimento.',
         before: [
-          'Criou histórias com a Mythoria e apoiou-nos pelo caminho. Obrigado, a sério.',
-          'Agora gostávamos da sua ajuda para escrever o nosso próximo capítulo: o que fez a Mythoria valer a pena para si e o que devemos melhorar. Demora cerca de {{surveyMinutes}} minutos.',
+          'Adquiriu créditos na Mythoria, e isso significa muito para nós. Obrigado, a sério.',
+          'Agora gostávamos da sua ajuda para escrever o nosso próximo capítulo: o que o levou a comprar, como correu e o que tornaria a Mythoria melhor para si. Demora cerca de {{surveyMinutes}} minutos.',
         ],
         cta: 'Escrever o próximo capítulo',
         after: [
@@ -192,8 +192,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       title: 'A sua oferta de agradecimento',
       body: {
         C1: 'Conclua o inquérito e, assim que publicar a sua primeira história, escolha para ela um **PDF pronto a imprimir** ou um **audiolivro narrado**, grátis. Oferta nossa, sem gastar créditos.',
-        C2: 'Conclua o inquérito e escolha um **PDF pronto a imprimir** ou um **audiolivro narrado** da sua história, grátis. Oferta nossa, sem gastar créditos.',
-        C3: 'Conclua o inquérito e escolha um **PDF pronto a imprimir** ou um **audiolivro narrado** de uma das suas histórias publicadas, grátis. Oferta nossa, sem gastar créditos.',
+        C2: 'Conclua o inquérito e escolha um **PDF pronto a imprimir** ou um **audiolivro narrado** de uma das suas histórias publicadas, grátis. Oferta nossa, sem gastar créditos.',
+        C3: 'Conclua o inquérito e escolha um **PDF pronto a imprimir** ou um **audiolivro narrado** de uma das suas histórias, grátis. Ainda sem história publicada? Sem pressa: a oferta fica disponível assim que publicar uma. Oferta nossa, sem gastar créditos.',
       },
     },
     deadlineNote: 'O inquérito está aberto até {{surveyDeadline}}.',
@@ -229,9 +229,9 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       C2: {
         subject: '¿Cómo terminó tu historia? Cuéntanos y elige un regalo',
         preheader:
-          'Unas preguntas rápidas sobre tu primera historia y un PDF o audiolibro gratis como agradecimiento.',
+          'Unas preguntas rápidas sobre tus historias y un PDF o audiolibro gratis como agradecimiento.',
         before: [
-          'Ya has escrito tu primera historia en Mythoria. Capítulo uno: hecho.',
+          'Ya has escrito tu primera historia en Mythoria, y quizá alguna más. Capítulo uno (por lo menos): hecho.',
           'Ahora tenemos curiosidad por saber cómo fue: qué te encantó, qué se quedó corto y qué te haría volver para una secuela. Te llevará unos {{surveyMinutes}} minutos.',
         ],
         cta: 'Contar cómo fue',
@@ -244,8 +244,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
         preheader:
           'Ayúdanos a dar forma a lo que viene y elige un PDF o audiolibro gratis como agradecimiento.',
         before: [
-          'Has creado historias con Mythoria y nos has apoyado por el camino. Gracias, de verdad.',
-          'Ahora nos encantaría que nos ayudaras a escribir nuestro próximo capítulo: qué hizo que Mythoria mereciera la pena para ti y qué deberíamos mejorar. Te llevará unos {{surveyMinutes}} minutos.',
+          'Te has hecho con créditos en Mythoria, y eso significa mucho para nosotros. Gracias, de verdad.',
+          'Ahora nos encantaría que nos ayudaras a escribir nuestro próximo capítulo: qué te hizo decidirte a comprar, cómo fue y qué haría que Mythoria fuera mejor para ti. Te llevará unos {{surveyMinutes}} minutos.',
         ],
         cta: 'Escribir el próximo capítulo',
         after: [
@@ -269,8 +269,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       title: 'Tu regalo de agradecimiento',
       body: {
         C1: 'Completa la encuesta y, en cuanto publiques tu primera historia, elige para ella un **PDF listo para imprimir** o un **audiolibro narrado** gratis. Invita la casa, sin gastar créditos.',
-        C2: 'Completa la encuesta y elige un **PDF listo para imprimir** o un **audiolibro narrado** gratis de tu historia. Invita la casa, sin gastar créditos.',
-        C3: 'Completa la encuesta y elige un **PDF listo para imprimir** o un **audiolibro narrado** gratis de una de tus historias publicadas. Invita la casa, sin gastar créditos.',
+        C2: 'Completa la encuesta y elige un **PDF listo para imprimir** o un **audiolibro narrado** gratis de una de tus historias publicadas. Invita la casa, sin gastar créditos.',
+        C3: 'Completa la encuesta y elige un **PDF listo para imprimir** o un **audiolibro narrado** gratis de una de tus historias. ¿Aún no has publicado ninguna? Sin prisa: el regalo se desbloquea en cuanto publiques una. Invita la casa, sin gastar créditos.',
       },
     },
     deadlineNote: 'La encuesta está abierta hasta el {{surveyDeadline}}.',
@@ -304,9 +304,9 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       C2: {
         subject: "Comment s'est terminée votre histoire ? Racontez-nous, choisissez un cadeau",
         preheader:
-          'Quelques questions rapides sur votre première histoire, et un PDF ou un livre audio offert en remerciement.',
+          'Quelques questions rapides sur vos histoires, et un PDF ou un livre audio offert en remerciement.',
         before: [
-          'Vous avez écrit votre première histoire Mythoria. Chapitre un : terminé.',
+          'Vous avez écrit votre première histoire Mythoria, et peut-être quelques autres. Chapitre un (au moins) : terminé.',
           "Nous sommes curieux de savoir comment ça s'est passé : ce que vous avez adoré, ce qui est tombé à plat, et ce qui vous donnerait envie de revenir pour une suite. Cela prend environ {{surveyMinutes}} minutes.",
         ],
         cta: 'Partager mon ressenti',
@@ -317,8 +317,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
         preheader:
           'Aidez-nous à imaginer la suite et choisissez un PDF ou un livre audio offert en remerciement.',
         before: [
-          'Vous avez créé des histoires avec Mythoria et nous avez soutenus en chemin. Merci, sincèrement.',
-          'Nous aimerions maintenant votre aide pour écrire notre prochain chapitre : ce qui a fait que Mythoria en valait la peine pour vous, et ce que nous devrions améliorer. Cela prend environ {{surveyMinutes}} minutes.',
+          'Vous avez fait le plein de crédits sur Mythoria, et cela compte beaucoup pour nous. Merci, sincèrement.',
+          "Nous aimerions maintenant votre aide pour écrire notre prochain chapitre : ce qui vous a décidé à acheter, comment cela s'est passé, et ce qui améliorerait Mythoria pour vous. Cela prend environ {{surveyMinutes}} minutes.",
         ],
         cta: 'Écrire le prochain chapitre',
         after: [
@@ -340,8 +340,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       title: 'Votre cadeau de remerciement',
       body: {
         C1: "Terminez le questionnaire et, dès que vous aurez publié votre première histoire, choisissez pour elle un **PDF prêt à imprimer** ou un **livre audio narré** offert. C'est cadeau, sans dépenser de crédits.",
-        C2: "Terminez le questionnaire et choisissez un **PDF prêt à imprimer** ou un **livre audio narré** offert pour votre histoire. C'est cadeau, sans dépenser de crédits.",
-        C3: "Terminez le questionnaire et choisissez un **PDF prêt à imprimer** ou un **livre audio narré** offert pour l'une de vos histoires publiées. C'est cadeau, sans dépenser de crédits.",
+        C2: "Terminez le questionnaire et choisissez un **PDF prêt à imprimer** ou un **livre audio narré** offert pour l'une de vos histoires publiées. C'est cadeau, sans dépenser de crédits.",
+        C3: "Terminez le questionnaire et choisissez un **PDF prêt à imprimer** ou un **livre audio narré** offert pour l'une de vos histoires. Pas encore d'histoire publiée ? Pas de souci : le cadeau se débloque dès que vous en publiez une. C'est cadeau, sans dépenser de crédits.",
       },
     },
     deadlineNote: "Le questionnaire est ouvert jusqu'au {{surveyDeadline}}.",
@@ -377,9 +377,9 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       C2: {
         subject: 'Wie ist deine Geschichte ausgegangen? Erzähl’s uns, wähl ein Geschenk',
         preheader:
-          'Ein paar schnelle Fragen zu deiner ersten Geschichte und als Dankeschön ein kostenloses PDF oder Hörbuch.',
+          'Ein paar schnelle Fragen zu deinen Geschichten und als Dankeschön ein kostenloses PDF oder Hörbuch.',
         before: [
-          'Du hast deine erste Mythoria-Geschichte geschrieben. Kapitel eins: erledigt.',
+          'Du hast deine erste Mythoria-Geschichte geschrieben, und vielleicht noch ein paar mehr. Kapitel eins (mindestens): erledigt.',
           'Jetzt sind wir neugierig, wie es war: was du geliebt hast, was nicht gezündet hat und was dich für eine Fortsetzung zurückbringen würde. Das dauert etwa {{surveyMinutes}} Minuten.',
         ],
         cta: 'Erzähl uns, wie es war',
@@ -392,8 +392,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
         preheader:
           'Gestalte mit, was als Nächstes kommt, und wähl als Dankeschön ein kostenloses PDF oder Hörbuch.',
         before: [
-          'Du hast Geschichten mit Mythoria erschaffen und uns dabei unterstützt. Danke, wirklich.',
-          'Jetzt hätten wir gern deine Hilfe beim nächsten Kapitel: was Mythoria für dich lohnenswert gemacht hat und was wir besser machen sollten. Das dauert etwa {{surveyMinutes}} Minuten.',
+          'Du hast dir Credits bei Mythoria geholt, und das bedeutet uns viel. Danke, wirklich.',
+          'Jetzt hätten wir gern deine Hilfe beim nächsten Kapitel: was dich zum Kauf bewogen hat, wie es gelaufen ist und was Mythoria für dich besser machen würde. Das dauert etwa {{surveyMinutes}} Minuten.',
         ],
         cta: 'Das nächste Kapitel mitschreiben',
         after: [
@@ -415,8 +415,8 @@ const COPY: Record<SurveyAssetLocale, LocaleCopy> = {
       title: 'Dein Dankeschön',
       body: {
         C1: 'Schließ die Umfrage ab und wähl, sobald du deine erste Geschichte veröffentlicht hast, ein kostenloses **druckfertiges PDF** oder **gesprochenes Hörbuch** davon. Geht auf uns, ganz ohne Credits.',
-        C2: 'Schließ die Umfrage ab und wähl ein kostenloses **druckfertiges PDF** oder **gesprochenes Hörbuch** deiner Geschichte. Geht auf uns, ganz ohne Credits.',
-        C3: 'Schließ die Umfrage ab und wähl ein kostenloses **druckfertiges PDF** oder **gesprochenes Hörbuch** einer deiner veröffentlichten Geschichten. Geht auf uns, ganz ohne Credits.',
+        C2: 'Schließ die Umfrage ab und wähl ein kostenloses **druckfertiges PDF** oder **gesprochenes Hörbuch** einer deiner veröffentlichten Geschichten. Geht auf uns, ganz ohne Credits.',
+        C3: 'Schließ die Umfrage ab und wähl ein kostenloses **druckfertiges PDF** oder **gesprochenes Hörbuch** einer deiner Geschichten. Noch keine Geschichte veröffentlicht? Kein Stress: Das Geschenk wird freigeschaltet, sobald du eine veröffentlichst. Geht auf uns, ganz ohne Credits.',
       },
     },
     deadlineNote: 'Die Umfrage ist bis zum {{surveyDeadline}} geöffnet.',

@@ -22,6 +22,8 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 ## Reference (lookup)
 
+- [Email delivery](email-delivery.md): stable notification events, response states and cross-service rollout.
+
 | Doc                                        | Scope                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------ |
 | `docs/api-reference.md`                    | REST route map, accepted query params, and response shapes.                          |

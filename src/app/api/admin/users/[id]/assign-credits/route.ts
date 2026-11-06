@@ -39,7 +39,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    await adminService.assignCreditsToUser(id, amount, eventType);
+    const creditEventId = await adminService.assignCreditsToUser(id, amount, eventType);
     const newBalance = await adminService.getUserCreditBalance(id);
 
     let warning: string | undefined;
@@ -51,6 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         credits: amount,
         preferredLocale: user.preferredLocale,
         authorId: user.authorId,
+        entityId: creditEventId,
       });
       if (!notifyResult.success) {
         warning = `Credits assigned but refund email failed: ${notifyResult.error}`;
@@ -63,7 +64,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         preferredLocale: user.preferredLocale,
         authorId: user.authorId,
         source: 'voucher',
-        entityId: crypto.randomUUID(),
+        entityId: creditEventId,
       });
       if (!notifyResult.success) {
         warning = `Credits assigned but voucher email failed: ${notifyResult.error}`;
