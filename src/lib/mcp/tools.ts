@@ -155,7 +155,7 @@ type PromoCreateInput = {
   active?: boolean;
 };
 
-export function registerMcpTools(server: McpServer) {
+export function registerMcpTools(server: McpServer, recoveryActor?: string) {
   // -----------------------------------------------------
   // Group A & B: Stats & Server Status
   // -----------------------------------------------------
@@ -709,6 +709,98 @@ export function registerMcpTools(server: McpServer) {
   // -----------------------------------------------------
   // Group I: Fiscal Documents
   // -----------------------------------------------------
+  if (recoveryActor)
+    server.tool(
+      'reserve_fiscal_document_recovery',
+      'Reserve a pending or failed document with a caller-generated secure token.',
+      {
+        id: z.string().uuid(),
+        orderId: z.string().uuid(),
+        expectedUpdatedAt: z.string().datetime(),
+        token: z
+          .string()
+          .min(32)
+          .max(256)
+          .regex(/^[A-Za-z0-9_-]+$/),
+        payload: z.string().min(1).max(20000),
+      },
+      async ({ id, orderId, expectedUpdatedAt, token, payload }) => {
+        try {
+          const { reserveRecovery } = await import('@/db/services/fiscal-recovery');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  await reserveRecovery({
+                    id,
+                    orderId,
+                    expectedUpdatedAt,
+                    token,
+                    actor: recoveryActor,
+                    payload,
+                  }),
+                ),
+              },
+            ],
+          };
+        } catch {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: 'Recovery reservation failed' }],
+          };
+        }
+      },
+    );
+  if (recoveryActor)
+    server.tool(
+      'transition_fiscal_document_recovery',
+      'Submit, cancel, or reconcile a reservation. Submitted remains blocked until verified reconciliation. This tool never calls KeyInvoice.',
+      {
+        id: z.string().uuid(),
+        orderId: z.string().uuid(),
+        token: z
+          .string()
+          .min(32)
+          .max(256)
+          .regex(/^[A-Za-z0-9_-]+$/),
+        payload: z.string().min(1).max(20000),
+        state: z.enum(['submitted', 'cancelled', 'reconciled']),
+        confirm: z.boolean().optional(),
+        identity: z
+          .object({
+            docType: z.string().trim().min(1).max(20),
+            docSeries: z.string().trim().min(1).max(80),
+            docNum: z.string().trim().min(1).max(80),
+            fullDocNumber: z.string().trim().min(1).max(160).optional(),
+            atDocCodeId: z.string().trim().min(1).max(255).optional(),
+            issuedAt: z.string().datetime(),
+            reason: z.string().trim().min(3).max(2000),
+          })
+          .optional(),
+      },
+      async (args) => {
+        try {
+          if (
+            (args.state === 'reconciled') !== Boolean(args.identity) ||
+            (args.state === 'reconciled' && args.confirm !== true)
+          )
+            throw new Error('Identity is required only for reconciliation');
+          const { transitionRecovery } = await import('@/db/services/fiscal-recovery');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(await transitionRecovery({ ...args, actor: recoveryActor })),
+              },
+            ],
+          };
+        } catch {
+          return { isError: true, content: [{ type: 'text', text: 'Recovery transition failed' }] };
+        }
+      },
+    );
+
   server.tool(
     'list_fiscal_documents',
     'List KeyInvoice fiscal documents with the same filters as the admin fiscal documents page.',

@@ -21,7 +21,7 @@ Due to the highly sensitive domain of admin tools, the MCP server forces strict 
 1. **API Key Generation Requirement**: The system expects a secure passkey to be defined using the `.env` variable `MCP_SECRET_KEY`.
 2. **Bearer verification**: Every MCP request must send `Authorization: Bearer <your-secret-key>`. `MCP_SECRET_KEY` grants the existing admin tools; the separate referral management and finance credentials retain their scoped permissions. See [referrals](referrals.md).
 3. **Timing-Safe Evaluation**: Verification utilizes constant-time string comparisons (`crypto.timingSafeEqual`) to prevent brute-force timing attacks against the secret configuration length.
-4. **Audit trails**: Requests log an `[MCP AUDIT] Streamable HTTP message` summary containing the method, message ID and top-level keys, without logging credentials or the full payload. Existing tool-level audit behavior is unchanged.
+4. **Audit trails**: Requests log a fixed `[MCP AUDIT] Streamable HTTP message received` marker, without logging client-controlled fields or error objects. Existing tool-level audit behavior is unchanged.
 
 ### Codex and streamable HTTP clients
 
@@ -111,3 +111,17 @@ _Last updated: 2026-08-04 - `restart_story_workflow` now uses the same durable, 
 - `get_promo_code_details`: Observe redemptions metrics deeply.
 - `create_promo_code`: Output generated promotional codes granting various balance injections automatically safely.
 - `toggle_promo_code`: Activate or disable a promotional code globally immediately.
+
+### KeyInvoice recovery reservation (migration required)
+
+`reserve_fiscal_document_recovery` is available only to authenticated legacy-admin principals. It accepts `id`, `orderId`, `expectedUpdatedAt`, a caller-generated cryptographically random token of at least 32 base64url characters, and `payload` (JSON encoded as a UTF-8 string, maximum 20,000 characters). It returns the payload SHA-256 and 15-minute expiry, never the token. The authenticated principal supplies the actor. Payload hashing parses JSON, recursively sorts object keys by JavaScript UTF-16 ordering, preserves array order, and uses JSON.stringify UTF-8 bytes; resubmit semantically identical JSON. The token must be handled as a secret and is never stored or logged by this service.
+
+`transition_fiscal_document_recovery` accepts the same id, orderId, payload, token and state; the actor is derived from authentication. `submitted` marks the operation as potentially dispatched before an external operation; this tool does not call KeyInvoice. `cancelled` is permitted only from reserved (including expired). `reconciled` is permitted only from submitted and requires `identity` containing nonempty trimmed `docType`, `docSeries`, `docNum`, ISO UTC `issuedAt`, and `reason` (at least three characters), plus explicit `confirm: true`. Optional `fullDocNumber` and `atDocCodeId` preserve the verified official number and AT code rather than replacing them with a fallback. Verify the actual remote invoice before reconciliation; reconciliation records identity and locally marks issued. A submitted reservation never expires into retryability. The existing manual mark-issued path refuses issuing rows and active recovery.
+
+Before deploying, apply the webapp-owned migrations 0046–0048. Token ledger rows must never be deleted; state changes in place transactionally. Migration 0048 creates the unique partial identity index on `(provider, doc_type, coalesce(doc_series, ''), doc_num)` where `doc_num` is non-null, and fails on duplicates. This database index is required to prevent identity races across all writers; application duplicate checks alone are insufficient. Do not deploy either service until migrations and cross-service concurrency verification are complete.
+
+#### Disposable PostgreSQL verification
+
+The opt-in `__tests__/db/services/fiscal-recovery.postgres.integration.test.ts` exercises the actual Drizzle recovery transactions, the webapp worker SQL predicates, fiscal baseline migration 0028 and additive migrations 0046–0048 against a disposable PostgreSQL 17 instance. It never reads application DB connection variables; it skips by default. It accepts only `KEYINVOICE_RECOVERY_TEST_SOCKET=/home/andre/.cache/keyinvoice-recovery-pg-test-<suffix>/socket`, with a private parent containing `TEST_ONLY` whose contents are `keyinvoice-local-test-only` followed by a newline, and connects to database `keyinvoice_recovery_local_test` as `postgres` over that Unix socket. The test DROPS the public schema in that explicitly disposable database before recreating its fixture. Do not point this harness at any existing database or copy production credentials into it.
+
+Run with `npm test -- --runInBand --watch=false --runTestsByPath __tests__/db/services/fiscal-recovery.postgres.integration.test.ts` after explicitly supplying the isolated test socket. Cover migration duplicate rejection, worker-versus-recovery claims, token replay, one-shot submission, expiry, idempotent reconciliation, rollback/audit consistency and unique remote identity races. The ordinary fiscal regression suites use mocked databases. No test emits an invoice or contacts KeyInvoice.

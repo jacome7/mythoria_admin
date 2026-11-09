@@ -16,7 +16,8 @@ export type FiscalDocumentStatus = (typeof FISCAL_DOCUMENT_STATUSES)[number];
 export const FISCAL_CUSTOMER_MODES = ['final_consumer', 'keyinvoice_client'] as const;
 export type FiscalCustomerMode = (typeof FISCAL_CUSTOMER_MODES)[number];
 
-const SECRET_KEY_PATTERN = /(apikey|api_key|token|session|authorization|password|secret|cookie)/i;
+const SECRET_KEY_PATTERN =
+  /(apikey|api_key|token|session|authorization|password|secret|cookie|hash)/i;
 
 export function isFiscalDocumentStatus(value: string): value is FiscalDocumentStatus {
   return FISCAL_DOCUMENT_STATUSES.includes(value as FiscalDocumentStatus);

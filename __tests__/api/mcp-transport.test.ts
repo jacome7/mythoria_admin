@@ -112,9 +112,24 @@ describe('stateless MCP HTTP transport', () => {
     expect(mockCreateServer).not.toHaveBeenCalled();
   });
 
+  it('never logs client-controlled JSON fields or recovery tokens', async () => {
+    const secret = 'recovery-secret-abcdefghijklmnopqrstuvwxyz';
+    await POST(
+      request('POST', credentials.MCP_SECRET_KEY, {
+        jsonrpc: '2.0',
+        id: secret,
+        method: secret,
+        [secret]: secret,
+        params: { name: 'reserve_fiscal_document_recovery', arguments: { token: secret } },
+      }),
+    );
+    expect(JSON.stringify(jest.mocked(console.log).mock.calls)).not.toContain(secret);
+    expect(JSON.stringify(jest.mocked(console.error).mock.calls)).not.toContain(secret);
+  });
+
   it('closes the protocol server when connecting fails', async () => {
     const server = new McpServer({ name: 'failure-test', version: '1.0.0' });
-    jest.spyOn(server, 'connect').mockRejectedValue(new Error('test connect failure'));
+    jest.spyOn(server, 'connect').mockRejectedValue(new Error('test-secret-in-error'));
     const close = jest.spyOn(server, 'close');
     mockCreateServer.mockReturnValue(server);
     const response = await POST(
@@ -125,6 +140,9 @@ describe('stateless MCP HTTP transport', () => {
       }),
     );
     expect(response.status).toBe(500);
+    expect(JSON.stringify(jest.mocked(console.error).mock.calls)).not.toContain(
+      'test-secret-in-error',
+    );
     expect(close).toHaveBeenCalledTimes(1);
   });
 

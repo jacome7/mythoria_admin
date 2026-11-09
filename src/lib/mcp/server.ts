@@ -10,7 +10,11 @@ export function createMcpServer(principal?: McpPrincipal): McpServer {
     version: '1.0.0',
   });
 
-  if (!principal || principal.legacy) registerMcpTools(server);
+  if (!principal || principal.legacy)
+    registerMcpTools(
+      server,
+      principal?.legacy && principal.id === 'legacy-admin' ? principal.id : undefined,
+    );
   if (principal && !principal.legacy) registerReferralMcpTools(server, principal.actor);
 
   return server;

@@ -60,6 +60,8 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 ## Recent behavior notes
 
+- 2026-11-09: Local-only KeyInvoice recovery reservation and manual-issued reconciliation MCP contract, authenticated actor binding, shared worker fencing, and opt-in disposable PostgreSQL concurrency tests. See [MCP recovery reference](mcp.md#keyinvoice-recovery-reservation-migration-required). Migration, deployment and live issuance remain separate approval gates.
+
 - 2026-10-27: MCP now uses finite, stateless HTTP POST responses. Optional GET streams return `405`, legacy message requests return `410`, client bridges use HTTP, and deployment safeguards require a `300s` timeout with request-based billing. The read-only `scripts/check-mcp-costs.ps1` checks streaming GETs and billable instance-hours (see `docs/mcp.md` and `docs/deployment.md`).
 
 - 2026-02-08: Email campaign audience estimation now uses draft filters and metadata from the detail page (see `docs/features/emailMarketing.md`).

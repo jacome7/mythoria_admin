@@ -7,8 +7,8 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   like,
-  lt,
   lte,
   ne,
   or,
@@ -316,6 +316,12 @@ export const fiscalDocumentAdminService = {
         });
       }
 
+      if (document.recoveryState && document.recoveryState !== 'cancelled') {
+        throw new FiscalDocumentManualIssueError(409, {
+          error: 'Recovery is active',
+          code: 'not_eligible',
+        });
+      }
       const previousStatus = document.status as FiscalDocumentStatus;
       if (
         !canManuallyMarkFiscalDocumentIssued({
@@ -504,12 +510,9 @@ function attentionSortExpression(): SQL<number> {
 }
 
 function manualIssuedEligibilityCondition(): SQL {
-  return or(
+  return and(
     inArray(fiscalDocuments.status, ['draft', 'pending', 'failed']),
-    and(
-      eq(fiscalDocuments.status, 'issuing'),
-      lt(fiscalDocuments.updatedAt, ATTENTION_THRESHOLD_SQL),
-    ),
+    or(isNull(fiscalDocuments.recoveryState), eq(fiscalDocuments.recoveryState, 'cancelled')),
   ) as SQL;
 }
 

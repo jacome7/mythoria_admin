@@ -131,6 +131,7 @@ describe('fiscal document MCP tools', () => {
         {
           requestPayload: {
             apiKey: 'secret',
+            payloadHash: 'sensitive-digest',
             nested: { authorization: 'bearer token', safe: 'visible' },
           },
           responsePayload: { sessionId: 'session' },
@@ -144,6 +145,7 @@ describe('fiscal document MCP tools', () => {
     expect(result.isError).toBeUndefined();
     expect(payload.events[0].requestPayload).toEqual({
       apiKey: '[REDACTED]',
+      payloadHash: '[REDACTED]',
       nested: { authorization: '[REDACTED]', safe: 'visible' },
     });
     expect(payload.events[0].responsePayload).toEqual({ sessionId: '[REDACTED]' });

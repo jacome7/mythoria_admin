@@ -5,25 +5,6 @@ import { getMcpPrincipal } from '@/lib/mcp/auth';
 
 export const dynamic = 'force-dynamic';
 
-function getPayloadAuditSummary(payload: unknown) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    return { payloadType: typeof payload };
-  }
-
-  const record = payload as Record<string, unknown>;
-  const method = typeof record.method === 'string' ? record.method : undefined;
-  const id =
-    typeof record.id === 'string' || typeof record.id === 'number' ? String(record.id) : undefined;
-  const topLevelKeys = Object.keys(record).slice(0, 10);
-
-  return {
-    id,
-    method,
-    payloadType: 'object',
-    topLevelKeys,
-  };
-}
-
 export async function POST(request: NextRequest) {
   const principal = getMcpPrincipal(request);
   if (!principal) {
@@ -35,9 +16,9 @@ export async function POST(request: NextRequest) {
   if (request.method === 'POST') {
     try {
       payload = await request.clone().json();
-      console.log('[MCP AUDIT] Streamable HTTP message', getPayloadAuditSummary(payload));
-    } catch (error) {
-      console.error('[MCP SERVER ERROR] Invalid streamable HTTP payload:', error);
+      console.log('[MCP AUDIT] Streamable HTTP message received');
+    } catch {
+      console.error('[MCP SERVER ERROR] Invalid streamable HTTP payload');
       return NextResponse.json(
         {
           jsonrpc: '2.0',
@@ -55,15 +36,15 @@ export async function POST(request: NextRequest) {
   });
   const server = createMcpServer(principal);
 
-  transport.onerror = (error) => {
-    console.error('[MCP SERVER ERROR] Streamable HTTP transport:', error);
+  transport.onerror = () => {
+    console.error('[MCP SERVER ERROR] Streamable HTTP transport');
   };
 
   try {
     await server.connect(transport);
     return await transport.handleRequest(request, { parsedBody: payload });
-  } catch (error) {
-    console.error('[MCP SERVER ERROR] Streamable HTTP request:', error);
+  } catch {
+    console.error('[MCP SERVER ERROR] Streamable HTTP request');
     return NextResponse.json(
       {
         jsonrpc: '2.0',
@@ -76,8 +57,8 @@ export async function POST(request: NextRequest) {
     // JSON responses are complete here; release the per-request protocol state.
     try {
       await server.close();
-    } catch (error) {
-      console.error('[MCP SERVER ERROR] Closing streamable HTTP request:', error);
+    } catch {
+      console.error('[MCP SERVER ERROR] Closing streamable HTTP request');
     }
   }
 }
