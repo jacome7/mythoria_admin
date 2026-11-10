@@ -62,7 +62,8 @@ export async function reserveRecovery({
         and(
           eq(fiscalDocuments.id, id),
           eq(fiscalDocuments.orderId, orderId),
-          eq(fiscalDocuments.updatedAt, expected),
+          // The MCP read surface serializes timestamps at JavaScript's millisecond precision.
+          sql`date_trunc('milliseconds', ${fiscalDocuments.updatedAt}) = ${expected.toISOString()}::timestamptz`,
           inArray(fiscalDocuments.status, ['pending', 'failed']),
           or(isNull(fiscalDocuments.recoveryState), eq(fiscalDocuments.recoveryState, 'cancelled')),
         ),
