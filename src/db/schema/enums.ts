@@ -44,6 +44,7 @@ export const creditEventTypeEnum = pgEnum('credit_event_type', [
   'imageEdit',
 ]);
 
+// Shared email deliverability status for both leads and registered authors.
 export const emailStatusEnum = pgEnum('email_status', [
   'ready',
   'sent',
@@ -120,6 +121,7 @@ export const graphicalStyleEnum = pgEnum('graphical_style', [
 ]);
 
 export const literaryPersonaEnum = pgEnum('literary_persona', [
+  'contextual-storyteller',
   'storyteller',
   'adventurous-narrator',
   'fun-reporter',

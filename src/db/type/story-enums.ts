@@ -51,6 +51,7 @@ export enum GraphicalStyle {
 }
 
 export enum LiteraryPersona {
+  CONTEXTUAL_STORYTELLER = 'contextual-storyteller',
   STORYTELLER = 'storyteller',
   ADVENTUROUS_NARRATOR = 'adventurous-narrator',
   FUN_REPORTER = 'fun-reporter',
@@ -79,6 +80,18 @@ export type LiteraryPersonaProfile = {
 };
 
 export const LiteraryPersonaMetadata: Record<LiteraryPersona, LiteraryPersonaProfile> = {
+  [LiteraryPersona.CONTEXTUAL_STORYTELLER]: {
+    pov: '3rd-limited',
+    tone: 3,
+    formality: 3,
+    rhythm: 3,
+    vocabulary: 3,
+    fictionality: 1,
+    dialogueDensity: 2,
+    sensoriality: 3,
+    subtextIrony: 1,
+    techniques: ['scene-anchoring', 'oral-cadence'],
+  },
   [LiteraryPersona.STORYTELLER]: {
     pov: '1st',
     povAlternatives: ['3rd-limited'],
