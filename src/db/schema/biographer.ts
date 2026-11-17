@@ -8,6 +8,7 @@ import {
   jsonb,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { stories } from './stories';
 import { authors } from './authors';
 
@@ -40,10 +41,21 @@ export const biographerParticipants = pgTable(
       .notNull()
       .references(() => biographerProjects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    relationship: text('relationship').notNull().default(''),
+    status: text('status').notNull().default('invited'),
+    accessVersion: integer('access_version').notNull().default(0),
+    reviewedRevision: integer('reviewed_revision').notNull().default(0),
+    contributionRevision: integer('contribution_revision').notNull().default(0),
+    lastActivity: timestamp('last_activity', { withTimezone: true }),
+    followUp: text('follow_up'),
     role: text('role').notNull().default('owner'),
-    consentAt: timestamp('consent_at', { withTimezone: true }).defaultNow().notNull(),
+    consentAt: timestamp('consent_at', { withTimezone: true }),
   },
-  (t) => [uniqueIndex('biographer_owner_project_unique').on(t.projectId, t.role)],
+  (t) => [
+    uniqueIndex('biographer_owner_project_unique')
+      .on(t.projectId)
+      .where(sql`${t.role} = 'owner'`),
+  ],
 );
 export const biographerTurns = pgTable('biographer_turns', {
   id: uuid('id').primaryKey(),
@@ -151,3 +163,21 @@ export const biographerBookVersions = pgTable(
   },
   (t) => [uniqueIndex('biographer_book_versions_revision_unique').on(t.projectId, t.revision)],
 );
+
+export const biographerInvitations = pgTable('biographer_invitations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id')
+    .notNull()
+    .references(() => biographerProjects.id, { onDelete: 'cascade' }),
+  participantId: uuid('participant_id')
+    .notNull()
+    .references(() => biographerParticipants.id, { onDelete: 'cascade' }),
+  inviteHash: text('invite_hash').notNull().unique(),
+  resumeHash: text('resume_hash').unique(),
+  sessionHash: text('session_hash').unique(),
+  sessionExpiresAt: timestamp('session_expires_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});

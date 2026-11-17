@@ -1,5 +1,5 @@
 // Auto-generated index file for mythoria-db schema
-// Last updated: 2026-11-17T09:40:47.753Z
+// Last updated: 2026-11-17T10:20:42.064Z
 
 export * from './admin-audit';
 export * from './ai-edits';

@@ -8,6 +8,7 @@ export default function BiographerOperations() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [projectId, setProjectId] = useState('');
+  const [selectedProject, setSelectedProject] = useState<BiographerProject>();
   const [reason, setReason] = useState('');
   const [minutes, setMinutes] = useState(60);
   const pendingCommand = useRef<{ payload: string; requestId: string } | null>(null);
@@ -32,6 +33,23 @@ export default function BiographerOperations() {
   useEffect(() => {
     void load();
   }, [load]);
+  async function inspectProject(id: string) {
+    setProjectId(id);
+    setSelectedProject(undefined);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/biographer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'getProject', input: { projectId: id } }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to load project');
+      setSelectedProject(result.data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to load project');
+    }
+  }
   async function command(operation: 'extendAllowance' | 'setLiveEnabled', enabled?: boolean) {
     setBusy(true);
     setError('');
@@ -91,7 +109,7 @@ export default function BiographerOperations() {
             {projects.map((p) => (
               <tr key={p.projectId}>
                 <td>
-                  <button className="link" onClick={() => setProjectId(p.projectId)}>
+                  <button className="link" onClick={() => void inspectProject(p.projectId)}>
                     {p.title || p.projectId}
                   </button>
                 </td>
@@ -108,6 +126,13 @@ export default function BiographerOperations() {
       </div>
       <section className="card bg-base-200 p-5 space-y-3">
         <h2 className="text-xl font-semibold">Project controls</h2>
+        {selectedProject?.participantCount !== undefined && (
+          <p>
+            Participants: {selectedProject.participantCount} · Started:{' '}
+            {selectedProject.startedCount ?? 0} · Finished for now:{' '}
+            {selectedProject.finishedCount ?? 0}
+          </p>
+        )}
         <label>
           Project ID
           <input

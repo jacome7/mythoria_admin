@@ -9,6 +9,9 @@ export type BiographerProject = {
   liveSecondsLimit: number;
   liveEnabled: boolean;
   updatedAt: string;
+  participantCount?: number;
+  startedCount?: number;
+  finishedCount?: number;
 };
 export type BiographerOperation =
   'listProjects' | 'getProject' | 'extendAllowance' | 'setLiveEnabled';

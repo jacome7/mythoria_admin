@@ -37,7 +37,13 @@ export interface BiographerSegment {
 }
 export interface BiographerProjectDetail {
   project: BiographerProject;
-  participant: { id: string; name: string; role: string };
+  participant: {
+    id: string;
+    name: string;
+    role: string;
+    status?: string;
+    followUp?: string | null;
+  };
   turns: BiographerTurn[];
   segments: BiographerSegment[];
   assets: Array<{ id: string; caption: string; contentType: string; included: boolean }>;
