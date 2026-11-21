@@ -254,7 +254,7 @@ export default function AdminHeader() {
                 </li>
                 <li>
                   <Link href="/biographer" onClick={closeDropdown}>
-                    AI Biographer
+                    Story Whisperer
                   </Link>
                   <Link href="/ai-usage" onClick={closeDropdown}>
                     AI Usage

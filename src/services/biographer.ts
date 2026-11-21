@@ -2,6 +2,7 @@ import { GoogleAuth } from 'google-auth-library';
 
 export type BiographerProject = {
   projectId: string;
+  authorId: string;
   title: string;
   locale: string;
   status: string;

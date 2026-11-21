@@ -1,6 +1,5 @@
 'use client';
 import { useCallback, useEffect, useState, useRef } from 'react';
-import Link from 'next/link';
 import type { BiographerProject } from '@/services/biographer';
 
 export default function BiographerOperations() {
@@ -79,13 +78,6 @@ export default function BiographerOperations() {
   }
   return (
     <div className="space-y-6">
-      <Link className="btn btn-outline" href="/services">
-        Configure book, audiobook and print prices
-      </Link>
-      <p className="text-sm">
-        Required service codes: biographerBookGeneration, biographerAudioBookGeneration,
-        biographerPrintOrder. Missing prices block the corresponding purchase.
-      </p>
       {error && (
         <p role="alert" className="alert alert-error">
           {error}
@@ -101,7 +93,7 @@ export default function BiographerOperations() {
               <th>Project</th>
               <th>Locale</th>
               <th>Status</th>
-              <th>Live minutes used / allowance</th>
+              <th>Author’s remaining voice minutes</th>
               <th>Access</th>
             </tr>
           </thead>
@@ -115,9 +107,7 @@ export default function BiographerOperations() {
                 </td>
                 <td>{p.locale}</td>
                 <td>{p.status}</td>
-                <td>
-                  {Math.ceil(p.liveSecondsUsed / 60)} / {Math.floor(p.liveSecondsLimit / 60)}
-                </td>
+                <td>{Math.floor(Math.max(0, p.liveSecondsLimit - p.liveSecondsUsed) / 60)}</td>
                 <td>{p.liveEnabled ? 'Enabled' : 'Paused'}</td>
               </tr>
             ))}
@@ -125,20 +115,17 @@ export default function BiographerOperations() {
         </table>
       </div>
       <section className="card bg-base-200 p-5 space-y-3">
-        <h2 className="text-xl font-semibold">Project controls</h2>
-        {selectedProject?.participantCount !== undefined && (
-          <p>
-            Participants: {selectedProject.participantCount} · Started:{' '}
-            {selectedProject.startedCount ?? 0} · Finished for now:{' '}
-            {selectedProject.finishedCount ?? 0}
-          </p>
-        )}
+        <h2 className="text-xl font-semibold">Author voice controls</h2>
+        {selectedProject && <p>Author ID: {selectedProject.authorId}</p>}
         <label>
           Project ID
           <input
             className="input input-bordered block w-full"
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(e) => {
+              setProjectId(e.target.value);
+              setSelectedProject(undefined);
+            }}
           />
         </label>
         <label>
@@ -151,7 +138,7 @@ export default function BiographerOperations() {
           />
         </label>
         <label>
-          Additional free minutes
+          Additional minutes for this author
           <input
             className="input input-bordered block"
             type="number"
@@ -169,21 +156,21 @@ export default function BiographerOperations() {
             }
             onClick={() => void command('extendAllowance')}
           >
-            Extend free allowance
+            Extend author’s allowance
           </button>
           <button
             className="btn"
             disabled={busy || !projectId || reason.trim().length < 3}
             onClick={() => void command('setLiveEnabled', false)}
           >
-            Pause new live sessions
+            Pause this author’s voice access
           </button>
           <button
             className="btn"
             disabled={busy || !projectId || reason.trim().length < 3}
             onClick={() => void command('setLiveEnabled', true)}
           >
-            Enable live sessions
+            Enable this author’s voice access
           </button>
         </div>
       </section>
