@@ -27,6 +27,12 @@ export interface EnvVarDescriptor {
 
 export const envManifest: EnvVarDescriptor[] = [
   {
+    name: 'BIOGRAPHER_INTERNAL_AUDIENCE',
+    required: false,
+    scopes: ['runtime', 'dev', 'prod'],
+    note: 'OIDC audience for the WebApp Biographer operations API. Admin service account must be allowlisted by WebApp.',
+  },
+  {
     name: 'SURVEY_IMPERSONATE_SERVICE_ACCOUNT',
     required: false,
     scopes: ['dev'],
