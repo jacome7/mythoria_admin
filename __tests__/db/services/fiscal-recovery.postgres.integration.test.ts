@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import { randomUUID } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq, sql, type SQL } from 'drizzle-orm';
@@ -30,7 +30,9 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
   beforeAll(async () => {
     if (
       !socket ||
-      !/^\/home\/andre\/\.cache\/keyinvoice-recovery-pg-test-[a-zA-Z0-9-]+\/socket$/.test(socket)
+      !isAbsolute(socket) ||
+      basename(socket) !== 'socket' ||
+      !/^keyinvoice-recovery-pg-test-[a-zA-Z0-9-]+$/.test(basename(dirname(socket)))
     ) {
       throw new Error('Only an explicitly isolated test socket is permitted');
     }
@@ -55,7 +57,7 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
       host: socket,
       user: 'postgres',
       database: 'keyinvoice_recovery_local_test',
-      port: 5432,
+      port: Number(process.env.KEYINVOICE_RECOVERY_TEST_PORT ?? '5432'),
       ssl: false,
       max: 6,
       connectionTimeoutMillis: 3000,
@@ -141,6 +143,16 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
     issuedAt: '2026-11-09T18:00:00.000Z',
     reason: 'Verified local test only',
   };
+
+  it('reserves a document whose timestamp includes sub-millisecond precision', async () => {
+    const input = await fixture();
+    await pool.query(
+      "UPDATE fiscal_documents SET updated_at = '2026-11-09T18:00:00.000789Z' WHERE id = $1",
+      [input.id],
+    );
+    await expect(reserveRecovery(input)).resolves.toHaveProperty('payloadHash');
+    expect((await state(input.id)).recoveryState).toBe('reserved');
+  });
 
   it('migrates and uniquely guards identities including null versus empty series', async () => {
     const first = await fixture(),

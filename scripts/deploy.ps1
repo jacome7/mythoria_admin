@@ -175,25 +175,24 @@ try {
         if ($LASTEXITCODE -ne 0) { Write-Host "[ERR] Build failed" -ForegroundColor Red; exit 1 }
     }
 
-    # Build and deploy with Cloud Build (cloudbuild.yaml)
-    # Referral runtime audience/identity defaults live in cloudbuild.yaml.
-    # Optional MCP credentials must already exist in Secret Manager.
-    # The custom "^|^" delimiter is only needed when a value contains commas; cmd.exe (gcloud.cmd)
-    # treats "|" as a pipe, so keep the plain form for the default deploy.
-    $buildSubstitutions = "_GIT_SHA=$gitSha"
+    # Production already has both referral MCP bindings. Image releases preserve them.
     if ($ReferralMcp) {
-        # Literal double quotes keep cmd.exe from consuming "^" and treating "|" as a pipe.
-        $buildSubstitutions = "`"^|^_GIT_SHA=$gitSha"
-        $buildSubstitutions += '|_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest"'
+        $service = & $gcloudPath run services describe $SERVICE_NAME --region=$Region --project=$ProjectId --format=json | ConvertFrom-Json
+        if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect the referral MCP bindings.' }
+        $bindings = @($service.spec.template.spec.containers[0].env | Where-Object { $_.valueFrom.secretKeyRef } | ForEach-Object { $_.name })
+        if ($bindings -notcontains 'REFERRAL_MCP_MANAGEMENT_KEY' -or $bindings -notcontains 'REFERRAL_MCP_FINANCE_KEY') {
+            throw 'Configure the referral MCP Secret Manager bindings on Cloud Run before releasing the image.'
+        }
     }
+    $buildSubstitutions = "_GIT_SHA=$gitSha,_SERVICE_NAME=$SERVICE_NAME,_REGION=$Region"
     Write-Host "[INFO] Starting Cloud Build production deployment..."
     Write-Host "[INFO] This may take several minutes..."
     
     if ($VerboseLogging) {
-        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions --verbosity=debug
+        & $gcloudPath beta builds submit --project=$ProjectId --config cloudbuild.yaml --substitutions $buildSubstitutions --verbosity=debug
     }
     else {
-        & $gcloudPath beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions
+        & $gcloudPath beta builds submit --project=$ProjectId --config cloudbuild.yaml --substitutions $buildSubstitutions
     }
     
     if ($LASTEXITCODE -ne 0) {

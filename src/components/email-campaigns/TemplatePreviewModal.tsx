@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import Handlebars from 'handlebars';
+import Handlebars from 'handlebars/dist/cjs/handlebars';
 import { FiX } from 'react-icons/fi';
 
 interface TemplatePreviewModalProps {

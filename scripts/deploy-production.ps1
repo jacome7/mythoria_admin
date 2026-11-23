@@ -26,15 +26,6 @@ try {
     exit 1
 }
 
-# Set project
-Write-Host "[INFO] Setting project to $PROJECT_ID..."
-gcloud config set project $PROJECT_ID
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERR] Failed to set project. Please check your authentication."
-    exit 1
-}
-
 # Confirm deployment
 if (-not $Force) {
     $confirmation = Read-Host "Deploy to production? This will update the live service. [y/N]"
@@ -44,42 +35,16 @@ if (-not $Force) {
     }
 }
 
-# Deploy using Cloud Build with beta for enhanced logging
-Write-Host "[INFO] Starting Cloud Build deployment with enhanced logging..."
-Write-Host "[INFO] This may take several minutes..."
-
-# Literal double quotes keep cmd.exe (gcloud.cmd) from consuming "^" and treating "|" as a pipe.
-$buildSubstitutions = '"^|^_REFERRAL_MCP_SECRET_BINDINGS=,REFERRAL_MCP_MANAGEMENT_KEY=REFERRAL_MCP_MANAGEMENT_KEY:latest,REFERRAL_MCP_FINANCE_KEY=REFERRAL_MCP_FINANCE_KEY:latest"'
-# Both referral MCP credentials are bound by default for production.
-# Referral runtime audience/identity defaults live in cloudbuild.yaml.
-if ($Verbose) {
-    gcloud beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions --verbosity=debug
-} else {
-    gcloud beta builds submit --config cloudbuild.yaml --substitutions $buildSubstitutions
+# Use the same image-release path for both production entry points.
+$deployParams = @{
+    ProjectId = $PROJECT_ID
+    Region = $REGION
+    Fast = $true
+    ReferralMcp = $ReferralMcp
+    VerboseLogging = $Verbose
 }
+& (Join-Path $PSScriptRoot 'deploy.ps1') @deployParams
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "[OK] Deployment completed successfully!"
-    Write-Host "[INFO] Getting service URL..."
-    
-    $serviceUrl = gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.url)" 2>$null
-    if ($serviceUrl) {
-        Write-Host "[OK] Service URL: $serviceUrl"
-    } else {
-        Write-Host "[WARN] Could not retrieve service URL. Check Cloud Console."
-    }
-    
-    Write-Host "[INFO] Deployment summary:"
-    Write-Host "  - Service: $SERVICE_NAME"
-    Write-Host "  - Region: $REGION"
-    Write-Host "  - URL: $serviceUrl"
-
-    & (Join-Path $PSScriptRoot "verify-cloud-run-timeout.ps1") -ServiceName $SERVICE_NAME -Region $REGION -ExpectedTimeoutSeconds 300
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[ERR] Post-deploy timeout verification failed"
-        exit 1
-    }
-} else {
-    Write-Host "[ERR] Deployment failed. Check the logs above for details."
-    exit 1
-}
+& (Join-Path $PSScriptRoot 'verify-cloud-run-timeout.ps1') -ServiceName $SERVICE_NAME -Region $REGION -ExpectedTimeoutSeconds 300
+exit $LASTEXITCODE

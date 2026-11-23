@@ -22,6 +22,7 @@ interface SourceMaps {
   cloudBuildSubstitutions: Record<string, string | undefined>;
   cloudBuildSetEnv: Record<string, string | undefined>;
   cloudBuildSecrets: Set<string>;
+  cloudBuildPreserved: Set<string>;
   buildArgs: Set<string>;
 }
 
@@ -36,7 +37,8 @@ function readEnvFile(name: string): Record<string, string | undefined> {
 function parseCloudBuild(): Partial<SourceMaps> {
   const file = path.join(root, 'cloudbuild.yaml');
   if (!fs.existsSync(file)) return {};
-  const doc = yaml.load(fs.readFileSync(file, 'utf8')) as any;
+  const raw = fs.readFileSync(file, 'utf8');
+  const doc = yaml.load(raw) as any;
   const substitutions: Record<string, string> = doc?.substitutions || {};
   const setEnv: Record<string, string> = {};
   const secrets = new Set<string>();
@@ -46,13 +48,13 @@ function parseCloudBuild(): Partial<SourceMaps> {
     if (Array.isArray(step.args)) {
       const args: string[] = step.args;
       for (let i = 0; i < args.length; i++) {
-        if (args[i] === '--set-env-vars' && args[i + 1]) {
+        if (['--set-env-vars', '--update-env-vars'].includes(args[i]) && args[i + 1]) {
           args[i + 1].split(',').forEach((p) => {
             const [k, v] = p.split('=');
             if (k) setEnv[k.trim()] = (v || '').trim();
           });
         }
-        if (args[i] === '--set-secrets' && args[i + 1]) {
+        if (['--set-secrets', '--update-secrets'].includes(args[i]) && args[i + 1]) {
           args[i + 1].split(',').forEach((p) => {
             const [k] = p.split('=');
             if (k) secrets.add(k.trim());
@@ -72,7 +74,6 @@ function parseCloudBuild(): Partial<SourceMaps> {
 
   // Fallback heuristic parsing if structured traversal produced no secrets or envs.
   if (secrets.size === 0) {
-    const raw = fs.readFileSync(file, 'utf8');
     const secretLineMatch = raw.match(/--set-secrets[^\n]*\n\s*-\s*'([^']+)'/);
     if (secretLineMatch) {
       secretLineMatch[1].split(',').forEach((pair) => {
@@ -82,7 +83,6 @@ function parseCloudBuild(): Partial<SourceMaps> {
     }
   }
   if (Object.keys(setEnv).length === 0) {
-    const raw = fs.readFileSync(file, 'utf8');
     const envLineMatch = raw.match(/--set-env-vars[^\n]*\n\s*-\s*'([^']+)'/);
     if (envLineMatch) {
       envLineMatch[1].split(',').forEach((pair) => {
@@ -94,6 +94,11 @@ function parseCloudBuild(): Partial<SourceMaps> {
 
   return {
     cloudBuildSubstitutions: substitutions,
+    cloudBuildPreserved: new Set(
+      [...raw.matchAll(/^\s*#\s*env-parity-preserved:[ \t]*([A-Z0-9_,]+)[ \t]*$/gm)].flatMap(
+        (match) => match[1].split(','),
+      ),
+    ),
     cloudBuildSetEnv: setEnv,
     cloudBuildSecrets: secrets,
     buildArgs,
@@ -115,6 +120,7 @@ function analyze(src: SourceMaps) {
     ...Object.keys(src.cloudBuildSubstitutions),
     ...Object.keys(src.cloudBuildSetEnv),
     ...Array.from(src.cloudBuildSecrets),
+    ...src.cloudBuildPreserved,
     ...Array.from(src.buildArgs),
     ...envManifest.map((v) => v.name),
   ]);
@@ -126,7 +132,12 @@ function analyze(src: SourceMaps) {
       case 'build':
         return src.buildArgs.has(key) || src.cloudBuildSubstitutions[key] !== undefined;
       case 'runtime': {
-        if (src.cloudBuildSetEnv[key] !== undefined || src.cloudBuildSecrets.has(key)) return true;
+        if (
+          src.cloudBuildSetEnv[key] !== undefined ||
+          src.cloudBuildSecrets.has(key) ||
+          src.cloudBuildPreserved.has(key)
+        )
+          return true;
         const subKey = `_${key}`;
         if (src.cloudBuildSubstitutions[subKey] !== undefined) {
           // If substitution exists assume deployment will inject via --set-env-vars even if parsing failed; best-effort.
@@ -190,6 +201,7 @@ function main() {
     cloudBuildSubstitutions: cloud.cloudBuildSubstitutions || {},
     cloudBuildSetEnv: cloud.cloudBuildSetEnv || {},
     cloudBuildSecrets: cloud.cloudBuildSecrets || new Set(),
+    cloudBuildPreserved: cloud.cloudBuildPreserved || new Set(),
     buildArgs: cloud.buildArgs || new Set(),
   };
   const violations = analyze(sources);
