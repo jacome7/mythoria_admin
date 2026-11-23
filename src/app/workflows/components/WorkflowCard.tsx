@@ -108,6 +108,13 @@ const formatTimeAgo = (date: Date) => {
 export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
   const [isRetrying, setIsRetrying] = useState(false);
 
+  const metadata =
+    workflow.metadata && typeof workflow.metadata === 'object'
+      ? (workflow.metadata as Record<string, unknown>)
+      : undefined;
+  const qaStatus = metadata?.printQaStatus;
+  const deliveryStatus = metadata?.printDeliveryStatus;
+  const alertRequired = qaStatus === 'review_failed' || Number(metadata?.printQaCriticalCount) > 0;
   const handleRetry = async () => {
     setIsRetrying(true);
     try {
@@ -150,6 +157,24 @@ export default function WorkflowCard({ workflow, onRetry }: WorkflowCardProps) {
           </div>
         </div>
 
+        {typeof qaStatus === 'string' && (
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm" aria-label="Print results">
+            <dt>PDF review</dt>
+            <dd>{qaStatus.replace(/_/g, ' ')}</dd>
+            <dt>Customer delivery</dt>
+            <dd>
+              {typeof deliveryStatus === 'string'
+                ? deliveryStatus.replace(/_/g, ' ')
+                : 'Unconfirmed'}
+            </dd>
+            {alertRequired && (
+              <>
+                <dt>Team alert</dt>
+                <dd>{metadata?.printQaAlertSent === true ? 'Sent' : 'Unconfirmed'}</dd>
+              </>
+            )}
+          </dl>
+        )}
         {/* Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
           <div className="flex items-center gap-2">
