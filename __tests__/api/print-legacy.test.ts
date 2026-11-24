@@ -109,6 +109,14 @@ it('blocks stale or unrelated PDFs in a legacy story request', async () => {
   expect(proxyToNotificationEngine).not.toHaveBeenCalled();
 });
 
+it('blocks manual dispatch of premium books even before a paid ticket exists', async () => {
+  mockReadStoryOrPartner.mockReturnValueOnce([
+    { coverPdfUri, interiorPdfUri, features: { premiumBook: { version: 1 } } },
+  ]);
+  expect((await request()).status).toBe(409);
+  expect(proxyToNotificationEngine).not.toHaveBeenCalled();
+});
+
 it('allows the verified legacy ticket to use the original dispatch path past a later paid reservation', async () => {
   jest.mocked(TicketService.getTicketById).mockResolvedValueOnce(legacyTicket as never);
   jest

@@ -8,12 +8,19 @@ interface PrintView {
   proofVersion: number;
   copies: number;
   binding: string;
+  squareEdition?: {
+    revision: string;
+    manifest: { key: string; generation: string; sha256: string; bytes: number };
+    podPackageId: string;
+    luluEnvironment: string;
+  };
   proof: {
     qaPassed: boolean;
     pageCount: number;
     interiorUrl: string;
     coverUrl: string;
     sentAt: string | null;
+    supplierValidated?: boolean;
     issues?: string[];
   } | null;
   holdReason: string | null;
@@ -143,8 +150,8 @@ export function PrintSettings() {
             />
           </label>
           <p>
-            Hardcover is available only when Lulu is the default provider and its product is
-            configured.
+            A5 hardcover uses the Lulu default. Square hardcover requires a physical proof approval
+            and the verified square product configuration.
           </p>
           <label>
             Maximum landed EUR per copy{' '}
@@ -316,6 +323,8 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
   const [reason, setReason] = useState('');
   const [checkedInbox, setCheckedInbox] = useState(false);
   const [amount, setAmount] = useState('');
+  const [correctedRevision, setCorrectedRevision] = useState('');
+  const [correctionReason, setCorrectionReason] = useState('');
   const run = useCallback(
     async (operation: string, extra: Record<string, unknown> = {}) => {
       setBusy(true);
@@ -355,7 +364,16 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
     !!view.proof.sentAt &&
     !view.holdReason;
   const canSubmit =
-    ready && view.provider === 'lulu' && quote && checkedInbox && Number(amount) === quote.totalEur;
+    ready &&
+    view.provider === 'lulu' &&
+    (!view.squareEdition ||
+      (view.proof?.supplierValidated &&
+        view.maxEurPerCopy > 0 &&
+        quote &&
+        Math.round(quote.totalEur * 100) <= Math.round(view.maxEurPerCopy * 100) * view.copies)) &&
+    quote &&
+    checkedInbox &&
+    Number(amount) === quote.totalEur;
   return (
     <div className="card bg-base-100 shadow-sm">
       <div className="card-body">
@@ -368,6 +386,19 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               {view.binding}
             </p>
             <p>Limit: €{view.maxEurPerCopy} per copy</p>
+            {view.squareEdition && (
+              <div className="space-y-1">
+                <h4 className="font-semibold">Square hardcover (8.5 × 8.5 in)</h4>
+                <p>Edition {view.squareEdition.revision}</p>
+                <p>
+                  Lulu {view.squareEdition.luluEnvironment} · {view.squareEdition.podPackageId}
+                </p>
+                <p className="break-all text-sm">
+                  Manifest generation {view.squareEdition.manifest.generation} · SHA-256{' '}
+                  {view.squareEdition.manifest.sha256}
+                </p>
+              </div>
+            )}
             <div className="space-y-1">
               <h4 className="font-semibold">Shipping address for this order</h4>
               <address className="not-italic text-sm">
@@ -403,6 +434,49 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                 }
               />
             )}
+            {view.squareEdition && view.status === 'held' && !closed && (
+              <form
+                key={view.squareEdition.revision}
+                className="space-y-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void run('correctSquareEdition', {
+                    expectedRevision: view.squareEdition?.revision,
+                    correctedRevision: correctedRevision.trim(),
+                    reason: correctionReason.trim(),
+                  });
+                }}
+              >
+                <h4 className="font-semibold">Bind published correction</h4>
+                <p>The order stays on hold. Clearing it queues a replacement proof and quote.</p>
+                <label className="block">
+                  Published revision ID
+                  <input
+                    className="input input-bordered input-sm w-full"
+                    required
+                    value={correctedRevision}
+                    onChange={(event) => setCorrectedRevision(event.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  Reason for revision
+                  <input
+                    className="input input-bordered input-sm w-full"
+                    required
+                    maxLength={500}
+                    value={correctionReason}
+                    onChange={(event) => setCorrectionReason(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="btn btn-sm"
+                  type="submit"
+                  disabled={busy || !correctedRevision.trim() || !correctionReason.trim()}
+                >
+                  Bind corrected edition
+                </button>
+              </form>
+            )}
             {view.proof && (
               <div>
                 <p>
@@ -410,6 +484,9 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                   {view.proof.qaPassed ? 'passed' : 'not passed'} · Emailed{' '}
                   {view.proof.sentAt || 'not sent'}
                 </p>
+                {view.squareEdition && (
+                  <p>Lulu file validation {view.proof.supplierValidated ? 'passed' : 'pending'}</p>
+                )}
                 <p>
                   <a
                     className="link"
@@ -435,7 +512,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                 )}
               </div>
             )}
-            {ready && view.provider === 'manual' && (
+            {ready && view.provider === 'manual' && !view.squareEdition && (
               <ManualPrint
                 key={view.proofVersion}
                 view={view}
@@ -456,33 +533,37 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               </p>
             )}
             <div className="flex flex-wrap gap-2">
-              <button
-                className="btn btn-sm"
-                disabled={busy || closed}
-                onClick={() => void run('select', { provider: 'lulu' })}
-              >
-                Select Lulu
-              </button>
-              <button
-                className="btn btn-sm"
-                disabled={busy || closed}
-                onClick={() => void run('select', { provider: 'manual' })}
-              >
-                Select manual
-              </button>
+              {!view.squareEdition && (
+                <>
+                  <button
+                    className="btn btn-sm"
+                    disabled={busy || closed}
+                    onClick={() => void run('select', { provider: 'lulu' })}
+                  >
+                    Select Lulu
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    disabled={busy || closed}
+                    onClick={() => void run('select', { provider: 'manual' })}
+                  >
+                    Select manual
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    disabled={busy || closed}
+                    onClick={() => void run('revise')}
+                  >
+                    Revise proof
+                  </button>
+                </>
+              )}
               <button
                 className="btn btn-sm"
                 disabled={busy || closed}
                 onClick={() => void run('prepare')}
               >
                 Prepare proof and quote
-              </button>
-              <button
-                className="btn btn-sm"
-                disabled={busy || closed}
-                onClick={() => void run('revise')}
-              >
-                Revise proof
               </button>
               <button className="btn btn-sm" disabled={busy} onClick={() => void run('reconcile')}>
                 Refresh order
@@ -538,10 +619,11 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                       confirmationId: quote.confirmationId,
                       checkedInbox: true,
                       confirmedTotalEur: Number(amount),
+                      proofVersion: view.proofVersion,
                     })
                   }
                 >
-                  Submit to Lulu
+                  {view.squareEdition ? 'Release square order to Lulu' : 'Submit to Lulu'}
                 </button>
               </div>
             )}

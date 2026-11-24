@@ -34,7 +34,7 @@ export async function POST(
     }
 
     // Only allow retry of failed workflows
-    if (originalRun.status !== 'failed') {
+    if (originalRun.status !== 'failed' && originalRun.status !== 'blocked') {
       return NextResponse.json(
         {
           error: 'Only failed workflows can be retried',
@@ -45,6 +45,8 @@ export async function POST(
 
     const result = await restartStoryGeneration({
       storyId: originalRun.storyId,
+      expectedRunId: runId,
+      ...(originalRun.status === 'blocked' && { premiumOnly: true }),
       source: 'mythoria-admin',
       requestedBy: session.user.email,
     });

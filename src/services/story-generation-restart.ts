@@ -1,4 +1,7 @@
 import { randomUUID } from 'crypto';
+import { z } from 'zod';
+import { resumePremiumGeneration } from './premium-generation-resume';
+import { logAdminAudit } from '@/lib/audit';
 import { and, eq } from 'drizzle-orm';
 import { getMythoriaDb } from '@/db';
 import { stories, storyGenerationRequests } from '@/db/schema';
@@ -10,6 +13,8 @@ export interface RestartStoryGenerationInput {
   storyId: string;
   source: StoryGenerationRestartSource;
   requestedBy?: string;
+  expectedRunId?: string;
+  premiumOnly?: boolean;
 }
 
 export interface RestartStoryGenerationResult {
@@ -48,12 +53,13 @@ export async function restartStoryGeneration(
   const db = getMythoriaDb();
   const runId = randomUUID();
 
-  await db.transaction(async (tx) => {
+  const premiumRun = await db.transaction(async (tx) => {
     const [story] = await tx
       .select({
         storyId: stories.storyId,
         authorId: stories.authorId,
         status: stories.status,
+        features: stories.features,
       })
       .from(stories)
       .where(eq(stories.storyId, input.storyId));
@@ -61,8 +67,30 @@ export async function restartStoryGeneration(
     if (!story) {
       throw new StoryGenerationRestartError(404, 'story_not_found', 'Story not found');
     }
+    if (story.features && typeof story.features === 'object' && 'premiumBook' in story.features) {
+      const marker = z
+        .object({
+          version: z.literal(1),
+          type: z.literal('premium_children'),
+          state: z.literal('queued'),
+          ownerId: z.literal(story.authorId),
+          revision: z.uuid(),
+        })
+        .safeParse(story.features.premiumBook);
+      if (
+        !marker.success ||
+        (input.expectedRunId && input.expectedRunId !== marker.data.revision)
+      ) {
+        throw new StoryGenerationRestartError(
+          409,
+          'story_not_restartable',
+          'Select the accepted, incomplete premium run to resume.',
+        );
+      }
+      return marker.data.revision;
+    }
 
-    if (story.status !== 'writing' && story.status !== 'published') {
+    if (input.premiumOnly || (story.status !== 'writing' && story.status !== 'published')) {
       throw new StoryGenerationRestartError(
         409,
         'story_not_restartable',
@@ -83,7 +111,24 @@ export async function restartStoryGeneration(
       .update(stories)
       .set({ storyGenerationStatus: 'queued', updatedAt: new Date() })
       .where(eq(stories.storyId, story.storyId));
+    return null;
   });
+  if (premiumRun) {
+    await logAdminAudit({
+      actorEmail: input.requestedBy ?? input.source,
+      action: 'premium.resume_requested',
+      entityType: 'story',
+      entityId: input.storyId,
+      metadata: { runId: premiumRun },
+    });
+    if (!(await resumePremiumGeneration(input.storyId, premiumRun)))
+      throw new StoryGenerationRestartError(
+        409,
+        'story_not_restartable',
+        'The premium run is unavailable for recovery.',
+      );
+    return { storyId: input.storyId, runId: premiumRun, status: 'published' };
+  }
 
   const claimTime = new Date();
   const [claimed] = await db
