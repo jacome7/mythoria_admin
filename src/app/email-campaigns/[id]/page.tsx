@@ -212,12 +212,17 @@ export default function CampaignDetailPage() {
   // Save metadata
   async function handleSaveMetadata() {
     const isSurveyCampaign = editAudienceSource === 'survey_invitations';
+    const isDraftReminderCampaign = editAudienceSource === 'unfinished_story_drafts';
     if (editAudienceSource !== 'leads' && editUserNotificationPreferences.length === 0) {
       setMetaMessage('Select at least one user notification preference');
       return;
     }
 
-    if (editAttachmentType === 'selfprint' && editAudienceSource === 'leads') {
+    if (
+      !isDraftReminderCampaign &&
+      editAttachmentType === 'selfprint' &&
+      editAudienceSource === 'leads'
+    ) {
       setMetaMessage("Self-print attachments require real users — 'leads' audience is not allowed");
       return;
     }
@@ -236,18 +241,20 @@ export default function CampaignDetailPage() {
         title: editTitle,
         description: editDescription || null,
         // Survey campaigns keep their audience source, filter and attachments (study cohort).
-        ...(isSurveyCampaign
+        ...(isSurveyCampaign || isDraftReminderCampaign
           ? {}
           : {
               audienceSource: editAudienceSource as Exclude<
                 CampaignAudienceSource,
-                'survey_invitations'
+                'survey_invitations' | 'unfinished_story_drafts'
               >,
               filterTree: editFilterTree,
               attachmentType: editAttachmentType,
               skipPrintQa: editAttachmentType === 'selfprint' ? editSkipPrintQa : false,
             }),
-        userNotificationPreferences: editUserNotificationPreferences,
+        userNotificationPreferences: isDraftReminderCampaign
+          ? ['news']
+          : editUserNotificationPreferences,
         dailySendLimit: editDailyLimit ? parseInt(editDailyLimit, 10) : null,
         startAt: startIso,
         endAt: endIso,
@@ -346,6 +353,8 @@ export default function CampaignDetailPage() {
 
   const isDraft = campaign.status === 'draft';
   const isSurvey = campaign.audienceSource === 'survey_invitations';
+  const isDraftReminder = campaign.audienceSource === 'unfinished_story_drafts';
+  const isFixedAudience = isSurvey || isDraftReminder;
   const scheduleWarnings: string[] = [];
   if (isSurvey) {
     const start = localInputToIso(editStartAt);
@@ -485,7 +494,7 @@ export default function CampaignDetailPage() {
                   />
                 </div>
 
-                {!isSurvey && (
+                {!isFixedAudience && (
                   <div className="form-control">
                     <label className="label py-1">
                       <span className="label-text text-sm">Audience Source</span>
@@ -504,7 +513,7 @@ export default function CampaignDetailPage() {
                   </div>
                 )}
 
-                {editAudienceSource !== 'leads' && (
+                {!isDraftReminder && editAudienceSource !== 'leads' && (
                   <div className="form-control md:col-span-2">
                     <label className="label py-1">
                       <span className="label-text text-sm">User Notification Preferences</span>
@@ -607,7 +616,7 @@ export default function CampaignDetailPage() {
         )}
 
         {/* Attachments / Special offer (draft only) */}
-        {isDraft && !isSurvey && (
+        {isDraft && !isFixedAudience && (
           <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body">
               <h3 className="card-title text-sm mb-3">Attachments / Special offer</h3>
@@ -680,7 +689,11 @@ export default function CampaignDetailPage() {
                 <div>
                   <span className="text-base-content/50 text-xs">Audience</span>
                   <p className="font-medium capitalize">
-                    {isSurvey ? 'Survey invitations' : campaign.audienceSource}
+                    {isSurvey
+                      ? 'Survey invitations'
+                      : isDraftReminder
+                        ? 'Unfinished story drafts'
+                        : campaign.audienceSource}
                   </p>
                 </div>
                 {campaign.audienceSource !== 'leads' && (
@@ -724,12 +737,14 @@ export default function CampaignDetailPage() {
           </div>
         )}
 
-        {/* Filters (not applicable to survey campaigns) */}
-        {isSurvey ? (
+        {/* Fixed audiences are resolved by their owning business rule. */}
+        {isSurvey || isDraftReminder ? (
           <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <h3 className="card-title text-sm">Survey audience</h3>
+                <h3 className="card-title text-sm">
+                  {isSurvey ? 'Survey audience' : 'Unfinished story draft audience'}
+                </h3>
                 <button
                   className="btn btn-sm btn-outline"
                   onClick={handleEstimateAudience}
@@ -741,8 +756,12 @@ export default function CampaignDetailPage() {
               </div>
               <p className="text-sm text-base-content/70">
                 {audienceCount
-                  ? `${audienceCount.total.toLocaleString()} people would be emailed now`
-                  : 'Run an estimate to see how many invitees match this campaign.'}
+                  ? isDraftReminder
+                    ? `${audienceCount.total.toLocaleString()} eligible authors, including the holdout`
+                    : `${audienceCount.total.toLocaleString()} people would be emailed now`
+                  : isSurvey
+                    ? 'Run an estimate to see how many invitees match this campaign.'
+                    : 'Only news-email subscribers with a draft or writing story last updated at least 24 hours ago are eligible. A stable 10% holdout is persisted in campaign recipient records. Eligibility is checked again immediately before send.'}
               </p>
             </div>
           </div>

@@ -128,11 +128,18 @@ export default function CreateCampaignModal({
             <select
               className="select select-bordered w-full"
               value={audienceSource}
-              onChange={(e) => setAudienceSource(e.target.value as CampaignAudienceSource)}
+              onChange={(e) => {
+                const nextSource = e.target.value as CampaignAudienceSource;
+                setAudienceSource(nextSource);
+                if (nextSource === 'unfinished_story_drafts') {
+                  setUserNotificationPreferences(['news']);
+                }
+              }}
             >
               <option value="leads">Leads only</option>
               <option value="users">Users only</option>
               <option value="both">Both users and leads</option>
+              <option value="unfinished_story_drafts">Opted-in unfinished story drafts</option>
             </select>
             <label className="label">
               <span className="label-text-alt text-base-content/60">
@@ -142,35 +149,42 @@ export default function CreateCampaignModal({
             </label>
           </div>
 
-          {audienceSource !== 'leads' && (
-            <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text font-medium">User Notification Preferences</span>
-              </label>
-              <div className="flex flex-wrap gap-3">
-                {preferenceOptions.map((value) => (
-                  <label key={value} className="label cursor-pointer gap-2">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-sm"
-                      checked={userNotificationPreferences.includes(value)}
-                      onChange={(e) => {
-                        const next = e.target.checked
-                          ? [...userNotificationPreferences, value]
-                          : userNotificationPreferences.filter((pref) => pref !== value);
-                        setUserNotificationPreferences(next);
-                      }}
-                    />
-                    <span className="label-text capitalize">{value.replace('_', ' ')}</span>
-                  </label>
-                ))}
-              </div>
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">
-                  Applies only when users are included in the audience.
-                </span>
-              </label>
+          {audienceSource === 'unfinished_story_drafts' ? (
+            <div className="alert alert-info mb-4 text-sm">
+              This draft reminder only includes users who explicitly opted in to news emails. It
+              rechecks draft status and email eligibility immediately before sending.
             </div>
+          ) : (
+            audienceSource !== 'leads' && (
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text font-medium">User Notification Preferences</span>
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {preferenceOptions.map((value) => (
+                    <label key={value} className="label cursor-pointer gap-2">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-sm"
+                        checked={userNotificationPreferences.includes(value)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...userNotificationPreferences, value]
+                            : userNotificationPreferences.filter((pref) => pref !== value);
+                          setUserNotificationPreferences(next);
+                        }}
+                      />
+                      <span className="label-text capitalize">{value.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+                <label className="label">
+                  <span className="label-text-alt text-base-content/60">
+                    Applies only when users are included in the audience.
+                  </span>
+                </label>
+              </div>
+            )
           )}
 
           {/* Daily Send Limit */}

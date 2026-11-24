@@ -30,6 +30,8 @@ export const campaignAudienceSourceEnum = pgEnum('campaign_audience_source', [
   'both',
   // Survey campaigns: audience resolved by notification-engine from survey_invitations.
   'survey_invitations',
+  // Draft recovery campaign: resolves current authors with an opted-in, unfinished story.
+  'unfinished_story_drafts',
 ]);
 
 export const campaignChannelEnum = pgEnum('campaign_channel', ['email']);
@@ -185,6 +187,8 @@ export const marketingCampaignRecipients = pgTable(
     trackingEnabledAt: timestamp('tracking_enabled_at', { withTimezone: true }),
     openedAt: timestamp('opened_at', { withTimezone: true }),
     clickedAt: timestamp('clicked_at', { withTimezone: true }),
+    // Target story snapshot for unfinished-draft reminder eligibility rechecks.
+    draftStoryId: uuid('draft_story_id'),
     attachmentContext: jsonb('attachment_context').$type<{
       storyId: string;
       storyTitle?: string;

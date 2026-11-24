@@ -28,11 +28,12 @@ State transitions are validated server-side in `campaignService.transitionCampai
 
 ### Audience source and filtering
 
-Each campaign targets one of three audience sources:
+Each campaign targets one of the following audience sources:
 
 - **`users`** — registered authors in `mythoria_db.authors`
 - **`leads`** — marketing leads in `mythoria_db.leads`
 - **`both`** — union of both tables
+- **`unfinished_story_drafts`** — opted-in authors with a draft or writing story last updated at least 24 hours ago. This source is fixed; filter trees, leads and attachments do not apply.
 
 **Default suppression** (always enforced, cannot be removed):
 
@@ -495,3 +496,11 @@ Customer-research survey campaigns reuse this module with `audience_source = 'su
 **Start and end dates.** While a campaign is a draft, the detail page has `datetime-local` Start and End inputs (shown in the browser's local time, sent as ISO UTC; empty clears the date) saved with the other draft metadata. `createCampaignSchema` and `updateCampaignSchema` require `endAt` to be after `startAt` when both are set. For survey reminders the page shows a non-blocking warning when the start is before the sibling invite campaign's start (same study and cohort; `GET /api/email-campaigns/[id]` returns `surveyContext.siblingInviteStartAt` for reminders). There is no warning yet for an end date after the study close date.
 
 Admin env: `SURVEY_INTERNAL_AUDIENCE` (OIDC audience of the WebApp survey command API) and the dev-only `SURVEY_IMPERSONATE_SERVICE_ACCOUNT`.
+
+## Unfinished story reminder (2026-11-24)
+
+Creating a campaign with `audience_source = 'unfinished_story_drafts'` creates it in `draft` status and seeds localized email assets for `en-US`, `pt-PT`, `es-ES`, `fr-FR` and `de-DE`. The only allowed preference is explicit `news`; the campaign uses the existing Admin activation flow and cannot be sent while it remains a draft. The audience is resolved by Notification Engine at each dispatch and again immediately before sending. It selects one specific story with status `draft` or `writing`, updated at least 24 hours earlier, and excludes generation states `queued`, `running` and `completed`. The same story ID is saved on the campaign recipient claim and used for the resume link and final eligibility check. Deleted/completed stories, closed accounts, non-subscribed or suppressed emails, and withdrawn `news` preference are excluded at send time.
+
+The Notification Engine assigns a deterministic 10% holdout using `unfinished-story-reminder-v1` plus the internal author UUID. Holdout rows are persisted in `marketing_campaign_recipients` with `status = 'skipped'`; the same author remains in the same cohort across campaigns. Treatment and holdout claims retain `draft_story_id` for audit. This percentage and 24-hour age threshold are initial product settings and should be reviewed before activation. No customer was sent a message while implementing this path.
+
+Apply the additive SQL in `scripts/unfinished-draft-reminder-audience-migration.sql` before deploying the Admin and Notification Engine readers. It adds the enum value and nullable `draft_story_id`. Activate the new audience after both deployments. Use the reviewed additive script. The schema generator also reported unrelated survey-schema drift. The shared database has yet to receive this migration.
