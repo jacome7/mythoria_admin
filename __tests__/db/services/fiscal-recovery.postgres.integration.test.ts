@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { randomUUID } from 'node:crypto';
-import { readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join } from 'node:path';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -15,6 +15,10 @@ jest.mock('@/db', () => ({ getMythoriaDb: jest.fn() }));
 // Opt in ONLY to a private local Unix socket. Never read app DB environment variables.
 const socket = process.env.KEYINVOICE_RECOVERY_TEST_SOCKET;
 const localSuite = socket ? describe : describe.skip;
+const workspaceWebappRoot = join(process.cwd(), '..', 'mythoria-webapp');
+const webappRoot = existsSync(workspaceWebappRoot)
+  ? workspaceWebappRoot
+  : join(process.cwd(), '..', 'Mythoria-webapp');
 const actor = 'legacy-admin';
 const payload = JSON.stringify({ method: 'insertDocument', DocType: '34', DocLines: [] });
 const authorId = '00000000-0000-0000-0000-000000000001';
@@ -42,17 +46,7 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
     ) {
       throw new Error('Missing local-only test sentinel');
     }
-    guards = await import(
-      join(
-        process.cwd(),
-        '..',
-        'Mythoria-webapp',
-        'src',
-        'db',
-        'services',
-        'fiscal-document-guards',
-      )
-    );
+    guards = await import(join(webappRoot, 'src', 'db', 'services', 'fiscal-document-guards'));
     pool = new Pool({
       host: socket,
       user: 'postgres',
@@ -68,7 +62,7 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
     await pool.query(
       'CREATE TABLE authors (author_id uuid PRIMARY KEY); CREATE TABLE payment_orders (order_id uuid PRIMARY KEY)',
     );
-    const migrationRoot = join(process.cwd(), '..', 'Mythoria-webapp', 'drizzle');
+    const migrationRoot = join(webappRoot, 'drizzle');
     for (const file of [
       '0028_keyinvoice_fiscal_documents.sql',
       '0046_keyinvoice_recovery_reservation.sql',
@@ -178,16 +172,7 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
       );
       await expect(
         client.query(
-          readFileSync(
-            join(
-              process.cwd(),
-              '..',
-              'Mythoria-webapp',
-              'drizzle',
-              '0048_keyinvoice_recovery_ledger.sql',
-            ),
-            'utf8',
-          ),
+          readFileSync(join(webappRoot, 'drizzle', '0048_keyinvoice_recovery_ledger.sql'), 'utf8'),
         ),
       ).rejects.toMatchObject({
         code: 'P0001',
