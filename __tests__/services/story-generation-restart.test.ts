@@ -1,5 +1,8 @@
 import { getMythoriaDb } from '@/db';
 import { publishStoryRequest } from '@/lib/pubsub';
+import { resumePremiumGeneration } from '@/services/premium-generation-resume';
+jest.mock('@/services/premium-generation-resume', () => ({ resumePremiumGeneration: jest.fn() }));
+jest.mock('@/lib/audit', () => ({ logAdminAudit: jest.fn() }));
 import {
   restartStoryGeneration,
   StoryGenerationRestartError,
@@ -18,7 +21,11 @@ jest.mock('@/lib/pubsub', () => ({
 const mockGetMythoriaDb = jest.mocked(getMythoriaDb);
 const mockPublishStoryRequest = jest.mocked(publishStoryRequest);
 
-function createDatabaseMock(options?: { storyStatus?: string; publishAttempts?: number }) {
+function createDatabaseMock(options?: {
+  storyStatus?: string;
+  publishAttempts?: number;
+  features?: unknown;
+}) {
   const storyStatus = options?.storyStatus ?? 'published';
   const publishAttempts = options?.publishAttempts ?? 0;
   const request = {
@@ -35,13 +42,18 @@ function createDatabaseMock(options?: { storyStatus?: string; publishAttempts?: 
   const tx = {
     select: jest.fn(() => ({
       from: jest.fn(() => ({
-        where: jest
-          .fn()
-          .mockResolvedValue(
-            storyStatus === 'missing'
-              ? []
-              : [{ storyId: 'story-1', authorId: 'author-1', status: storyStatus }],
-          ),
+        where: jest.fn().mockResolvedValue(
+          storyStatus === 'missing'
+            ? []
+            : [
+                {
+                  storyId: 'story-1',
+                  authorId: 'author-1',
+                  status: storyStatus,
+                  features: options?.features,
+                },
+              ],
+        ),
       })),
     })),
     insert: jest.fn(() => ({ values: transactionInsertValues })),
@@ -141,6 +153,30 @@ describe('restartStoryGeneration', () => {
         code: 'story_not_restartable',
       }),
     );
+    expect(tx.insert).not.toHaveBeenCalled();
+    expect(mockPublishStoryRequest).not.toHaveBeenCalled();
+  });
+  it('resumes an accepted premium run without inserting a new request or debit', async () => {
+    const revision = '00000000-0000-4000-8000-000000000080';
+    const { db, tx } = createDatabaseMock({
+      features: {
+        premiumBook: {
+          version: 1,
+          type: 'premium_children',
+          state: 'queued',
+          ownerId: 'author-1',
+          revision,
+        },
+      },
+    });
+    mockGetMythoriaDb.mockReturnValue(db as never);
+    jest.mocked(resumePremiumGeneration).mockResolvedValue(true);
+    const input = { storyId: 'story-1', source: 'mythoria-admin' as const };
+    await expect(
+      restartStoryGeneration({ ...input, expectedRunId: 'older' }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(await restartStoryGeneration(input)).toMatchObject({ runId: revision });
+    expect(resumePremiumGeneration).toHaveBeenCalledWith(input.storyId, revision);
     expect(tx.insert).not.toHaveBeenCalled();
     expect(mockPublishStoryRequest).not.toHaveBeenCalled();
   });

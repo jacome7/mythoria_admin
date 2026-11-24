@@ -47,6 +47,14 @@ const requestSchema = z.discriminatedUnion('operation', [
     confirmationId: z.uuid(),
     checkedInbox: z.literal(true),
     confirmedTotalEur: z.number().positive().finite(),
+    proofVersion: z.number().int().positive().optional(),
+  }),
+  z.object({
+    operation: z.literal('correctSquareEdition'),
+    ticketId: z.uuid(),
+    expectedRevision: z.uuid(),
+    correctedRevision: z.uuid(),
+    reason: z.string().trim().min(1).max(500),
   }),
   z.object({
     operation: z.literal('correctShipping'),
@@ -113,6 +121,15 @@ export async function POST(request: Request) {
         action: `print.${command.operation}`,
         entityType: 'print',
         entityId: 'ticketId' in command ? command.ticketId : undefined,
+        ...(command.operation === 'correctSquareEdition'
+          ? {
+              metadata: {
+                previousRevision: command.expectedRevision,
+                correctedRevision: command.correctedRevision,
+                reason: command.reason,
+              },
+            }
+          : {}),
       });
     }
     const data = await callPrintDomain(command.operation, input, actor.email);

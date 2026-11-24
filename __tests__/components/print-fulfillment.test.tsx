@@ -88,3 +88,38 @@ it('shows nonblocking proof warnings and requires an inbox check for manual disp
   fireEvent.click(screen.getByLabelText('I checked the inbox and reviewed proof version 3.'));
   expect(send).toBeEnabled();
 });
+
+it('releases only the current square proof through Lulu after explicit review and quote confirmation', async () => {
+  const squareOrder = {
+    ...manualOrder,
+    provider: 'lulu',
+    binding: 'hardcover',
+    maxEurPerCopy: 25,
+    squareEdition: {
+      revision: ticketId,
+      manifest: { key: 'key', generation: '1', sha256: 'a'.repeat(64), bytes: 512 },
+      podPackageId: '0850X0850FCPRECW080CW444MXX',
+      luluEnvironment: 'sandbox',
+    },
+    proof: { ...manualOrder.proof, pageCount: 32, supplierValidated: true },
+    quote: { shippingLevel: 'EXPRESS', totalEur: 20, perCopyEur: 20, confirmationId: ticketId },
+  };
+  fetchMock.mockResolvedValue(json(squareOrder));
+  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+  const release = await screen.findByRole('button', { name: 'Release square order to Lulu' });
+  expect(release).toBeDisabled();
+  expect(screen.queryByRole('button', { name: 'Select manual' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Send print request' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText('I checked the inbox and reviewed proof version 3.'));
+  fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '20' } });
+  expect(release).toBeEnabled();
+  fireEvent.click(release);
+  expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
+    operation: 'submit',
+    ticketId,
+    confirmationId: ticketId,
+    checkedInbox: true,
+    confirmedTotalEur: 20,
+    proofVersion: 3,
+  });
+});

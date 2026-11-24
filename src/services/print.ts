@@ -16,7 +16,8 @@ type PrintOperation =
   | 'reconcile'
   | 'reserveManual'
   | 'finalizeManual'
-  | 'correctShipping';
+  | 'correctShipping'
+  | 'correctSquareEdition';
 
 export class PrintDomainError extends Error {
   constructor(

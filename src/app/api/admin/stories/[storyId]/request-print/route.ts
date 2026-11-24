@@ -99,11 +99,21 @@ export async function POST(
 
     const db = getMythoriaDb();
     const [story] = await db
-      .select({ coverPdfUri: stories.coverPdfUri, interiorPdfUri: stories.interiorPdfUri })
+      .select({
+        coverPdfUri: stories.coverPdfUri,
+        interiorPdfUri: stories.interiorPdfUri,
+        features: stories.features,
+      })
       .from(stories)
       .where(eq(stories.storyId, storyId))
       .limit(1);
     if (!story) return Response.json({ error: 'Story not found' }, { status: 404 });
+    if (story.features && typeof story.features === 'object' && 'premiumBook' in story.features) {
+      return Response.json(
+        { error: 'Square hardcover orders can only be released from their paid print ticket.' },
+        { status: 409 },
+      );
+    }
     if (story.coverPdfUri !== coverPdfUri || story.interiorPdfUri !== interiorPdfUri) {
       return Response.json(
         { error: 'The print files changed. Reopen the story to review its current files.' },

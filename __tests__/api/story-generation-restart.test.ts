@@ -91,6 +91,7 @@ describe('story generation restart API', () => {
     expect(response.status).toBe(200);
     expect(mockRestartStoryGeneration).toHaveBeenCalledWith({
       storyId: 'story-1',
+      expectedRunId: 'failed-run',
       source: 'mythoria-admin',
       requestedBy: 'admin@mythoria.pt',
     });

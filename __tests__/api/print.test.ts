@@ -100,6 +100,39 @@ it('uses the server-side ticket link and audits the submission', async () => {
   );
 });
 
+it('audits the old and new revisions of a square edition correction using the linked ticket', async () => {
+  const correction = {
+    operation: 'correctSquareEdition',
+    ticketId: id,
+    expectedRevision: printId,
+    correctedRevision: confirmationId,
+    reason: 'Correct a spelling mistake',
+  };
+  expect((await POST(req(correction))).status).toBe(200);
+  expect(callPrintDomain).toHaveBeenCalledWith(
+    'correctSquareEdition',
+    {
+      ticketId: id,
+      printRequestId: printId,
+      expectedRevision: printId,
+      correctedRevision: confirmationId,
+      reason: correction.reason,
+    },
+    'admin@mythoria.pt',
+  );
+  expect(logAdminAudit).toHaveBeenCalledWith(
+    expect.objectContaining({
+      action: 'print.correctSquareEdition',
+      entityId: id,
+      metadata: {
+        previousRevision: printId,
+        correctedRevision: confirmationId,
+        reason: correction.reason,
+      },
+    }),
+  );
+});
+
 it('rejects a cross-origin request before sending any print command', async () => {
   const response = await POST(
     new Request('http://localhost/api/admin/print', {

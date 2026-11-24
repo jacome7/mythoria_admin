@@ -95,3 +95,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 See [../docs/SURVEYS.md](../docs/SURVEYS.md) and [docs/survey-analytics.md](docs/survey-analytics.md). Admin owns survey campaigns (`audience_source = 'survey_invitations'`), `survey_admin_roles` (`requireSurveyPermission` in `src/lib/surveys/permissions.ts`) and `admin_audit_events` (`logAdminAudit` in `src/lib/audit.ts`). Study/snapshot writes go through the WebApp internal command API (`src/services/surveys.ts`, OIDC `SURVEY_INTERNAL_AUDIENCE`); survey tables in `mythoria_db` are read-only here (`npm run sync-mythoria-db-schema`). Backoffice migration `0009_survey_campaigns_rbac_audit` must be applied (with authorization) before deploying this version.
 
 Story Whisperer support operations resolve an interview to the owner's shared voice account through the WebApp. See [staff operations](docs/how-to/biographer-operations.md).
+
+Premium story retries resume the original SGW run. Premium square print orders require the explicit release action on the linked paid ticket. See [print fulfillment operations](docs/print-fulfillment.md).
