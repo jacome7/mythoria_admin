@@ -27,6 +27,12 @@ export interface EnvVarDescriptor {
 
 export const envManifest: EnvVarDescriptor[] = [
   {
+    name: 'PRINT_INTERNAL_AUDIENCE',
+    required: false,
+    scopes: ['runtime', 'dev', 'prod'],
+    note: 'OIDC audience for the WebApp print fulfillment command API. Enable it before switching WebApp to paid print fulfillment.',
+  },
+  {
     name: 'BIOGRAPHER_INTERNAL_AUDIENCE',
     required: false,
     scopes: ['runtime', 'dev', 'prod'],

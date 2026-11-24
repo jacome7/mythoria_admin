@@ -81,10 +81,16 @@ export async function POST(request: NextRequest) {
         });
         break;
 
-      case 'print_request':
+      case 'print_request': {
         if (!body.storyId) {
           return NextResponse.json(
             { error: 'Missing required field for print request: storyId' },
+            { status: 400 },
+          );
+        }
+        if (body.orderDetails?.fulfillmentVersion !== undefined) {
+          return NextResponse.json(
+            { error: 'Versioned print tickets require the paid print endpoint' },
             { status: 400 },
           );
         }
@@ -96,6 +102,7 @@ export async function POST(request: NextRequest) {
           numberOfCopies: body.numberOfCopies,
         });
         break;
+      }
 
       case 'payment_request':
         if (!body.amount) {

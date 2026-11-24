@@ -45,6 +45,10 @@ Use this playbook whenever you script or automate changes in the repo.
 - `../docs/EMAIL_CAMPAIGNS.md` – cross-service campaign runbook and Phase 4 validation checklist.
 - Specialized guides (CSV import, bounce API, Postmaster, ticketing) live next to those files; link them from `docs/README.md` when you add new surfaces.
 
+## Print fulfillment (2026-11-24)
+
+WebApp owns paid orders, proof versions, provider settings and supplier authorization. The initial provider is None / manual. Admin links checkout tickets to print requests, verifies the operator reviewed the current proof and inbox, and forwards the reserved file identities to Notification Engine for manual dispatch. See [print fulfillment operations](docs/print-fulfillment.md) for the OIDC contract, legacy ticket flow and rollout prerequisites.
+
 ## Email campaigns module
 
 The multi-campaign marketing system is spread across:

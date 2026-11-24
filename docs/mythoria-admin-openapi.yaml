@@ -924,6 +924,235 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/tickets/paid-print:
+    post:
+      tags: [Tickets]
+      summary: Create or recover the linked ticket for paid print checkout
+      security:
+        - AdminApiKey: []
+        - BearerApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, storyId, userId, printFormat, numberOfCopies, orderDetails]
+              properties:
+                category:
+                  type: string
+                  enum: [print_request]
+                storyId:
+                  type: string
+                  format: uuid
+                userId:
+                  type: string
+                  format: uuid
+                printFormat:
+                  type: string
+                  enum: [paperback, hardcover]
+                numberOfCopies:
+                  type: integer
+                  minimum: 1
+                orderDetails:
+                  type: object
+                  required: [fulfillmentVersion, printRequestId]
+                  properties:
+                    fulfillmentVersion:
+                      type: integer
+                      enum: [1]
+                    printRequestId:
+                      type: string
+                      format: uuid
+      responses:
+        '201':
+          description: Ticket ID and matching stored print request ID, on creation or retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, metadata]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  metadata:
+                    type: object
+                    required: [printRequestId]
+                    properties:
+                      printRequestId:
+                        type: string
+                        format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/print:
+    post:
+      tags: [Tickets]
+      summary: Read or update print fulfillment
+      security:
+        - AdminSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operation]
+              properties:
+                operation:
+                  type: string
+                  enum: [getConfig, setConfig, get, select, prepare, revise, hold, clear, correctShipping, submit, reconcile]
+                ticketId:
+                  type: string
+                  format: uuid
+                  description: Required for commands targeting a linked paid print ticket.
+                defaultProvider:
+                  type: string
+                  enum: [none, lulu]
+                  description: Required for setConfig.
+                maxEurPerCopy:
+                  type: number
+                  minimum: 0
+                  maximum: 99999999.99
+                  description: Required for setConfig.
+                hardcoverCredits:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000000
+                  nullable: true
+                  description: Send null to disable hardcover pricing. Omit to preserve its setting.
+                provider:
+                  type: string
+                  enum: [manual, lulu]
+                  description: Required for select.
+                reason:
+                  type: string
+                  description: Required for hold.
+                customerConfirmed:
+                  type: boolean
+                  enum: [true]
+                  description: Required for correctShipping.
+                shippingAddress:
+                  type: object
+                  description: Customer-confirmed address for correctShipping.
+                confirmationId:
+                  type: string
+                  format: uuid
+                  description: Current quote confirmation required for submit.
+                checkedInbox:
+                  type: boolean
+                  enum: [true]
+                  description: Required for submit.
+                confirmedTotalEur:
+                  type: number
+                  description: Required for submit.
+      responses:
+        '200':
+          description: Current print settings or fulfillment detail in the data property.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: The ticket or current fulfillment state does not allow the command.
+  /api/admin/print/manual:
+    post:
+      tags: [Tickets]
+      summary: Dispatch the reviewed paid proof version to an active printer
+      security:
+        - AdminSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ticketId, partnerId, proofVersion, checkedInbox, subject, bodyText]
+              properties:
+                ticketId:
+                  type: string
+                  format: uuid
+                partnerId:
+                  type: string
+                  format: uuid
+                proofVersion:
+                  type: integer
+                  minimum: 1
+                checkedInbox:
+                  type: boolean
+                  enum: [true]
+                subject:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                bodyText:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+      responses:
+        '200':
+          description: Fulfillment detail and a sent or uncertain dispatch outcome.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: The ticket or current fulfillment state does not allow dispatch.
+  /api/admin/stories/{storyId}/request-print:
+    post:
+      tags: [Tickets]
+      summary: Dispatch legacy story PDFs to a printer
+      security:
+        - AdminSession: []
+      parameters:
+        - name: storyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [partnerId, subject, bodyText, coverPdfUri, interiorPdfUri]
+              properties:
+                partnerId:
+                  type: string
+                  format: uuid
+                subject:
+                  type: string
+                bodyText:
+                  type: string
+                coverPdfUri:
+                  type: string
+                  format: uri
+                interiorPdfUri:
+                  type: string
+                  format: uri
+                legacyTicketId:
+                  type: string
+                  format: uuid
+                  description: Optional open legacy ticket for the same story that predates its first paid print reservation.
+      responses:
+        '200':
+          description: Notification Engine delivery response for the legacy dispatch.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: A paid reservation, legacy ticket mismatch, or stale story files prevent dispatch.
   /api/tickets/{id}:
     parameters:
       - name: id
@@ -3488,6 +3717,15 @@ components:
           additionalProperties: true
         printFormat:
           type: string
+        numberOfCopies:
+          type: integer
+        orderDetails:
+          type: object
+          description: Legacy print context. Versioned paid requests use /api/tickets/paid-print.
+          properties:
+            printRequestId:
+              type: string
+              description: An optional identifier used by legacy clients. Admin preserves the legacy ticket workflow when present.
         amount:
           type: number
       required: [category]

@@ -105,6 +105,49 @@ describe('StoryDetailPage', () => {
     expect(screen.queryByText('Not available')).not.toBeInTheDocument();
   });
 
+  it('includes the legacy ticket from the story link when sending print', async () => {
+    const previousUrl = window.location.href;
+    const previousFetch = globalThis.fetch;
+    const legacyTicketId = 'c0dedede-dede-4ede-8ede-dededededede';
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => ({ data: [{ id: 'printer', name: 'Printer', type: 'printer' }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'Synthetic outcome' }),
+      });
+    globalThis.fetch = fetchMock;
+    window.history.replaceState(null, '', `?legacyPrintTicket=${legacyTicketId}`);
+    mockUseStoryDetail.mockReturnValue({
+      story: {
+        ...story,
+        interiorPdfUri: 'gs://stories/story/interior.pdf',
+        coverPdfUri: 'gs://stories/story/cover.pdf',
+      },
+      isLoading: false,
+      setStory: jest.fn(),
+      fetchStory: jest.fn().mockResolvedValue(undefined),
+    });
+    try {
+      render(<StoryDetailPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Request Print' }));
+      await screen.findByRole('option', { name: 'Printer' });
+      fireEvent.click(screen.getByRole('button', { name: 'Send Email' }));
+      await screen.findByText('Synthetic outcome');
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `/api/admin/stories/${story.storyId}/request-print`,
+        expect.objectContaining({
+          body: expect.stringContaining(`"legacyTicketId":"${legacyTicketId}"`),
+        }),
+      );
+    } finally {
+      globalThis.fetch = previousFetch;
+      window.history.replaceState(null, '', previousUrl);
+    }
+  });
+
   it('starts Audio Narration collapsed and expands it on request', () => {
     render(<StoryDetailPage />);
 

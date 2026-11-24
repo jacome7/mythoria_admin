@@ -69,6 +69,9 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
     setIsSendingPrint(true);
     setPrintMessage(null);
     try {
+      const legacyPrintTicketId = new URLSearchParams(window.location.search).get(
+        'legacyPrintTicket',
+      );
       const response = await fetch(`/api/admin/stories/${storyId}/request-print`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,6 +81,7 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
           bodyText: printBody,
           coverPdfUri: story.coverPdfUri,
           interiorPdfUri: story.interiorPdfUri,
+          ...(legacyPrintTicketId ? { legacyTicketId: legacyPrintTicketId } : {}),
         }),
       });
       const result = await response.json();

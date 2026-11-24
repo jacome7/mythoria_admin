@@ -65,6 +65,14 @@ export interface CreatePrintTicketData {
   numberOfCopies?: number;
 }
 
+interface CreateLinkedPrintTicketData {
+  storyId: string;
+  userId: string;
+  printRequestId: string;
+  printFormat: 'paperback' | 'hardcover';
+  numberOfCopies: number;
+}
+
 export interface CreatePaymentTicketData {
   amount: number;
   userId?: string;
@@ -271,6 +279,49 @@ export class TicketService {
         printFormat: data.printFormat || 'standard',
         numberOfCopies: data.numberOfCopies ?? 1,
       },
+    });
+  }
+
+  static async createLinkedPrintTicket(data: CreateLinkedPrintTicketData): Promise<Ticket> {
+    const db = getBackofficeDb();
+    return db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${data.printRequestId}, 0))`,
+      );
+      const [existing] = await tx
+        .select()
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.category, 'print_request'),
+            sql`${tickets.metadata}->>'printRequestId' = ${data.printRequestId}`,
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        const metadata = existing.metadata as TicketMetadata | null;
+        if (metadata?.storyId !== data.storyId || existing.userId !== data.userId) {
+          throw new Error('Print request is linked to a different ticket owner or story');
+        }
+        return existing;
+      }
+      // Fulfillment owns the customer proof email and the frozen shipping address.
+      const [ticket] = await tx
+        .insert(tickets)
+        .values({
+          userId: data.userId,
+          category: 'print_request',
+          subject: `Print Request for Story ${data.storyId}`,
+          description: `User requested print for story ID: ${data.storyId}`,
+          metadata: {
+            printRequestId: data.printRequestId,
+            storyId: data.storyId,
+            printFormat: data.printFormat,
+            numberOfCopies: data.numberOfCopies,
+          },
+        })
+        .returning();
+      return ticket;
     });
   }
 
@@ -499,6 +550,7 @@ export class TicketService {
 
       // Enrich address data
       if (
+        !metadata.printRequestId &&
         metadata.shippingAddress &&
         typeof metadata.shippingAddress === 'object' &&
         'addressId' in metadata.shippingAddress
@@ -573,7 +625,12 @@ export class TicketService {
       .returning();
 
     if (updatedTicket) {
-      if (!options?.suppressNotification) {
+      // A ticket closing does not establish that a paid print order arrived.
+      // Linked fulfillment orders use their own delivery state and proof email.
+      const metadata = updatedTicket.metadata as TicketMetadata | null;
+      const linkedPrintOrder =
+        updatedTicket.category === 'print_request' && !!metadata?.printRequestId;
+      if (!options?.suppressNotification && !linkedPrintOrder) {
         await this.triggerNotification(ticketId, status);
       }
 

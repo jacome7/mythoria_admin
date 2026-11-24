@@ -7,6 +7,7 @@ import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/uti
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import type { TicketMetadata, TicketPaymentPackage } from '@/lib/ticketing/types';
+import { PrintFulfillment } from '@/components/PrintFulfillment';
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 const EURO_FORMATTER = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' });
@@ -569,6 +570,26 @@ export default function TicketDetailPage() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title text-lg">Print Request Details</h3>
+          {metadata.printRequestId && (
+            <PrintFulfillment
+              key={ticketId}
+              ticketId={ticketId}
+              closed={ticket?.status === 'closed' || ticket?.status === 'resolved'}
+            />
+          )}
+          {!metadata.printRequestId &&
+            metadata.storyId &&
+            (ticket?.status === 'open' || ticket?.status === 'in_progress') && (
+              <Link
+                href={{
+                  pathname: `/stories/${metadata.storyId}`,
+                  query: { legacyPrintTicket: ticketId },
+                }}
+                className="btn btn-sm btn-outline self-start"
+              >
+                Open story for legacy print
+              </Link>
+            )}
           <div className="space-y-4">
             {/* User Information */}
             <div>
@@ -645,52 +666,54 @@ export default function TicketDetailPage() {
             </div>
 
             {/* Shipping Address */}
-            <div>
-              <h4 className="font-semibold text-base mb-2">Shipping Address</h4>
-              {metadata.enrichedAddress ? (
-                <div className="space-y-1 pl-2">
-                  <div className="flex flex-col">
-                    <span className="text-sm text-base-content/60">Address ID:</span>
-                    <span className="font-mono text-sm text-base-content/80">
-                      {metadata.enrichedAddress.addressId}
-                    </span>
-                  </div>
-                  <div className="flex flex-col mt-2">
-                    <span className="text-sm text-base-content/60 mb-1">Full Address:</span>
-                    <div className="bg-base-200 p-3 rounded text-base-content/90 text-sm">
-                      <div>{metadata.enrichedAddress.line1}</div>
-                      {metadata.enrichedAddress.line2 && (
-                        <div>{metadata.enrichedAddress.line2}</div>
-                      )}
-                      <div>
-                        {metadata.enrichedAddress.city}
-                        {metadata.enrichedAddress.stateRegion &&
-                          `, ${metadata.enrichedAddress.stateRegion}`}
-                      </div>
-                      {metadata.enrichedAddress.postalCode && (
-                        <div>{metadata.enrichedAddress.postalCode}</div>
-                      )}
-                      <div>{metadata.enrichedAddress.country}</div>
-                      {metadata.enrichedAddress.phone && (
-                        <div className="mt-2 pt-2 border-t border-base-300">
-                          Phone: {metadata.enrichedAddress.phone}
+            {!metadata.printRequestId && (
+              <div>
+                <h4 className="font-semibold text-base mb-2">Shipping Address</h4>
+                {metadata.enrichedAddress ? (
+                  <div className="space-y-1 pl-2">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-base-content/60">Address ID:</span>
+                      <span className="font-mono text-sm text-base-content/80">
+                        {metadata.enrichedAddress.addressId}
+                      </span>
+                    </div>
+                    <div className="flex flex-col mt-2">
+                      <span className="text-sm text-base-content/60 mb-1">Full Address:</span>
+                      <div className="bg-base-200 p-3 rounded text-base-content/90 text-sm">
+                        <div>{metadata.enrichedAddress.line1}</div>
+                        {metadata.enrichedAddress.line2 && (
+                          <div>{metadata.enrichedAddress.line2}</div>
+                        )}
+                        <div>
+                          {metadata.enrichedAddress.city}
+                          {metadata.enrichedAddress.stateRegion &&
+                            `, ${metadata.enrichedAddress.stateRegion}`}
                         </div>
-                      )}
+                        {metadata.enrichedAddress.postalCode && (
+                          <div>{metadata.enrichedAddress.postalCode}</div>
+                        )}
+                        <div>{metadata.enrichedAddress.country}</div>
+                        {metadata.enrichedAddress.phone && (
+                          <div className="mt-2 pt-2 border-t border-base-300">
+                            Phone: {metadata.enrichedAddress.phone}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="pl-2 space-y-1">
-                  <div className="flex flex-col">
-                    <span className="text-sm text-base-content/60">Address ID:</span>
-                    <span className="font-mono text-sm text-base-content/80">
-                      {(metadata.shippingAddress?.addressId as string | undefined) || 'N/A'}
-                    </span>
+                ) : (
+                  <div className="pl-2 space-y-1">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-base-content/60">Address ID:</span>
+                      <span className="font-mono text-sm text-base-content/80">
+                        {(metadata.shippingAddress?.addressId as string | undefined) || 'N/A'}
+                      </span>
+                    </div>
+                    <span className="text-error text-sm">Address not found</span>
                   </div>
-                  <span className="text-error text-sm">Address not found</span>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Print Format */}
             {metadata.printFormat && (
