@@ -52,9 +52,21 @@ This guide covers the deployment process for the Mythoria Admin Portal to Google
 
 - Google Cloud SDK installed and configured
 - Node.js 24.18.1 LTS installed locally (`.node-version` and `.nvmrc` pin this version)
+- npm 11.21.3 for local installs and container builds
 - Docker installed (for local testing)
 - Git repository access
 - Environment variables configured
+
+### Compiler and lint compatibility
+
+`npm run typecheck` uses the native TypeScript 7 compiler. The `typescript` package
+stays on TypeScript 6 for the ESLint parser's JavaScript compiler API and Next's
+production build. ESLint stays on version 9 while the React, import, and
+accessibility plugins in `eslint-config-next` require that version.
+
+The test tooling uses dependency overrides for patched versions of `glob` and
+`minimatch`. When updating Jest, run `npm run test:coverage` to verify its
+coverage tooling against those versions.
 
 ### 3. Database Infrastructure
 

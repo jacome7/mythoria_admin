@@ -8,7 +8,7 @@ FROM node:${NODE_VERSION}-alpine AS base
 RUN apk add --no-cache libc6-compat
 
 # Keep npm aligned with packageManager in package.json.
-RUN npm install -g npm@11.17.0
+RUN npm install -g npm@11.21.3
 
 # Set the working directory in the container.
 WORKDIR /app
