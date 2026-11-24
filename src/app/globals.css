@@ -1,4 +1,7 @@
 @import 'tailwindcss';
+
+/* Preserve join utilities previously included by the DaisyUI patch source. */
+@source inline("join-horizontal join-vertical");
 @plugin "daisyui" {
   exclude: [ 'properties'];
 }
