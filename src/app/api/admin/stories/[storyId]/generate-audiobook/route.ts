@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { auth } from '@/auth';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 import { adminService } from '@/db/services';
+import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { publishAudiobookRequest } from '@/lib/pubsub';
 import { logAdminAudit } from '@/lib/audit';
 import { isPremiumAudiobookPending } from '@/lib/premium-audiobook';
@@ -25,8 +26,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const origin = request.headers.get('origin');
-    if (origin && origin !== new URL(request.url).origin) {
+    if (!hasTrustedAdminOrigin(request)) {
+      console.warn(
+        JSON.stringify({
+          severity: 'WARNING',
+          message: 'Admin audiobook request rejected: untrusted origin',
+        }),
+      );
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
