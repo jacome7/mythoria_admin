@@ -29,3 +29,11 @@ Use **Request one staff print proof** on that story while public checkout is clo
 For a paid square ticket, confirm the purchaser received the current proof and check the reply inbox before either release action. Manual dispatch includes the frozen shipping address and quantity with the exact proof files. For Lulu, also verify tracked shipping and the landed quote against the per-copy limit, then enter the total and use **Release square order to Lulu**. The server verifies the proof version, supplier validation and refreshed quote before creating the job. Changing the provider versions the proof but retains the ticket’s edition.
 
 Place the order on hold before a correction. After the corrected direct successor is published, enter its revision ID and the reason under **Bind published correction**. The ticket keeps its hold. Clearing it queues the new proof, quote and customer email. Review the new proof and check the inbox again before release. The audit records the operator, predecessor, successor and reason. For an uncertain or submitted job, use **Refresh order** and reconcile its supplier references before handling cancellation or replacement.
+
+## Printing costs
+
+Open **Printing costs** under **Financials**. The range selector offers Last 7 days, Last 30 days, Last 90 days and Forever. The chart uses Lulu's job date in UTC and the request table uses the date the print request was placed. Forever uses monthly chart buckets. A request can fall into a different period from its supplier cost.
+
+The table shows Lulu's tax-exclusive total in the original currency and its EUR equivalent when available. Requests handled by other providers have an untracked cost. The homepage **Revenue vs costs** chart subtracts the same recorded EUR totals and AI costs from revenue. Pending prices and conversions are flagged in the charts. A priced job can appear in the total while Lulu is awaiting payment.
+
+The WebApp owns price capture, conversion and backfill. Apply its additive cost migration, `0055_print_fulfillment_costs`, before rolling out these Admin routes. See [the shared rollout runbook](https://github.com/jacome7/Mythoria-webapp/blob/master/docs/PRINT_FULFILLMENT.md).

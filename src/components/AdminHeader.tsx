@@ -261,6 +261,11 @@ export default function AdminHeader() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/printing-costs" onClick={closeDropdown}>
+                    Printing Costs
+                  </Link>
+                </li>
+                <li>
                   <Link href="/pricing" onClick={closeDropdown}>
                     Pricing
                   </Link>
@@ -464,6 +469,11 @@ export default function AdminHeader() {
                     <li>
                       <Link href="/ai-usage" onClick={closeDrawer}>
                         AI Usage
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/printing-costs" onClick={closeDrawer}>
+                        Printing Costs
                       </Link>
                     </li>
                     <li>

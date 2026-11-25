@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { PrintFulfillment, PrintSettings } from '@/components/PrintFulfillment';
 
 const ticketId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
@@ -114,7 +114,9 @@ it('releases only the current square proof through Lulu after explicit review an
   fireEvent.click(screen.getByLabelText('I checked the inbox and reviewed proof version 3.'));
   fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '20' } });
   expect(release).toBeEnabled();
-  fireEvent.click(release);
+  await act(async () => {
+    fireEvent.click(release);
+  });
   expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
     operation: 'submit',
     ticketId,
