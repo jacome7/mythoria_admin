@@ -1,4 +1,4 @@
-import { GoogleAuth } from 'google-auth-library';
+import { GoogleAuth, IdTokenClient, Impersonated } from 'google-auth-library';
 
 const auth = new GoogleAuth();
 
@@ -37,6 +37,21 @@ function printEndpoint() {
   return { audience, url: `${base.replace(/\/$/, '')}/api/internal/print/command` };
 }
 
+async function getPrintIdTokenClient(audience: string) {
+  const impersonate = process.env.PRINT_IMPERSONATE_SERVICE_ACCOUNT?.trim();
+  if (impersonate && process.env.NODE_ENV === 'development') {
+    return new IdTokenClient({
+      targetAudience: audience,
+      idTokenProvider: new Impersonated({
+        sourceClient: await auth.getClient(),
+        targetPrincipal: impersonate,
+        targetScopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      }),
+    });
+  }
+  return auth.getIdTokenClient(audience);
+}
+
 export async function callPrintDomain<T>(
   operation: PrintOperation,
   input: unknown,
@@ -44,7 +59,7 @@ export async function callPrintDomain<T>(
 ): Promise<T> {
   const { audience, url } = printEndpoint();
   try {
-    const client = await auth.getIdTokenClient(audience);
+    const client = await getPrintIdTokenClient(audience);
     const response = await client.request<{ data: T }>({
       url,
       method: 'POST',
@@ -75,7 +90,7 @@ export async function callPremiumEditionImage(
 ) {
   const { audience, url } = printEndpoint();
   try {
-    const client = await auth.getIdTokenClient(audience);
+    const client = await getPrintIdTokenClient(audience);
     const response = await client.request<ArrayBuffer>({
       url,
       method: 'POST',

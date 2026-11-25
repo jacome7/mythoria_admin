@@ -33,6 +33,12 @@ export const envManifest: EnvVarDescriptor[] = [
     note: 'OIDC audience for the WebApp print fulfillment command API. Enable it before switching WebApp to paid print fulfillment.',
   },
   {
+    name: 'PRINT_IMPERSONATE_SERVICE_ACCOUNT',
+    required: false,
+    scopes: ['dev'],
+    note: 'Development-only print OIDC impersonation using local application default credentials. Requires permission to generate ID tokens for this service account.',
+  },
+  {
     name: 'BIOGRAPHER_INTERNAL_AUDIENCE',
     required: false,
     scopes: ['runtime', 'dev', 'prod'],
