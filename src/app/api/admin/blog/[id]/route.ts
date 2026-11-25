@@ -53,7 +53,7 @@ export async function PUT(req: Request) {
   }
 
   let normalizedTranslations;
-  let warnings: string[] = [];
+  let warnings: string[];
   try {
     const normalized = normalizeAdminTranslations(body.translations, rawLimits);
     normalizedTranslations = normalized.translations;

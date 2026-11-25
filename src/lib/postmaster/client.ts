@@ -107,6 +107,7 @@ export class PostmasterClient {
       console.error('[PostmasterClient] Failed to initialize:', error);
       throw new Error(
         `Failed to initialize Postmaster API client: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error },
       );
     }
   }
@@ -149,7 +150,9 @@ export class PostmasterClient {
           console.error(
             '[PostmasterClient] Access denied - check domain-wide delegation and scopes',
           );
-          throw new Error('Access denied to Postmaster Tools API. Check domain-wide delegation.');
+          throw new Error('Access denied to Postmaster Tools API. Check domain-wide delegation.', {
+            cause: error,
+          });
         }
       }
 

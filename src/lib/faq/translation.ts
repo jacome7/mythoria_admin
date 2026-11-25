@@ -116,7 +116,7 @@ export async function translateFaqEntryById(
     });
   } catch (error) {
     console.error('Failed to reach translation service:', error);
-    throw new Error('Failed to reach translation service');
+    throw new Error('Failed to reach translation service', { cause: error });
   }
 
   let translationData: SGWTranslationResponse | null = null;

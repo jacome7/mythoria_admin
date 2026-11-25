@@ -1,3 +1,4 @@
+import { fixupConfigRules } from '@eslint/compat';
 import next from 'eslint-config-next';
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 import nextTypescript from 'eslint-config-next/typescript';
@@ -23,7 +24,7 @@ const config = [
     },
   },
   {
-    files: ['jest.config.cjs', 'jest.setup.js'],
+    files: ['jest.config.cjs', 'jest.environment.cjs', 'jest.setup.js', 'compat/**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: {
@@ -63,4 +64,4 @@ const config = [
   },
 ];
 
-export default config;
+export default fixupConfigRules(config);

@@ -9,7 +9,7 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
   const isNonProd = process.env.NODE_ENV !== 'production';
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
-  let adminPort = '3001';
+  let adminPort: string;
   try {
     const u = new URL(adminUrl);
     adminPort = u.port || (u.protocol === 'https:' ? '443' : '80');
