@@ -127,6 +127,39 @@ it('releases only the current square proof through Lulu after explicit review an
   });
 });
 
+it.each(['lulu', 'manual'])(
+  'blocks square Lulu actions while retaining manual preparation (%s)',
+  async (provider) => {
+    const order = {
+      ...manualOrder,
+      provider,
+      binding: 'hardcover',
+      proofOnly: true,
+      maxEurPerCopy: 25,
+      squareLuluBlockReason: 'This edition is not approved for Lulu.',
+      squareEdition: {
+        revision: ticketId,
+        manifest: { key: 'key', generation: '1', sha256: 'a'.repeat(64), bytes: 512 },
+      },
+      proof: { ...manualOrder.proof, supplierValidated: true },
+      quote: { shippingLevel: 'EXPRESS', totalEur: 20, perCopyEur: 20, confirmationId: ticketId },
+    };
+    fetchMock.mockResolvedValue(json(order));
+    render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+    expect(await screen.findByText('This edition is not approved for Lulu.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Prepare for Lulu' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Prepare for manual printer' })).toBeEnabled();
+    if (provider === 'lulu') {
+      expect(screen.getByRole('button', { name: 'Prepare proof and quote' })).toBeDisabled();
+      fireEvent.click(screen.getByLabelText('I reviewed staff proof version 3.'));
+      fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '20' } });
+      expect(screen.getByRole('button', { name: 'Submit one proof to Lulu' })).toBeDisabled();
+    } else {
+      expect(screen.getByRole('button', { name: 'Prepare proof' })).toBeEnabled();
+    }
+  },
+);
+
 it('shows UNPAID operational alert and supports canceling a cancelable Lulu job', async () => {
   const unpaidOrder = {
     ...manualOrder,

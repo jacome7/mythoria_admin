@@ -12,6 +12,7 @@ interface PrintView {
   adminOrder?: boolean;
   orderOrigin?: 'customer' | 'staff_proof' | 'admin_order';
   luluConfigured?: boolean;
+  squareLuluBlockReason?: string | null;
   squareEdition?: {
     revision: string;
     manifest: { key: string; generation: string; sha256: string; bytes: number };
@@ -422,6 +423,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
     return () => clearInterval(timer);
   }, [closed, ticketId, view]);
   const quote = view?.quote;
+  const squareLuluBlockReason = view?.squareEdition ? view.squareLuluBlockReason : null;
   const skipInboxCheck = Boolean(view?.proofOnly || view?.adminOrder);
   const ready =
     !closed &&
@@ -432,6 +434,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
   const canSubmit =
     ready &&
     view.provider === 'lulu' &&
+    !squareLuluBlockReason &&
     (!view.squareEdition ||
       (view.proof?.supplierValidated &&
         view.maxEurPerCopy > 0 &&
@@ -455,6 +458,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
         {message && <p role="alert">{message}</p>}
         {view && (
           <>
+            {squareLuluBlockReason && <p role="alert">{squareLuluBlockReason}</p>}
             {view.proofOnly ? (
               <p className="font-semibold">Staff proof · One copy · No customer charge</p>
             ) : view.adminOrder ? (
@@ -739,7 +743,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                 <>
                   <button
                     className="btn btn-sm"
-                    disabled={busy || closed}
+                    disabled={busy || closed || Boolean(squareLuluBlockReason)}
                     onClick={() => void run('select', { provider: 'lulu' })}
                   >
                     {view.squareEdition ? 'Prepare for Lulu' : 'Select Lulu'}
@@ -764,7 +768,9 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               )}
               <button
                 className="btn btn-sm"
-                disabled={busy || closed}
+                disabled={
+                  busy || closed || (view.provider === 'lulu' && Boolean(squareLuluBlockReason))
+                }
                 onClick={() => void run('prepare', { runImmediately: true })}
               >
                 {view.provider === 'lulu' ? 'Prepare proof and quote' : 'Prepare proof'}
