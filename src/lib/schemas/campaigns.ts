@@ -8,12 +8,7 @@ export const SUPPORTED_LOCALES = ['en-US', 'pt-PT', 'es-ES', 'fr-FR', 'de-DE'] a
 export const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'completed', 'cancelled'] as const;
 export const GENERAL_AUDIENCE_SOURCES = ['users', 'leads', 'both'] as const;
 export const SURVEY_AUDIENCE_SOURCE = 'survey_invitations' as const;
-export const DRAFT_REMINDER_AUDIENCE_SOURCE = 'unfinished_story_drafts' as const;
-export const AUDIENCE_SOURCES = [
-  ...GENERAL_AUDIENCE_SOURCES,
-  SURVEY_AUDIENCE_SOURCE,
-  DRAFT_REMINDER_AUDIENCE_SOURCE,
-] as const;
+export const AUDIENCE_SOURCES = [...GENERAL_AUDIENCE_SOURCES, SURVEY_AUDIENCE_SOURCE] as const;
 export const SURVEY_COHORT_KEYS = ['C1', 'C2', 'C3'] as const;
 export const SURVEY_AUDIENCE_MODES = ['invite', 'reminder'] as const;
 export const CAMPAIGN_CHANNELS = ['email'] as const;
@@ -119,16 +114,6 @@ export const createCampaignSchema = z
         code: 'custom',
         path: ['audienceSource'],
         message: "Survey fields require audienceSource 'survey_invitations'.",
-      });
-    }
-    if (
-      data.audienceSource === DRAFT_REMINDER_AUDIENCE_SOURCE &&
-      JSON.stringify(data.userNotificationPreferences ?? []) !== JSON.stringify(['news'])
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['userNotificationPreferences'],
-        message: 'Unfinished story reminders require the explicit news email preference only.',
       });
     }
   });

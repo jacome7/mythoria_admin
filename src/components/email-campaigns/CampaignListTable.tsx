@@ -15,7 +15,6 @@ const AUDIENCE_LABELS: Record<CampaignAudienceSource, string> = {
   leads: 'Leads',
   both: 'Both',
   survey_invitations: 'Survey',
-  unfinished_story_drafts: 'Unfinished drafts',
 };
 
 interface CampaignListTableProps {

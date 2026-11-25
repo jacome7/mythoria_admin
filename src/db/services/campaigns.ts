@@ -26,8 +26,7 @@ import type {
   MarketingCampaign,
   MarketingCampaignAsset,
 } from '../schema/campaigns';
-import { DRAFT_REMINDER_AUDIENCE_SOURCE, SURVEY_AUDIENCE_SOURCE } from '@/lib/schemas/campaigns';
-import { buildUnfinishedDraftReminderAssets } from '@/lib/campaigns/unfinished-draft-assets';
+import { SURVEY_AUDIENCE_SOURCE } from '@/lib/schemas/campaigns';
 import {
   findMissingSurveyAssetVariables,
   SurveyAssetValidationError,
@@ -238,42 +237,30 @@ export const campaignService = {
   async createCampaign(data: CreateCampaignInput, adminEmail: string): Promise<MarketingCampaign> {
     const db = getBackofficeDb();
     const isSurvey = data.audienceSource === SURVEY_AUDIENCE_SOURCE;
-    const isDraftReminder = data.audienceSource === DRAFT_REMINDER_AUDIENCE_SOURCE;
     // Survey campaigns never carry attachments or a filter tree (audience = survey invitations).
-    const attachmentType = isSurvey || isDraftReminder ? 'none' : (data.attachmentType ?? 'none');
-    return db.transaction(async (tx) => {
-      const [campaign] = await tx
-        .insert(marketingCampaigns)
-        .values({
-          title: data.title,
-          description: data.description ?? null,
-          status: 'draft',
-          audienceSource: data.audienceSource,
-          userNotificationPreferences: data.userNotificationPreferences ?? null,
-          filterTree: isSurvey || isDraftReminder ? null : (data.filterTree ?? null),
-          surveyStudyId: isSurvey ? (data.surveyStudyId ?? null) : null,
-          surveyCohortKey: isSurvey ? (data.surveyCohortKey ?? null) : null,
-          surveyAudienceMode: isSurvey ? (data.surveyAudienceMode ?? null) : null,
-          dailySendLimit: data.dailySendLimit ?? null,
-          attachmentType,
-          skipPrintQa: attachmentType === 'selfprint' ? (data.skipPrintQa ?? false) : false,
-          startAt: data.startAt ? new Date(data.startAt) : null,
-          endAt: data.endAt ? new Date(data.endAt) : null,
-          createdBy: adminEmail,
-          updatedBy: adminEmail,
-        })
-        .returning();
-      if (campaign && isDraftReminder) {
-        await tx.insert(marketingCampaignAssets).values(
-          buildUnfinishedDraftReminderAssets().map((asset) => ({
-            campaignId: campaign.id,
-            channel: 'email' as const,
-            ...asset,
-          })),
-        );
-      }
-      return campaign;
-    });
+    const attachmentType = isSurvey ? 'none' : (data.attachmentType ?? 'none');
+    const [campaign] = await db
+      .insert(marketingCampaigns)
+      .values({
+        title: data.title,
+        description: data.description ?? null,
+        status: 'draft',
+        audienceSource: data.audienceSource,
+        userNotificationPreferences: data.userNotificationPreferences ?? null,
+        filterTree: isSurvey ? null : (data.filterTree ?? null),
+        surveyStudyId: isSurvey ? (data.surveyStudyId ?? null) : null,
+        surveyCohortKey: isSurvey ? (data.surveyCohortKey ?? null) : null,
+        surveyAudienceMode: isSurvey ? (data.surveyAudienceMode ?? null) : null,
+        dailySendLimit: data.dailySendLimit ?? null,
+        attachmentType,
+        skipPrintQa: attachmentType === 'selfprint' ? (data.skipPrintQa ?? false) : false,
+        startAt: data.startAt ? new Date(data.startAt) : null,
+        endAt: data.endAt ? new Date(data.endAt) : null,
+        createdBy: adminEmail,
+        updatedBy: adminEmail,
+      })
+      .returning();
+    return campaign;
   },
 
   async getCampaign(
@@ -407,7 +394,6 @@ export const campaignService = {
       );
     }
     const isSurvey = existing.audienceSource === SURVEY_AUDIENCE_SOURCE;
-    const isDraftReminder = existing.audienceSource === DRAFT_REMINDER_AUDIENCE_SOURCE;
 
     const updateData: Record<string, unknown> = {
       updatedBy: adminEmail,
@@ -417,29 +403,19 @@ export const campaignService = {
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
     // Survey campaigns keep their audience source/filter/attachment: the audience is the study cohort.
-    if (data.audienceSource !== undefined && !isSurvey && !isDraftReminder)
+    if (data.audienceSource !== undefined && !isSurvey)
       updateData.audienceSource = data.audienceSource;
-    if (data.userNotificationPreferences !== undefined && isDraftReminder) {
-      if (JSON.stringify(data.userNotificationPreferences) !== JSON.stringify(['news'])) {
-        throw new Error(
-          'Unfinished story reminders require the explicit news email preference only.',
-        );
-      }
-    } else if (data.userNotificationPreferences !== undefined) {
+    if (data.userNotificationPreferences !== undefined)
       updateData.userNotificationPreferences = data.userNotificationPreferences;
-    }
-    if (data.filterTree !== undefined && !isSurvey && !isDraftReminder)
-      updateData.filterTree = data.filterTree;
+    if (data.filterTree !== undefined && !isSurvey) updateData.filterTree = data.filterTree;
     if (data.dailySendLimit !== undefined) updateData.dailySendLimit = data.dailySendLimit;
-    if (data.attachmentType !== undefined && !isSurvey && !isDraftReminder)
+    if (data.attachmentType !== undefined && !isSurvey)
       updateData.attachmentType = data.attachmentType;
-    if (data.skipPrintQa !== undefined && !isSurvey && !isDraftReminder)
-      updateData.skipPrintQa = data.skipPrintQa;
+    if (data.skipPrintQa !== undefined && !isSurvey) updateData.skipPrintQa = data.skipPrintQa;
     // Coerce skipPrintQa to false when the effective attachmentType isn't 'selfprint'.
     const effectiveAttachmentType = data.attachmentType;
     if (
       !isSurvey &&
-      !isDraftReminder &&
       effectiveAttachmentType !== undefined &&
       effectiveAttachmentType !== 'selfprint'
     ) {
@@ -1111,17 +1087,11 @@ export const campaignService = {
     let userCount = 0;
     let leadCount = 0;
 
-    if (
-      audienceSource === 'users' ||
-      audienceSource === 'both' ||
-      audienceSource === DRAFT_REMINDER_AUDIENCE_SOURCE
-    ) {
+    if (audienceSource === 'users' || audienceSource === 'both') {
       const preferences =
-        audienceSource === DRAFT_REMINDER_AUDIENCE_SOURCE
-          ? ['news']
-          : userNotificationPreferences && userNotificationPreferences.length > 0
-            ? userNotificationPreferences
-            : DEFAULT_USER_NOTIFICATION_PREFERENCES;
+        userNotificationPreferences && userNotificationPreferences.length > 0
+          ? userNotificationPreferences
+          : DEFAULT_USER_NOTIFICATION_PREFERENCES;
 
       if (preferences.length === 0) {
         userCount = 0;
@@ -1131,17 +1101,6 @@ export const campaignService = {
           `notification_preference IN (${preferences.map((value) => `'${String(value).replace(/'/g, "''")}'`).join(', ')})`,
           `email_status NOT IN ('unsub', 'hard_bounce')`,
         ];
-
-        if (audienceSource === DRAFT_REMINDER_AUDIENCE_SOURCE) {
-          userConditions.push('account_closed_at IS NULL');
-          userConditions.push(`EXISTS (
-            SELECT 1 FROM stories s
-            WHERE s.author_id = authors.author_id
-              AND s.status IN ('draft', 'writing')
-              AND s.updated_at <= now() - interval '24 hours'
-              AND (s.story_generation_status IS NULL OR s.story_generation_status NOT IN ('queued', 'running', 'completed'))
-          )`);
-        }
 
         // Apply filter tree
         const filterSql = buildFilterSql(filterTree, 'users');
