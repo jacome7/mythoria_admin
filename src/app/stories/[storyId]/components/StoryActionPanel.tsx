@@ -120,6 +120,11 @@ export function StoryActionPanel({
   const recommendedVoice = getRecommendedVoice(getTTSProvider(), story.targetAudience);
 
   const audioEndpoint = `/api/admin/stories/${storyId}/audio`;
+  const premiumAudio = audiobookOnly ? story.premiumAudio : undefined;
+  const fullAudiobookUrl =
+    premiumAudio && 'duration' in premiumAudio
+      ? `${audioEndpoint}/0?runId=${premiumAudio.runId}`
+      : undefined;
   const audioChapters = useMemo(
     () => getAudioChapters(story.audiobookUri, chapters, FALLBACK_TITLE),
     [story.audiobookUri, chapters],
@@ -469,7 +474,7 @@ export function StoryActionPanel({
               <p className="text-lg font-semibold">Listen & QA</p>
               <p className="text-sm text-base-content/70">
                 {audiobookOnly
-                  ? 'Listen to the narrated pages of this edition.'
+                  ? 'Listen to the narration of this edition.'
                   : 'Stream each chapter right here. Playback proxies every audio file through the admin API.'}
               </p>
             </div>
@@ -495,16 +500,30 @@ export function StoryActionPanel({
                 <div className="flex items-center justify-center py-6">
                   <span className="loading loading-spinner loading-md" />
                 </div>
-              ) : audiobookOnly && story.premiumAudio ? (
+              ) : fullAudiobookUrl ? (
+                <div className="grid gap-2">
+                  <audio
+                    key={fullAudiobookUrl}
+                    controls
+                    preload="none"
+                    aria-label="Full audiobook"
+                    className="w-full max-w-lg"
+                    src={fullAudiobookUrl}
+                  />
+                  <a className="link w-fit" href={`${fullAudiobookUrl}&download=1`} download>
+                    Download audiobook
+                  </a>
+                </div>
+              ) : premiumAudio && 'tracks' in premiumAudio ? (
                 <ul className="space-y-3">
-                  {story.premiumAudio.tracks.map(({ pageNumber }, index) => (
+                  {premiumAudio.tracks.map(({ pageNumber }, index) => (
                     <li key={pageNumber} className="grid gap-1">
                       <span>Page {pageNumber}</span>
                       <audio
                         controls
                         preload="none"
                         aria-label={`Page ${pageNumber}`}
-                        src={`${audioEndpoint}/${index}?runId=${story.premiumAudio?.runId}`}
+                        src={`${audioEndpoint}/${index}?runId=${premiumAudio.runId}`}
                       />
                     </li>
                   ))}

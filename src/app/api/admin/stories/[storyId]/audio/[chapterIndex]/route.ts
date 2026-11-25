@@ -38,11 +38,24 @@ export async function GET(
         premium.state === 'published' && story.status === 'published'
           ? premiumAudiobookMetadata(premium.revision, story.audiobookUri)
           : null;
-      const runId = new URL(request.url).searchParams.get('runId');
-      if (!metadata || runId !== metadata.runId || !metadata.tracks[chapterIdx]) {
-        return new NextResponse(null, { status: 404 });
+      const { searchParams } = new URL(request.url);
+      const runId = searchParams.get('runId');
+      const hasTrack =
+        metadata &&
+        ('tracks' in metadata ? Boolean(metadata.tracks[chapterIdx]) : chapterIdx === 0);
+      if (!metadata || runId !== metadata.runId || !hasTrack) {
+        return new NextResponse(null, {
+          status: 404,
+          headers: { 'Cache-Control': 'private, no-store' },
+        });
       }
-      return await getPremiumAudioTrack(storyId, runId, chapterIdx, request.headers.get('range'));
+      return await getPremiumAudioTrack(
+        storyId,
+        runId,
+        chapterIdx,
+        request,
+        'duration' in metadata && searchParams.get('download') === '1',
+      );
     }
 
     if (!story.audiobookUri || typeof story.audiobookUri !== 'object') {

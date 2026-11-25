@@ -105,6 +105,29 @@ describe('StoryDetailPage', () => {
     expect(screen.queryByText('Not available')).not.toBeInTheDocument();
   });
 
+  it('plays and downloads the complete premium audiobook at index zero', () => {
+    const runId = 'd65bb5f3-204a-479d-b4df-9ee71f6c513e';
+    const revision = 'af14c317-c9c8-4922-87e2-67983cd2ae81';
+    mockUseStoryDetail.mockReturnValue({
+      story: {
+        ...story,
+        premiumEdition: { state: 'published', revision },
+        premiumAudio: { runId, duration: 55 },
+      },
+      isLoading: false,
+      setStory: jest.fn(),
+      fetchStory: jest.fn().mockResolvedValue(undefined),
+    });
+
+    render(<StoryDetailPage />);
+    const audioUrl = `/api/admin/stories/${story.storyId}/audio/0?runId=${runId}`;
+    expect(screen.getByLabelText('Full audiobook')).toHaveAttribute('src', audioUrl);
+    expect(screen.getByRole('link', { name: 'Download audiobook' })).toHaveAttribute(
+      'href',
+      `${audioUrl}&download=1`,
+    );
+  });
+
   it('includes the legacy ticket from the story link when sending print', async () => {
     const previousUrl = window.location.href;
     const previousFetch = globalThis.fetch;
