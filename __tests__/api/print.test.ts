@@ -37,6 +37,25 @@ beforeEach(() => {
   jest.mocked(callPrintDomain).mockResolvedValue({ status: 'proof_ready' });
 });
 
+it('uses the configured Admin origin when Cloud Run supplies an internal request URL', async () => {
+  const adminOrigin = 'https://admin.example.com';
+  const env = jest.replaceProperty(process, 'env', { ...process.env, NEXTAUTH_URL: adminOrigin });
+  const request = (origin: string) =>
+    new Request('http://localhost:8080/api/admin/print', {
+      method: 'POST',
+      headers: { origin },
+      body: JSON.stringify({ operation: 'getConfig' }),
+    });
+
+  try {
+    expect((await POST(request(adminOrigin))).status).toBe(200);
+    expect((await POST(request('http://localhost:8080'))).status).toBe(403);
+    expect(callPrintDomain).toHaveBeenCalledTimes(1);
+  } finally {
+    env.restore();
+  }
+});
+
 it('requires explicit inbox and quote confirmation before submitting', async () => {
   const response = await POST(
     req({

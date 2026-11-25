@@ -1,3 +1,4 @@
+import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getMythoriaDb } from '@/db';
@@ -56,8 +57,7 @@ const reservationSchema = z.object({
 export async function POST(request: Request) {
   const actor = await authenticateAdmin();
   if ('error' in actor) return actor.error;
-  const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin)
+  if (!hasTrustedAdminOrigin(request))
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success)

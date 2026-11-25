@@ -1,3 +1,4 @@
+import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { z } from 'zod';
 import { authenticateAdmin } from '@/lib/api-helpers';
 import { logAdminAudit } from '@/lib/audit';
@@ -43,8 +44,7 @@ type Context = { params: Promise<{ storyId: string }> };
 export async function POST(request: Request, { params }: Context) {
   const actor = await authenticateAdmin();
   if ('error' in actor) return actor.error;
-  const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin)
+  if (!hasTrustedAdminOrigin(request))
     return Response.json({ error: 'Forbidden' }, { status: 403, headers });
 
   const story = z

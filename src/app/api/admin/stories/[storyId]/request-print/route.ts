@@ -1,3 +1,4 @@
+import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getBackofficeDb, getMythoriaDb } from '@/db';
@@ -25,8 +26,7 @@ export async function POST(
   try {
     const actor = await authenticateAdmin();
     if ('error' in actor) return actor.error;
-    const origin = request.headers.get('origin');
-    if (origin && origin !== new URL(request.url).origin)
+    if (!hasTrustedAdminOrigin(request))
       return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const { storyId } = await params;

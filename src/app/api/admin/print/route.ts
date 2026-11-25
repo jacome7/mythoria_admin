@@ -1,3 +1,4 @@
+import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { z } from 'zod';
 import { authenticateAdmin } from '@/lib/api-helpers';
 import { logAdminAudit } from '@/lib/audit';
@@ -92,8 +93,7 @@ const requestSchema = z.discriminatedUnion('operation', [
 export async function POST(request: Request) {
   const actor = await authenticateAdmin();
   if ('error' in actor) return actor.error;
-  const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin)
+  if (!hasTrustedAdminOrigin(request))
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: 'Invalid print command' }, { status: 400 });
