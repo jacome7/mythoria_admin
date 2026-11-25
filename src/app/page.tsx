@@ -221,8 +221,8 @@ export default function AdminPortal() {
             <GrossMarginChart range={chartRange} onRangeChange={setChartRange} />
           ) : (
             <ChartPanelSkeleton
-              title="Revenue vs AI costs"
-              description="Compare sales against AI spend and monitor gross margin."
+              title="Revenue vs costs"
+              description="Compare sales against AI and printing spend and monitor gross margin."
             />
           )}
         </div>

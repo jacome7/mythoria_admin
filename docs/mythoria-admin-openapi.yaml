@@ -1972,6 +1972,86 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/admin/printing-costs:
+    get:
+      tags: [Print Requests]
+      summary: Get tax-exclusive Lulu job costs in EUR
+      parameters:
+        - $ref: '#/components/parameters/PrintingCostRange'
+      responses:
+        '200':
+          description: Totals and UTC buckets by Lulu job creation date.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [range, granularity, currency, buckets, totalCost, pendingConversionCount, pendingPriceCount]
+                properties:
+                  range:
+                    type: string
+                    enum: [7d, 30d, 90d, forever]
+                  granularity:
+                    type: string
+                    enum: [day, month]
+                  currency:
+                    const: EUR
+                  totalCost:
+                    type: number
+                  pendingConversionCount:
+                    type: integer
+                  pendingPriceCount:
+                    type: integer
+                  buckets:
+                    type: array
+                    items:
+                      type: object
+                      required: [date, totalCost]
+                      properties:
+                        date:
+                          type: string
+                          format: date-time
+                        totalCost:
+                          type: number
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/admin/printing-costs/requests:
+    get:
+      tags: [Print Requests]
+      summary: List print requests with supplier costs
+      parameters:
+        - $ref: '#/components/parameters/PrintingCostRange'
+        - $ref: '#/components/parameters/PageParam'
+      responses:
+        '200':
+          description: Paginated requests by request date, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requests, page, pageSize, total]
+                properties:
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+                  total:
+                    type: integer
+                  requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PrintingCostRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/admin/print-requests:
     get:
       tags: [Print Requests]
@@ -2681,6 +2761,13 @@ components:
       bearerFormat: API Key
       description: Bearer token carrying the same `ADMIN_API_KEY` value.
   parameters:
+    PrintingCostRange:
+      name: range
+      in: query
+      schema:
+        type: string
+        enum: [7d, 30d, 90d, forever]
+        default: 30d
     PeriodParam:
       name: period
       in: query
@@ -4100,6 +4187,45 @@ components:
           format: date-time
           nullable: true
       required: [id, storyId, authorId, pdfUrl, status, printProviderId, printingOptions, requestedAt]
+    PrintingCostRequest:
+      type: object
+      required: [id, requestedAt, title, copies, provider, status, vendorStatus, ticketId, cost]
+      properties:
+        id:
+          type: string
+          format: uuid
+        requestedAt:
+          type: string
+          format: date-time
+        title:
+          type: [string, 'null']
+        copies:
+          type: [integer, 'null']
+        provider:
+          type: string
+          enum: [lulu, manual, legacy]
+          description: Manual and legacy request costs are not tracked.
+        sandbox:
+          type: boolean
+          description: True for requests that use the Lulu sandbox. These costs are untracked.
+        status:
+          type: string
+        vendorStatus:
+          type: [string, 'null']
+        ticketId:
+          type: [string, 'null']
+          format: uuid
+        cost:
+          type: [object, 'null']
+          description: Lulu cost excluding tax; null means a price has not been recorded.
+          required: [amount, currency, amountEur]
+          properties:
+            amount:
+              type: string
+            currency:
+              type: string
+            amountEur:
+              type: [string, 'null']
     PrintRequestListResponse:
       type: object
       properties:

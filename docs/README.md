@@ -23,6 +23,7 @@ We apply the Diátaxis model so that each document answers a single type of ques
 ## Reference (lookup)
 
 - [Email delivery](email-delivery.md): stable notification events, response states and cross-service rollout.
+- [Print fulfillment operations](print-fulfillment.md): provider settings, ticket controls, manual dispatch, and printing cost reporting.
 
 | Doc                                        | Scope                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------ |

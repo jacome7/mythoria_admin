@@ -7,6 +7,7 @@ import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/uti
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import type { TicketMetadata, TicketPaymentPackage } from '@/lib/ticketing/types';
+import { PrintFulfillment } from '@/components/PrintFulfillment';
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 const EURO_FORMATTER = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' });
@@ -569,6 +570,7 @@ export default function TicketDetailPage() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title text-lg">Print Request Details</h3>
+          {metadata.printRequestId && <PrintFulfillment ticketId={ticketId} />}
           <div className="space-y-4">
             {/* User Information */}
             <div>

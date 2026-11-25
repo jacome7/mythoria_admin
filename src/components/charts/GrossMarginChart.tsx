@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
   CartesianGrid,
   ComposedChart,
   Line,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -31,10 +32,19 @@ interface AiUsageStatsResponse {
   dailyUsage: DailyUsagePoint[];
 }
 
+interface PrintingCostsResponse {
+  granularity: RegistrationGranularity;
+  currency: string;
+  buckets: DailyUsagePoint[];
+  pendingConversionCount: number;
+  pendingPriceCount: number;
+}
+
 type ChartDatum = {
   label: string;
   revenue: number;
   aiCost: number;
+  printingCost: number;
   margin: number;
   date: Date;
 };
@@ -49,6 +59,7 @@ const RANGE_OPTIONS: { label: string; value: RegistrationRange }[] = [
 const COLORS = {
   revenue: '#2563eb',
   aiCost: '#ef4444',
+  printingCost: '#f97316',
   margin: '#10b981',
   grid: 'rgba(148, 163, 184, 0.3)',
 };
@@ -65,6 +76,8 @@ export default function GrossMarginChart({ onReady, range, onRangeChange }: Gros
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [granularity, setGranularity] = useState<RegistrationGranularity>('day');
+  const [pendingConversionCount, setPendingConversionCount] = useState(0);
+  const [pendingPriceCount, setPendingPriceCount] = useState(0);
 
   const currencyFormatter = useMemo(
     () =>
@@ -76,55 +89,78 @@ export default function GrossMarginChart({ onReady, range, onRangeChange }: Gros
       }),
     [currencyCode],
   );
-
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const [revenueResponse, aiUsageResponse] = await Promise.all([
-        fetch(`/api/admin/revenue/snapshot?range=${range}`),
-        fetch(`/api/ai-usage/stats?period=${range}`),
-      ]);
-
-      if (!revenueResponse.ok) {
-        throw new Error(`Failed to load revenue (${revenueResponse.status})`);
-      }
-
-      if (!aiUsageResponse.ok) {
-        throw new Error(`Failed to load AI usage (${aiUsageResponse.status})`);
-      }
-
-      const revenuePayload: RevenueSnapshotResponse = await revenueResponse.json();
-      const aiUsagePayload: AiUsageStatsResponse = await aiUsageResponse.json();
-
-      const mergedData = mergeData(revenuePayload, aiUsagePayload);
-      setChartData(mergedData);
-      setCurrencyCode((revenuePayload.currency ?? 'EUR').toUpperCase());
-      setGranularity(revenuePayload.granularity ?? 'day');
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setChartData([]);
-    } finally {
-      setIsLoading(false);
-      onReady?.();
-    }
-  }, [onReady, range]);
+  const preciseCurrencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [currencyCode],
+  );
 
   useEffect(() => {
+    const controller = new AbortController();
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const options = { signal: controller.signal, cache: 'no-store' as RequestCache };
+        const [revenueResponse, aiUsageResponse, printingResponse] = await Promise.all([
+          fetch(`/api/admin/revenue/snapshot?range=${range}`, options),
+          fetch(`/api/ai-usage/stats?period=${range}`, options),
+          fetch(`/api/admin/printing-costs?range=${range}`, options),
+        ]);
+
+        if (!revenueResponse.ok)
+          throw new Error(`Failed to load revenue (${revenueResponse.status})`);
+        if (!aiUsageResponse.ok)
+          throw new Error(`Failed to load AI usage (${aiUsageResponse.status})`);
+        if (!printingResponse.ok) {
+          throw new Error(`Failed to load printing costs (${printingResponse.status})`);
+        }
+
+        const [revenue, aiUsage, printing] = await Promise.all([
+          revenueResponse.json() as Promise<RevenueSnapshotResponse>,
+          aiUsageResponse.json() as Promise<AiUsageStatsResponse>,
+          printingResponse.json() as Promise<PrintingCostsResponse>,
+        ]);
+        if (controller.signal.aborted) return;
+
+        setChartData(mergeData(revenue, aiUsage, printing));
+        setCurrencyCode((revenue.currency || 'EUR').toUpperCase());
+        setGranularity(revenue.granularity ?? 'day');
+        setPendingConversionCount(printing.pendingConversionCount ?? 0);
+        setPendingPriceCount(printing.pendingPriceCount ?? 0);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        console.error(err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setChartData([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+          onReady?.();
+        }
+      }
+    };
+
     void fetchData();
-  }, [fetchData]);
+    return () => controller.abort();
+  }, [onReady, range]);
 
   const showEmptyState = !isLoading && chartData.length === 0;
+  const incompleteCostCount = pendingConversionCount + pendingPriceCount;
 
   return (
-    <section className="w-full rounded-2xl border border-base-200 bg-base-100 p-2 sm:p-6 shadow-sm">
+    <section className="w-full rounded-2xl border border-base-200 bg-base-100 p-2 shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Revenue vs AI costs</h2>
+          <h2 className="text-xl font-semibold">Revenue vs costs</h2>
           <p className="text-sm text-base-content/70">
-            Revenue bars stay positive, AI spend is plotted below the axis, and the margin line
-            shows gross profit.
+            AI and printing costs stack below zero. The margin line subtracts both from revenue.
+            Printing costs exclude tax and use verified production job dates in UTC.
           </p>
         </div>
         <div className="join">
@@ -173,32 +209,28 @@ export default function GrossMarginChart({ onReady, range, onRangeChange }: Gros
                   <Tooltip
                     content={
                       <CustomTooltip
-                        currencyFormatter={currencyFormatter}
+                        currencyFormatter={preciseCurrencyFormatter}
                         granularity={granularity}
                       />
                     }
-                    cursor={{ fill: 'rgba(59,130,246,0.08)' }}
                   />
+                  <Legend />
+                  <Bar dataKey="revenue" name="Revenue" fill={COLORS.revenue} />
+                  <Bar dataKey="aiCost" name="AI cost" stackId="costs" fill={COLORS.aiCost} />
                   <Bar
-                    dataKey="revenue"
-                    name="Revenue"
-                    fill={COLORS.revenue}
-                    radius={[6, 6, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="aiCost"
-                    name="AI usage"
-                    fill={COLORS.aiCost}
-                    radius={[0, 0, 6, 6]}
+                    dataKey="printingCost"
+                    name="Printing cost"
+                    stackId="costs"
+                    fill={COLORS.printingCost}
                   />
                   <Line
                     type="monotone"
                     dataKey="margin"
-                    name="Margin"
+                    name="Gross margin"
                     stroke={COLORS.margin}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={false}
+                    activeDot={{ r: 4 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -206,13 +238,24 @@ export default function GrossMarginChart({ onReady, range, onRangeChange }: Gros
           </MeasuredChartFrame>
         )}
       </div>
+      {incompleteCostCount > 0 && (
+        <p className="mt-3 text-sm text-warning" role="status">
+          EUR printing costs are incomplete: {pendingConversionCount.toLocaleString()} orders await
+          currency conversion and {pendingPriceCount.toLocaleString()} await a price.
+        </p>
+      )}
     </section>
   );
 }
 
-function mergeData(revenue: RevenueSnapshotResponse, aiUsage: AiUsageStatsResponse): ChartDatum[] {
+function mergeData(
+  revenue: RevenueSnapshotResponse,
+  aiUsage: AiUsageStatsResponse,
+  printing: PrintingCostsResponse,
+): ChartDatum[] {
   const revenueMap = new Map<string, NormalizedRevenueBucket>();
   const aiCostMap = new Map<string, DailyUsagePoint>();
+  const printingCostMap = new Map<string, DailyUsagePoint>();
   const dateLookup = new Map<string, Date>();
 
   revenue.buckets.forEach((bucket) => {
@@ -220,34 +263,34 @@ function mergeData(revenue: RevenueSnapshotResponse, aiUsage: AiUsageStatsRespon
     revenueMap.set(key, bucket);
     dateLookup.set(key, new Date(bucket.date));
   });
-
-  aiUsage.dailyUsage.forEach((usage) => {
-    const key = formatDateKey(usage.date, aiUsage.granularity);
-    aiCostMap.set(key, usage);
-    if (!dateLookup.has(key)) {
-      dateLookup.set(key, new Date(usage.date));
-    }
+  aiUsage.dailyUsage.forEach((bucket) => {
+    const key = formatDateKey(bucket.date, aiUsage.granularity);
+    aiCostMap.set(key, bucket);
+    if (!dateLookup.has(key)) dateLookup.set(key, new Date(bucket.date));
+  });
+  printing.buckets.forEach((bucket) => {
+    const key = formatDateKey(bucket.date, printing.granularity);
+    printingCostMap.set(key, bucket);
+    if (!dateLookup.has(key)) dateLookup.set(key, new Date(bucket.date));
   });
 
-  const keys = Array.from(new Set([...revenueMap.keys(), ...aiCostMap.keys()]));
-  keys.sort((a, b) => {
-    const dateA = dateLookup.get(a)?.getTime() ?? 0;
-    const dateB = dateLookup.get(b)?.getTime() ?? 0;
-    return dateA - dateB;
-  });
+  const keys = Array.from(
+    new Set([...revenueMap.keys(), ...aiCostMap.keys(), ...printingCostMap.keys()]),
+  );
+  keys.sort((a, b) => (dateLookup.get(a)?.getTime() ?? 0) - (dateLookup.get(b)?.getTime() ?? 0));
 
   return keys.map((key) => {
     const revenueBucket = revenueMap.get(key);
-    const aiUsageBucket = aiCostMap.get(key);
     const revenueValue = revenueBucket?.revenue ?? 0;
-    const aiCostValue = aiUsageBucket?.totalCost ?? 0;
+    const aiCostValue = aiCostMap.get(key)?.totalCost ?? 0;
+    const printingCostValue = printingCostMap.get(key)?.totalCost ?? 0;
     const date = dateLookup.get(key) ?? new Date();
-
     return {
       label: revenueBucket?.label ?? formatFallbackLabel(date, revenue.granularity),
       revenue: revenueValue,
       aiCost: -aiCostValue,
-      margin: revenueValue - aiCostValue,
+      printingCost: -printingCostValue,
+      margin: revenueValue - aiCostValue - printingCostValue,
       date,
     };
   });
@@ -257,11 +300,8 @@ function formatDateKey(value: string, granularity: RegistrationGranularity) {
   const date = new Date(value);
   const year = date.getUTCFullYear();
   const month = `${date.getUTCMonth() + 1}`.padStart(2, '0');
-  if (granularity === 'month') {
-    return `${year}-${month}`;
-  }
-  const day = `${date.getUTCDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  if (granularity === 'month') return `${year}-${month}`;
+  return `${year}-${month}-${`${date.getUTCDate()}`.padStart(2, '0')}`;
 }
 
 function formatFallbackLabel(date: Date, granularity: RegistrationGranularity) {
@@ -318,7 +358,8 @@ function CustomTooltip({
       <p className="font-semibold">{formatFullDate(point.date.toISOString(), granularity)}</p>
       <p>Revenue: {currencyFormatter.format(point.revenue)}</p>
       <p>AI cost: {currencyFormatter.format(Math.abs(point.aiCost))}</p>
-      <p className="font-semibold">Margin: {currencyFormatter.format(point.margin)}</p>
+      <p>Printing cost: {currencyFormatter.format(Math.abs(point.printingCost))}</p>
+      <p className="font-semibold">Gross margin: {currencyFormatter.format(point.margin)}</p>
     </div>
   );
 }

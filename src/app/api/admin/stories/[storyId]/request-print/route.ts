@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { getMythoriaDb } from '@/db';
+import { getBackofficeDb, getMythoriaDb } from '@/db';
 import { partners } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { tickets } from '@/db/schema/tickets';
+import { and, eq, sql } from 'drizzle-orm';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 import { auth } from '@/auth';
 import { proxyToNotificationEngine } from '@/lib/api-helpers';
@@ -34,6 +35,23 @@ export async function POST(
     if (!storyId) {
       return Response.json({ error: 'Story ID is required' }, { status: 400 });
     }
+
+    const linked = await getBackofficeDb()
+      .select({ id: tickets.id })
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.category, 'print_request'),
+          sql`${tickets.metadata}->>'storyId' = ${storyId}`,
+          sql`${tickets.metadata}->>'printRequestId' is not null`,
+        ),
+      )
+      .limit(1);
+    if (linked.length)
+      return Response.json(
+        { error: 'This story has a linked paid print order. Handle fulfillment from its ticket.' },
+        { status: 409 },
+      );
 
     const body = await request.json();
     const parsed = requestPrintSchema.safeParse(body);

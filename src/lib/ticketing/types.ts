@@ -27,6 +27,7 @@ export interface TicketMetadata {
   author?: TicketAuthorMetadata;
   creditPackages?: TicketPaymentPackage[];
   storyId?: string;
+  printRequestId?: string;
   shippingAddress?: Record<string, unknown>;
   printFormat?: string;
   numberOfCopies?: number;

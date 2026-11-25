@@ -59,6 +59,7 @@ export interface CreateContactTicketData {
 
 export interface CreatePrintTicketData {
   storyId: string;
+  printRequestId?: string;
   userId?: string;
   shippingAddress?: Record<string, unknown>;
   printFormat?: string;
@@ -260,6 +261,51 @@ export class TicketService {
    * Create ticket from print request
    */
   static async createPrintTicket(data: CreatePrintTicketData): Promise<Ticket> {
+    if (data.printRequestId) {
+      const db = getBackofficeDb();
+      const ticket = await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${data.printRequestId}, 0))`,
+        );
+        const [existing] = await tx
+          .select()
+          .from(tickets)
+          .where(
+            and(
+              eq(tickets.category, 'print_request'),
+              sql`${tickets.metadata}->>'printRequestId' = ${data.printRequestId}`,
+            ),
+          )
+          .limit(1);
+        if (existing) {
+          const metadata = existing.metadata as TicketMetadata | null;
+          if (metadata?.storyId !== data.storyId || existing.userId !== (data.userId || null)) {
+            throw new Error('Print request is linked to a different ticket owner or story');
+          }
+          return existing;
+        }
+        const [ticket] = await tx
+          .insert(tickets)
+          .values({
+            userId: data.userId || null,
+            category: 'print_request',
+            subject: `Print Request for Story ${data.storyId}`,
+            description: `User requested print for story ID: ${data.storyId}`,
+            metadata: {
+              printRequestId: data.printRequestId,
+              storyId: data.storyId,
+              shippingAddress: data.shippingAddress,
+              printFormat: data.printFormat || 'standard',
+              numberOfCopies: data.numberOfCopies ?? 1,
+            },
+          })
+          .returning();
+        return ticket;
+      });
+      // Paid print orders have a separate, idempotent proof email from the
+      // fulfillment service. Avoid a premature duplicate ticket notification.
+      return ticket;
+    }
     return this.createTicket({
       userId: data.userId,
       category: 'print_request',
@@ -573,7 +619,12 @@ export class TicketService {
       .returning();
 
     if (updatedTicket) {
-      if (!options?.suppressNotification) {
+      // A ticket closing does not establish that a paid print order arrived.
+      // Linked fulfillment orders use their own delivery state and proof email.
+      const metadata = updatedTicket.metadata as TicketMetadata | null;
+      const linkedPrintOrder =
+        updatedTicket.category === 'print_request' && !!metadata?.printRequestId;
+      if (!options?.suppressNotification && !linkedPrintOrder) {
         await this.triggerNotification(ticketId, status);
       }
 

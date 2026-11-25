@@ -58,6 +58,12 @@ MCP transport update (2026-10-27): `POST /api/mcp` accepts authenticated JSON-RP
 | Notifications | `GET /api/mail-marketing/*` | Proxy routes for notification-engine APIs (campaign controls, stats). |
 | Postmaster | `GET /api/postmaster/traffic-stats` | Google Postmaster telemetry for deliverability dashboards. |
 
+### Printing costs
+
+- `GET /api/admin/printing-costs` returns the EUR total, UTC cost buckets, and counts of submitted jobs awaiting a price or conversion. The cost period uses the Lulu job creation date.
+- `GET /api/admin/printing-costs/requests` returns a paginated list ordered by request date, newest first. It accepts `page` starting at 1 and includes the original currency and EUR equivalent when available. Lulu costs exclude tax; manual and legacy costs are not tracked. Lulu sandbox rows are marked `sandbox: true` and their costs are not tracked.
+- Both routes accept `range` values `7d`, `30d`, `90d` and `forever` and default to `30d`. Both require an authorized Admin session.
+
 ### Email campaigns
 
 | Area      | Method + path                                  | Notes                                                                                                        |

@@ -88,8 +88,18 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
+        if (
+          body.orderDetails?.printRequestId !== undefined &&
+          (typeof body.orderDetails.printRequestId !== 'string' ||
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              body.orderDetails.printRequestId,
+            ))
+        ) {
+          return NextResponse.json({ error: 'Invalid print request ID' }, { status: 400 });
+        }
         ticket = await TicketService.createPrintTicket({
           storyId: body.storyId,
+          printRequestId: body.orderDetails?.printRequestId,
           userId: body.userId,
           shippingAddress: body.shippingAddress,
           printFormat: body.printFormat,
