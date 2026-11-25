@@ -28,6 +28,7 @@ export interface TicketMetadata {
   creditPackages?: TicketPaymentPackage[];
   storyId?: string;
   printRequestId?: string;
+  proofOnly?: { revision: string; requestedBy: string };
   shippingAddress?: Record<string, unknown>;
   printFormat?: string;
   numberOfCopies?: number;

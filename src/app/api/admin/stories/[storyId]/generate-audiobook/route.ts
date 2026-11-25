@@ -4,6 +4,8 @@ import { auth } from '@/auth';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 import { adminService } from '@/db/services';
 import { publishAudiobookRequest } from '@/lib/pubsub';
+import { logAdminAudit } from '@/lib/audit';
+import { isPremiumAudiobookPending } from '@/lib/premium-audiobook';
 import {
   getAvailableVoices,
   getRecommendedVoice,
@@ -20,6 +22,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
 
     const isAllowedDomain = ALLOWED_DOMAINS.some((domain) => session.user?.email?.endsWith(domain));
     if (!isAllowedDomain) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const origin = request.headers.get('origin');
+    if (origin && origin !== new URL(request.url).origin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -55,6 +62,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
       );
     }
 
+    const edition = story.premiumEdition;
+    const premiumRevision = edition?.state === 'published' ? edition.revision : undefined;
+    if (
+      edition &&
+      (!premiumRevision ||
+        (body.premiumRevision !== undefined && body.premiumRevision !== premiumRevision))
+    ) {
+      return NextResponse.json(
+        { error: 'The requested premium edition is unavailable' },
+        { status: 409 },
+      );
+    }
+    if (premiumRevision && isPremiumAudiobookPending(premiumRevision, story.audiobookUri)) {
+      return NextResponse.json({ error: 'Narration is already in progress' }, { status: 409 });
+    }
+
     const voice = requestedVoice || getRecommendedVoice(getTTSProvider(), story.targetAudience);
 
     const runId = uuidv4();
@@ -65,14 +88,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
         runId,
         voice,
         includeBackgroundMusic,
+        ...(premiumRevision && { premiumRevision }),
         requestedBy: session.user.email,
         requestedAt: new Date().toISOString(),
         source: 'admin-portal',
       });
 
-      await adminService.updateStory(storyId, {
-        audiobookStatus: 'generating',
-      });
+      if (premiumRevision) {
+        await logAdminAudit({
+          actorEmail: session.user.email,
+          action: 'premium_audiobook.requested',
+          entityType: 'story',
+          entityId: storyId,
+          metadata: { revision: premiumRevision, runId },
+        });
+      } else {
+        await adminService.updateStory(storyId, { audiobookStatus: 'generating' });
+      }
     } catch (error) {
       console.error('Failed to publish audiobook request from admin portal', error);
       return NextResponse.json(

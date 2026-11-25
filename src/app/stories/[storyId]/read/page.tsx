@@ -5,6 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import AdminStoryReader from '../../../../components/AdminStoryReader';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import { getLatestChapterVersions } from '@/lib/storyChapters';
+import AdminPremiumEditionReader, {
+  type AdminPremiumEdition,
+} from '@/components/AdminPremiumEditionReader';
 
 interface Chapter {
   id: string;
@@ -37,12 +40,14 @@ export default function ReadStoryPage() {
 
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [edition, setEdition] = useState<AdminPremiumEdition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStory = useCallback(async () => {
     try {
       setIsLoading(true);
+      setEdition(null);
       const response = await fetch(`/api/admin/stories/${storyId}/chapters`, {
         cache: 'no-store',
       });
@@ -51,6 +56,14 @@ export default function ReadStoryPage() {
         setStory(data.story);
         // Defensive: ensure only latest version per chapterNumber (in case API changes or caching returns older list)
         setChapters(getLatestChapterVersions(data.chapters as Chapter[]));
+      } else if (response.status === 409 && (await response.json()).code === 'premium_edition') {
+        const premiumResponse = await fetch(`/api/admin/stories/${storyId}/premium-edition`, {
+          cache: 'no-store',
+        });
+        const result = await premiumResponse.json();
+        if (!premiumResponse.ok)
+          throw new Error(result.error || 'Could not load the premium edition');
+        setEdition(result.data);
       } else if (response.status === 404) {
         setError('Story not found');
       } else if (response.status === 403) {
@@ -60,7 +73,7 @@ export default function ReadStoryPage() {
       }
     } catch (error) {
       console.error('Error fetching story:', error);
-      setError('Failed to load story');
+      setError(error instanceof Error ? error.message : 'Failed to load story');
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +115,9 @@ export default function ReadStoryPage() {
       </div>
     );
   }
+
+  if (edition)
+    return <AdminPremiumEditionReader key={edition.revision} storyId={storyId} book={edition} />;
 
   if (!story || chapters.length === 0) {
     return (

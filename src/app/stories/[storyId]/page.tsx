@@ -9,6 +9,7 @@ import { StoryHeader } from '@/app/stories/[storyId]/components/StoryHeader';
 import { StoryActions } from '@/app/stories/[storyId]/components/StoryActions';
 import { ChapterTable } from '@/app/stories/[storyId]/components/ChapterTable';
 import { StoryActionPanel } from '@/app/stories/[storyId]/components/StoryActionPanel';
+import { PremiumStoryActions } from '@/app/stories/[storyId]/components/PremiumStoryActions';
 import { GraphicalStyle, getGraphicalStyleLabel } from '@/types/story-enums';
 
 export default function StoryDetailPage() {
@@ -70,8 +71,14 @@ export default function StoryDetailPage() {
                   </span>
                 </div>
                 <div>
-                  <span className="font-semibold">Chapters:</span>
-                  <span className="ml-2">{story.chapterCount}</span>
+                  {story.premiumEdition ? (
+                    <span className="font-semibold">Premium children’s book</span>
+                  ) : (
+                    <>
+                      <span className="font-semibold">Chapters:</span>
+                      <span className="ml-2">{story.chapterCount}</span>
+                    </>
+                  )}
                 </div>
                 <div>
                   <span className="font-semibold">Created:</span>
@@ -127,7 +134,21 @@ export default function StoryDetailPage() {
             </div>
           </div>
 
-          <StoryActionPanel story={story} storyId={storyId} onStoryRefresh={fetchStory} />
+          {story.premiumEdition ? (
+            <>
+              <PremiumStoryActions storyId={storyId} edition={story.premiumEdition} />
+              {story.premiumEdition.state === 'published' && story.status === 'published' && (
+                <StoryActionPanel
+                  story={story}
+                  storyId={storyId}
+                  onStoryRefresh={fetchStory}
+                  audiobookOnly
+                />
+              )}
+            </>
+          ) : (
+            <StoryActionPanel story={story} storyId={storyId} onStoryRefresh={fetchStory} />
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -190,9 +211,11 @@ export default function StoryDetailPage() {
           </div>
         </div>
 
-        <div className="mt-6">
-          <ChapterTable storyId={storyId} />
-        </div>
+        {!story.premiumEdition && (
+          <div className="mt-6">
+            <ChapterTable storyId={storyId} />
+          </div>
+        )}
       </main>
     </div>
   );

@@ -109,6 +109,7 @@ it('releases only the current square proof through Lulu after explicit review an
   const release = await screen.findByRole('button', { name: 'Release square order to Lulu' });
   expect(release).toBeDisabled();
   expect(screen.queryByRole('button', { name: 'Select manual' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Prepare for manual printer' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Send print request' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByLabelText('I checked the inbox and reviewed proof version 3.'));
   fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '20' } });

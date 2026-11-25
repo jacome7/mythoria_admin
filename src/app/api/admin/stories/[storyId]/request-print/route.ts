@@ -70,6 +70,7 @@ export async function POST(
           eq(tickets.category, 'print_request'),
           sql`${tickets.metadata}->>'storyId' = ${storyId.toLowerCase()}`,
           sql`${tickets.metadata}->>'printRequestId' is not null`,
+          sql`${tickets.metadata}->>'proofOnly' is null`,
           legacyTicketCreatedAt ? lte(tickets.createdAt, legacyTicketCreatedAt) : undefined,
         ),
       )

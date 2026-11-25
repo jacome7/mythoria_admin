@@ -6,6 +6,8 @@ type PrintOperation =
   | 'getConfig'
   | 'setConfig'
   | 'hasPaidOrderForStory'
+  | 'getPremiumEdition'
+  | 'createStaffProof'
   | 'get'
   | 'select'
   | 'prepare'
@@ -28,18 +30,23 @@ export class PrintDomainError extends Error {
   }
 }
 
+function printEndpoint() {
+  const audience = process.env.PRINT_INTERNAL_AUDIENCE;
+  const base = process.env.WEBAPP_URL;
+  if (!audience || !base) throw new PrintDomainError(503, 'Print service is not configured');
+  return { audience, url: `${base.replace(/\/$/, '')}/api/internal/print/command` };
+}
+
 export async function callPrintDomain<T>(
   operation: PrintOperation,
   input: unknown,
   email: string,
 ): Promise<T> {
-  const audience = process.env.PRINT_INTERNAL_AUDIENCE;
-  const base = process.env.WEBAPP_URL;
-  if (!audience || !base) throw new PrintDomainError(503, 'Print service is not configured');
+  const { audience, url } = printEndpoint();
   try {
     const client = await auth.getIdTokenClient(audience);
     const response = await client.request<{ data: T }>({
-      url: `${base.replace(/\/$/, '')}/api/internal/print/command`,
+      url,
       method: 'POST',
       data: { operation, input, actor: { email } },
       timeout: ['submit', 'reconcile'].includes(operation) ? 180000 : 30000,
@@ -59,5 +66,34 @@ export async function callPrintDomain<T>(
       response?.status || 502,
       typeof detail === 'string' ? detail : detail?.message || 'Print service request failed',
     );
+  }
+}
+
+export async function callPremiumEditionImage(
+  input: { storyId: string; revision: string; image: string },
+  email: string,
+) {
+  const { audience, url } = printEndpoint();
+  try {
+    const client = await auth.getIdTokenClient(audience);
+    const response = await client.request<ArrayBuffer>({
+      url,
+      method: 'POST',
+      data: { operation: 'getPremiumEditionImage', input, actor: { email } },
+      responseType: 'arraybuffer',
+      timeout: 30000,
+      retry: false,
+    });
+    const contentType = new Headers(response.headers as HeadersInit).get('content-type');
+    if (contentType !== 'image/jpeg' && contentType !== 'image/png') {
+      throw new Error('Invalid edition image response');
+    }
+    return { bytes: new Uint8Array(response.data), contentType };
+  } catch (error) {
+    const status =
+      error && typeof error === 'object' && 'response' in error
+        ? (error.response as { status?: number } | undefined)?.status
+        : undefined;
+    throw new PrintDomainError(status || 502, 'Premium edition image unavailable');
   }
 }
