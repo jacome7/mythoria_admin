@@ -30,6 +30,10 @@ For a paid square ticket, confirm the purchaser received the current proof and c
 
 Place the order on hold before a correction. After the corrected direct successor is published, enter its revision ID and the reason under **Bind published correction**. The ticket keeps its hold. Clearing it queues the new proof, quote and customer email. Review the new proof and check the inbox again before release. The audit records the operator, predecessor, successor and reason. For an uncertain or submitted job, use **Refresh order** and reconcile its supplier references before handling cancellation or replacement.
 
+## Lulu payment, delivery and support
+
+The ticket shows the current quote, Lulu job ID, supplier status and available tracking data. Use **Refresh order** to read the order again from Lulu. Resolve unpaid jobs in the Lulu Developer Portal. After checking supplier records, record cancellation, replacement, supplier credit and any separate Mythoria customer refund in the ticket.
+
 ## Printing costs
 
 Open **Printing costs** under **Financials**. The range selector offers Last 7 days, Last 30 days, Last 90 days and Forever. The chart uses Lulu's job date in UTC and the request table uses the date the print request was placed. Forever uses monthly chart buckets. A request can fall into a different period from its supplier cost.
