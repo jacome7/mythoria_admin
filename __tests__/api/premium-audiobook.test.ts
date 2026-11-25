@@ -60,14 +60,12 @@ it('streams a range with attachment and public-safe headers through authenticate
     STORY_GENERATION_WORKFLOW_URL: 'https://sgw.example.test',
     STORY_GENERATION_WORKFLOW_API_KEY: 'synthetic-key',
   });
-  const upstream = jest
-    .spyOn(globalThis, 'fetch')
-    .mockResolvedValue(
-      new Response('bc', {
-        status: 206,
-        headers: { 'content-length': '2', 'content-range': 'bytes 1-2/4' },
-      }),
-    );
+  const upstream = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response('bc', {
+      status: 206,
+      headers: { 'content-length': '2', 'content-range': 'bytes 1-2/4' },
+    }),
+  );
 
   const response = await request(0, `runId=${runId}&download=1`, 'bytes=1-2');
   expect(response.status).toBe(206);
