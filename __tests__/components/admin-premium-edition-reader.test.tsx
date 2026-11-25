@@ -66,7 +66,8 @@ it('renders typeset copy once as selectable text even when a reading image is su
   fireEvent.change(screen.getByRole('combobox', { name: 'Book page' }), { target: { value: '1' } });
   const paragraph = screen.getByText('Primeiro parágrafo. Segundo parágrafo.');
   expect(paragraph.textContent).toBe(text);
-  expect(paragraph).toHaveStyle({ fontFamily: 'PremiumLiterata, serif', lineHeight: '1.4' });
+  expect(paragraph).toHaveStyle({ fontFamily: 'PremiumLiterata, serif' });
+  expect(paragraph.style.lineHeight).toBe('1.4');
   expect(screen.queryByRole('img')).not.toBeInTheDocument();
   expect(screen.queryByText('Page transcript')).not.toBeInTheDocument();
 });

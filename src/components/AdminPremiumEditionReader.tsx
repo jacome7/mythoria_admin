@@ -151,10 +151,11 @@ export default function AdminPremiumEditionReader({
               }}
             >
               <p
-                className="w-full whitespace-pre-wrap [overflow-wrap:anywhere]"
+                className={`w-full whitespace-pre-wrap [overflow-wrap:anywhere] ${
+                  book.audience === 'children_0-2' ? 'text-[5.229cqw]' : 'text-[4.739cqw]'
+                }`}
                 style={{
                   fontFamily: 'PremiumLiterata, serif',
-                  fontSize: book.audience === 'children_0-2' ? '5.229cqw' : '4.739cqw',
                   lineHeight: 1.4,
                 }}
               >
