@@ -100,7 +100,7 @@ localSuite('KeyInvoice recovery: disposable PostgreSQL migration and concurrency
     await pool.query('INSERT INTO payment_orders(order_id) VALUES ($1)', [orderId]);
     await pool.query(
       "INSERT INTO fiscal_documents(id,order_id,author_id,status,doc_type,customer_mode,updated_at) VALUES ($1,$2,$3,$4,'34','final_consumer',$5)",
-      [id, orderId, authorId, status, new Date('2026-11-09T18:00:00.000Z')],
+      [id, orderId, authorId, status, '2026-11-09T18:00:00.000123Z'],
     );
     const doc = (
       await database.select().from(fiscalDocuments).where(eq(fiscalDocuments.id, id))
