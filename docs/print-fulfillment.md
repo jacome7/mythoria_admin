@@ -2,6 +2,8 @@
 
 Updated 2026-11-25.
 
+Production is accepting eligible premium square hardcover orders with **None / manual** and the 22-credit base hardcover price. Open the paid order's linked ticket to review and dispatch the pinned files to the manual printer. The WebApp production revision has no Lulu runtime configuration. The Lulu actions below describe the supplier workflow for an approved environment. [WebApp release record](https://github.com/jacome7/Mythoria-webapp/blob/master/docs/PRINT_FULFILLMENT.md#production-release-on-2026-11-25)
+
 The tickets page exposes the WebApp-owned default provider and per-copy landed EUR ceiling. The initial provider is **None / manual**, and changes apply to future orders. Set Admin `PRINT_INTERNAL_AUDIENCE` to the exact same OIDC audience as the WebApp setting, and set `WEBAPP_URL` to the WebApp base URL. WebApp `PRINT_ADMIN_SERVICE_ACCOUNT` must equal the email of the Admin runtime identity that signs the ID token. Configure the audience on the Admin runtime before switching WebApp checkout to paid print fulfillment. Cloud Build preserves the runtime value. Configure the WebApp scheduler, private proof bucket and vendor prerequisites before enabling checkout or Lulu. [Shared rollout runbook](https://github.com/jacome7/Mythoria-webapp/blob/master/docs/PRINT_FULFILLMENT.md)
 
 For local Admin-to-WebApp calls, set `PRINT_IMPERSONATE_SERVICE_ACCOUNT` to the same identity as WebApp `PRINT_ADMIN_SERVICE_ACCOUNT`. Local application default credentials need `iam.serviceAccounts.getOpenIdToken` for that identity. The override applies only in development and preserves the configured audience and Admin session checks.
@@ -29,3 +31,9 @@ Use **Request one staff print proof** on that story while public checkout is clo
 For a paid square ticket, confirm the purchaser received the current proof and check the reply inbox before either release action. Manual dispatch includes the frozen shipping address and quantity with the exact proof files. For Lulu, also verify tracked shipping and the landed quote against the per-copy limit, then enter the total and use **Release square order to Lulu**. The server verifies the proof version, supplier validation and refreshed quote before creating the job. Changing the provider versions the proof but retains the ticket’s edition.
 
 Place the order on hold before a correction. After the corrected direct successor is published, enter its revision ID and the reason under **Bind published correction**. The ticket keeps its hold. Clearing it queues the new proof, quote and customer email. Review the new proof and check the inbox again before release. The audit records the operator, predecessor, successor and reason. For an uncertain or submitted job, use **Refresh order** and reconcile its supplier references before handling cancellation or replacement.
+
+## Lulu payment, delivery and support
+
+The ticket shows the current quote, Lulu job ID, supplier status and available tracking data. **Refresh order** reads the order again from Lulu. Resolve unpaid jobs through the Lulu Developer Portal and confirm settlement there. Record cancellation, replacement, supplier credit and the separate Mythoria customer refund outcome in the ticket after checking the supplier job and payment records. The ticket actions cover pre-release holds, proof revisions and supplier reconciliation. The current Admin release has no integrated supplier payment, cancellation, claim, replacement or refund action.
+
+The WebApp can read and retain the raw Lulu job cost. The separate **Financials > Printing costs** dashboard and EUR conversion work are in local development. The production ticket quote remains the amount staff confirm for release.
