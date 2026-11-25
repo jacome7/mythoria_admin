@@ -29,6 +29,10 @@ export interface TicketMetadata {
   storyId?: string;
   printRequestId?: string;
   proofOnly?: { revision: string; requestedBy: string };
+  adminPrintOrder?: boolean;
+  orderKind?: 'staff_proof' | 'admin_order';
+  bookFormat?: 'premium_square' | 'standard_a5';
+  requestedBy?: string;
   shippingAddress?: Record<string, unknown>;
   printFormat?: string;
   numberOfCopies?: number;

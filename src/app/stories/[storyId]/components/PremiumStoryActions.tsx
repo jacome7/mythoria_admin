@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
+import { AdminLuluOrderForm } from '@/components/AdminLuluOrderForm';
 import type { PremiumEditionSummary } from '@/lib/premium-edition';
 
 const fields = [
@@ -107,6 +108,21 @@ export function PremiumStoryActions({
                 </form>
               </details>
             )}
+            <details className="rounded-lg border border-base-300 p-3">
+              <summary className="cursor-pointer font-semibold">
+                Dispatch Print Order via Lulu (1–10 copies)
+              </summary>
+              <p className="my-2 text-sm text-base-content/70">
+                Create an admin print-and-ship order (Premium Square Hardcover or Standard A5) and
+                prepare Lulu-compliant interior &amp; cover PDFs immediately.
+              </p>
+              <AdminLuluOrderForm
+                storyId={storyId}
+                hasPublishedPremiumEdition={Boolean(revision)}
+                defaultBookFormat="premium_square"
+                defaultBinding="hardcover"
+              />
+            </details>
           </>
         ) : (
           <p role="status">

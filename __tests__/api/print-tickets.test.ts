@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { POST as createLegacyTicket } from '@/app/api/tickets/route';
 import { POST as createPaidTicket } from '@/app/api/tickets/paid-print/route';
+import { POST as createAdminTicket } from '@/app/api/tickets/admin-print/route';
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { TicketService } from '@/lib/ticketing/service';
 
@@ -121,4 +122,49 @@ it('fails the paid checkout handshake if the ticket returned by storage lacks th
     .spyOn(TicketService, 'createLinkedPrintTicket')
     .mockResolvedValueOnce({ id: ticketId } as never);
   expect((await createPaidTicket(payload('/paid-print', versioned))).status).toBe(502);
+});
+
+it('requires an API key and links new or legacy tickets on admin-print', async () => {
+  const legacyTicketId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  const adminBody = {
+    category: 'print_request',
+    storyId,
+    userId,
+    shippingAddress: null,
+    printFormat: 'hardcover',
+    numberOfCopies: 3,
+    legacyTicketId,
+    orderDetails: {
+      fulfillmentVersion: 1,
+      printRequestId,
+      adminPrintOrder: true,
+      orderKind: 'admin_order',
+      bookFormat: 'standard_a5',
+      requestedBy: 'admin@mythoria.pt',
+    },
+  };
+
+  jest.mocked(authenticateRequest).mockResolvedValueOnce({ success: true, source: 'session' });
+  expect((await createAdminTicket(payload('/admin-print', adminBody))).status).toBe(403);
+
+  const linkSpy = jest
+    .spyOn(TicketService, 'createOrLinkAdminPrintTicket')
+    .mockResolvedValueOnce({ id: legacyTicketId, metadata: { printRequestId } } as never);
+
+  const response = await createAdminTicket(payload('/admin-print', adminBody));
+  expect(response.status).toBe(201);
+  expect(await response.json()).toEqual({ id: legacyTicketId, metadata: { printRequestId } });
+  expect(linkSpy).toHaveBeenCalledWith(
+    expect.objectContaining({
+      storyId,
+      userId,
+      printRequestId,
+      printFormat: 'hardcover',
+      numberOfCopies: 3,
+      orderKind: 'admin_order',
+      bookFormat: 'standard_a5',
+      requestedBy: 'admin@mythoria.pt',
+      legacyTicketId,
+    }),
+  );
 });

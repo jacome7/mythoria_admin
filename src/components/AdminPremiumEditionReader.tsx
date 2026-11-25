@@ -3,12 +3,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import './PremiumTypeset.css';
 
 export interface AdminPremiumEdition {
   revision: string;
   title: string;
   locale: string;
   editionLayout?: string;
+  audience?: 'children_0-2' | 'children_3-6';
+  openingDesign?: { background: string };
   specification?: {
     title: { label: string; value: string };
     details: { label: string; value: string }[];
@@ -20,6 +23,7 @@ export interface AdminPremiumEdition {
     number: number;
     kind: string;
     text: string;
+    renderMode?: 'embedded_art' | 'illustration' | 'typeset';
     image?: string;
     imageDescription?: string;
     textBox?: { x: number; y: number; width: number; height: number };
@@ -43,7 +47,7 @@ export default function AdminPremiumEditionReader({
       ? 'front'
       : index === lastIndex
         ? 'back'
-        : page?.image
+        : page?.image && page.renderMode !== 'typeset'
           ? String(page.number)
           : undefined;
   const title =
@@ -51,7 +55,9 @@ export default function AdminPremiumEditionReader({
   const isTextPage = page && [1, 2, 3, 4, 33].includes(page.number);
   const showImage = image && (!isTextPage || previewPage === page.number);
   const visibleImage = showImage && failed !== image;
-  const embedded = book.editionLayout === 'embedded-lettering-v2';
+  const embedded =
+    page?.renderMode === 'embedded_art' ||
+    (!page?.renderMode && book.editionLayout === 'embedded-lettering-v2');
   const overlay = !embedded && visibleImage && page?.textBox;
   const description = [page?.imageDescription, embedded ? page?.text : undefined]
     .filter(Boolean)
@@ -109,7 +115,14 @@ export default function AdminPremiumEditionReader({
             {showImage ? 'Show Text' : 'Preview Page Artwork'}
           </button>
         )}
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-white text-black shadow-sm">
+        <div
+          className="relative @container aspect-square overflow-hidden rounded-lg bg-white text-black shadow-sm"
+          style={
+            page?.renderMode === 'typeset'
+              ? { backgroundColor: book.openingDesign?.background ?? '#fbf5e6', color: '#243735' }
+              : undefined
+          }
+        >
           {visibleImage && (
             <Image
               key={image}
@@ -127,7 +140,30 @@ export default function AdminPremiumEditionReader({
               Page artwork is unavailable. Reload the reader to check the current edition.
             </p>
           )}
+          {page?.renderMode === 'typeset' && page.text && (
+            <div
+              className="absolute flex items-center overflow-auto"
+              style={{
+                left: page.number % 2 ? '12.745%' : '9.804%',
+                top: '10.784%',
+                width: '77.451%',
+                height: '78.431%',
+              }}
+            >
+              <p
+                className="w-full whitespace-pre-wrap [overflow-wrap:anywhere]"
+                style={{
+                  fontFamily: 'PremiumLiterata, serif',
+                  fontSize: book.audience === 'children_0-2' ? '5.229cqw' : '4.739cqw',
+                  lineHeight: 1.4,
+                }}
+              >
+                {page.text}
+              </p>
+            </div>
+          )}
           {page?.text &&
+            page.renderMode !== 'typeset' &&
             (overlay ? (
               <div
                 className="absolute grid place-items-center overflow-auto whitespace-pre-wrap text-center text-[clamp(0.75rem,2.5vw,1.25rem)]"

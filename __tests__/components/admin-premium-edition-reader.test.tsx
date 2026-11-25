@@ -47,3 +47,26 @@ it('shows selectable publication details and can preview the pinned image separa
   fireEvent.click(screen.getByRole('button', { name: 'Show Text' }));
   expect(screen.getByText('Direitos reservados')).toBeVisible();
 });
+
+it('renders typeset copy once as selectable text even when a reading image is supplied', () => {
+  const text = 'Primeiro parágrafo.\n\nSegundo parágrafo.';
+  render(
+    <AdminPremiumEditionReader
+      storyId="story"
+      book={{
+        revision: 'revision',
+        locale: 'pt-PT',
+        title: 'O Jardim',
+        audience: 'children_0-2',
+        openingDesign: { background: '#f9efd9' },
+        pages: [{ number: 6, kind: 'spread', text, renderMode: 'typeset', image: '/reading/6' }],
+      }}
+    />,
+  );
+  fireEvent.change(screen.getByRole('combobox', { name: 'Book page' }), { target: { value: '1' } });
+  const paragraph = screen.getByText('Primeiro parágrafo. Segundo parágrafo.');
+  expect(paragraph.textContent).toBe(text);
+  expect(paragraph).toHaveStyle({ fontFamily: 'PremiumLiterata, serif', lineHeight: '1.4' });
+  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  expect(screen.queryByText('Page transcript')).not.toBeInTheDocument();
+});

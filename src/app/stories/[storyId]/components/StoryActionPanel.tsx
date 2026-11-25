@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { StoryDetail } from '@/app/stories/[storyId]/hooks/useStoryDetail';
+import { AdminLuluOrderForm } from '@/components/AdminLuluOrderForm';
 import {
   useAudioPlayer,
   AudioChapterList,
@@ -52,6 +53,12 @@ export function StoryActionPanel({
   );
   const [isSendingPrint, setIsSendingPrint] = useState(false);
   const [printMessage, setPrintMessage] = useState<string | null>(null);
+  const [legacyTicketId, setLegacyTicketId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get('legacyPrintTicket');
+    if (param) setLegacyTicketId(param);
+  }, []);
 
   useEffect(() => {
     if (isPrintModalOpen && printShops.length === 0) {
@@ -377,6 +384,25 @@ export function StoryActionPanel({
               )}
             </div>
           </>
+        )}
+
+        {!audiobookOnly && story.status === 'published' && (
+          <details className="rounded-lg border border-base-300 p-3">
+            <summary className="cursor-pointer font-semibold">
+              Order Print &amp; Ship via Lulu
+            </summary>
+            <p className="my-2 text-sm text-base-content/70">
+              Generate Lulu-compliant PDFs, quote shipping, and dispatch a Standard A5 Paperback or
+              Hardcover print job directly to Lulu.
+            </p>
+            <AdminLuluOrderForm
+              storyId={storyId}
+              hasPublishedPremiumEdition={false}
+              defaultBookFormat="standard_a5"
+              defaultBinding="paperback"
+              legacyTicketId={legacyTicketId}
+            />
+          </details>
         )}
 
         <section className="rounded-xl border border-base-300 overflow-hidden">

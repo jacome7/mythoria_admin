@@ -107,6 +107,8 @@ export async function getPrintingCostRequests(range: RegistrationRange, page: nu
     amount: string | null;
     currency: string | null;
     amount_eur: string | null;
+    quoted_eur: string | null;
+    total_incl_tax: string | null;
   }>(sql`
     SELECT r.id, r.requested_at,
       COALESCE(NULLIF(f.email_variables->>'storyTitle', ''), s.title) AS title,
@@ -115,7 +117,11 @@ export async function getPrintingCostRequests(range: RegistrationRange, page: nu
       CASE WHEN f.provider IN ('lulu', 'manual') THEN f.provider ELSE 'legacy' END AS provider,
       r.status::text AS status, f.vendor->>'status' AS vendor_status,
       f.ticket_id, (f.vendor->>'environment' = 'sandbox') AS sandbox,
-      c.amount_excl_tax::text AS amount, c.currency, c.amount_eur::text AS amount_eur
+      c.amount_excl_tax::text AS amount, c.currency, c.amount_eur::text AS amount_eur,
+      CASE WHEN f.quote->>'totalEur' ~ '^[0-9]+(\\.[0-9]+)?$'
+        THEN (f.quote->>'totalEur')::numeric::text END AS quoted_eur,
+      CASE WHEN f.vendor->'costs'->>'total' ~ '^[0-9]+(\\.[0-9]+)?$'
+        THEN (f.vendor->'costs'->>'total')::numeric::text END AS total_incl_tax
     FROM print_requests r
     LEFT JOIN ${printFulfillmentsRead} f ON f.print_request_id = r.id
     LEFT JOIN ${printFulfillmentCostsRead} c ON c.print_request_id = r.id
@@ -137,6 +143,8 @@ export async function getPrintingCostRequests(range: RegistrationRange, page: nu
       vendorStatus: row.vendor_status,
       sandbox: row.sandbox ?? false,
       ticketId: row.ticket_id,
+      quotedEur: row.quoted_eur ?? null,
+      totalInclTax: row.total_incl_tax ?? null,
       cost:
         row.amount !== null && row.currency !== null
           ? { amount: row.amount, currency: row.currency, amountEur: row.amount_eur }

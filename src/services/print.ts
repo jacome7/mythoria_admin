@@ -8,6 +8,7 @@ type PrintOperation =
   | 'hasPaidOrderForStory'
   | 'getPremiumEdition'
   | 'createStaffProof'
+  | 'createAdminOrder'
   | 'get'
   | 'select'
   | 'prepare'
@@ -16,6 +17,7 @@ type PrintOperation =
   | 'revise'
   | 'submit'
   | 'reconcile'
+  | 'cancel'
   | 'reserveManual'
   | 'finalizeManual'
   | 'correctShipping'
@@ -64,7 +66,9 @@ export async function callPrintDomain<T>(
       url,
       method: 'POST',
       data: { operation, input, actor: { email } },
-      timeout: ['submit', 'reconcile'].includes(operation) ? 180000 : 30000,
+      timeout: ['submit', 'reconcile', 'prepare', 'createAdminOrder', 'cancel'].includes(operation)
+        ? 240000
+        : 30000,
       retry: false,
     });
     if (!response.data || typeof response.data !== 'object' || !('data' in response.data)) {

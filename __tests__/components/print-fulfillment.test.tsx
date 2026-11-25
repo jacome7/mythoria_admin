@@ -126,3 +126,71 @@ it('releases only the current square proof through Lulu after explicit review an
     proofVersion: 3,
   });
 });
+
+it('shows UNPAID operational alert and supports canceling a cancelable Lulu job', async () => {
+  const unpaidOrder = {
+    ...manualOrder,
+    provider: 'lulu',
+    status: 'submitted',
+    vendor: {
+      id: '7701',
+      status: 'UNPAID',
+      unpaid: true,
+      cancelable: true,
+      environment: 'sandbox',
+      tracking: [],
+      costs: { currency: 'EUR', total: 24.5, amountExclTax: '20.00', fees: [] },
+    },
+    quote: { shippingLevel: 'GROUND', totalEur: 24.5, perCopyEur: 24.5, confirmationId: ticketId },
+  };
+  const canceledOrder = {
+    ...unpaidOrder,
+    vendor: { ...unpaidOrder.vendor, status: 'CANCELED', unpaid: false, cancelable: false },
+  };
+  fetchMock.mockResolvedValueOnce(json(unpaidOrder)).mockResolvedValueOnce(json(canceledOrder));
+
+  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+  expect(await screen.findByText(/Fund your Lulu Developer account/i)).toBeInTheDocument();
+  const cancelBtn = screen.getByRole('button', { name: 'Cancel Lulu job' });
+  expect(cancelBtn).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('Cancellation reason'), {
+    target: { value: 'Fix shipping postcode' },
+  });
+  expect(cancelBtn).toBeEnabled();
+  await act(async () => {
+    fireEvent.click(cancelBtn);
+  });
+  expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
+    operation: 'cancel',
+    ticketId,
+    reason: 'Fix shipping postcode',
+  });
+  expect(await screen.findByText(/Lulu order 7701: CANCELED/i)).toBeInTheDocument();
+});
+
+it('allows multi-copy adminOrder Lulu submission without an emailed customer proof timestamp', async () => {
+  const adminOrder = {
+    ...manualOrder,
+    provider: 'lulu',
+    binding: 'hardcover',
+    copies: 3,
+    adminOrder: true,
+    maxEurPerCopy: 30,
+    proof: {
+      ...manualOrder.proof,
+      sentAt: null,
+      normalizedPageCount: 34,
+      coverDimensions: { width: 1368, height: 738 },
+      supplierValidated: true,
+    },
+    quote: { shippingLevel: 'EXPRESS', totalEur: 60, perCopyEur: 20, confirmationId: ticketId },
+  };
+  fetchMock.mockResolvedValue(json(adminOrder));
+  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+  const submit = await screen.findByRole('button', { name: 'Submit to Lulu' });
+  expect(submit).toBeDisabled();
+  expect(screen.getByText(/Admin print order · 3 copies/i)).toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText('I reviewed admin proof version 3.'));
+  fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '60' } });
+  expect(submit).toBeEnabled();
+});

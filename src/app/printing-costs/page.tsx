@@ -40,6 +40,8 @@ interface PrintRequest {
   vendorStatus: string | null;
   sandbox?: boolean;
   ticketId: string | null;
+  quotedEur?: string | null;
+  totalInclTax?: string | null;
   cost: { amount: string; currency: string; amountEur: string | null } | null;
 }
 
@@ -336,13 +338,14 @@ export default function PrintingCostsPage() {
                       <th>Provider</th>
                       <th>Status</th>
                       <th>Vendor</th>
+                      <th className="text-right">Quoted (incl. tax)</th>
                       <th className="text-right">Cost excl. tax</th>
                     </tr>
                   </thead>
                   <tbody>
                     {requestsLoading ? (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center">
+                        <td colSpan={8} className="py-8 text-center">
                           <span className="loading loading-spinner loading-sm" />
                         </td>
                       </tr>
@@ -371,7 +374,22 @@ export default function PrintingCostsPage() {
                             {request.sandbox ? ' (sandbox)' : ''}
                           </td>
                           <td>{formatStatus(request.status)}</td>
-                          <td>{request.vendorStatus ? formatStatus(request.vendorStatus) : '—'}</td>
+                          <td>
+                            {request.vendorStatus ? (
+                              <span
+                                className={`badge badge-sm ${vendorStatusBadge(request.vendorStatus)}`}
+                              >
+                                {formatStatus(request.vendorStatus)}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="text-right">
+                            {request.quotedEur
+                              ? currencyFormatter.format(Number(request.quotedEur))
+                              : '—'}
+                          </td>
                           <td className="min-w-40 text-right font-medium">
                             {formatRequestCost(
                               request.cost,
@@ -384,7 +402,7 @@ export default function PrintingCostsPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-base-content/70">
+                        <td colSpan={8} className="py-8 text-center text-base-content/70">
                           No print requests found for this period.
                         </td>
                       </tr>
@@ -518,6 +536,26 @@ function formatRequestCost(
       {original} <span className="text-base-content/60">→</span> {eurValue}
     </span>
   );
+}
+
+function vendorStatusBadge(value: string) {
+  switch (value.toUpperCase()) {
+    case 'UNPAID':
+    case 'ERROR':
+    case 'REJECTED':
+      return 'badge-error';
+    case 'PRODUCTION_DELAYED':
+      return 'badge-warning';
+    case 'IN_PRODUCTION':
+    case 'SHIPPED':
+    case 'DELIVERED':
+      return 'badge-success';
+    case 'CANCELED':
+    case 'CANCELLED':
+      return 'badge-ghost';
+    default:
+      return 'badge-outline';
+  }
 }
 
 function formatStatus(value: string) {

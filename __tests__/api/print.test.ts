@@ -231,3 +231,46 @@ it('accepts explicit hardcover activation or deactivation and rejects invalid pr
     ).status,
   ).toBe(400);
 });
+
+it('forwards cancel with reason and prepare with runImmediately while auditing cancel', async () => {
+  expect(
+    (
+      await POST(
+        req({
+          operation: 'prepare',
+          ticketId: id,
+          runImmediately: true,
+        }),
+      )
+    ).status,
+  ).toBe(200);
+  expect(callPrintDomain).toHaveBeenCalledWith(
+    'prepare',
+    { ticketId: id, printRequestId: printId, runImmediately: true },
+    'admin@mythoria.pt',
+  );
+
+  expect(
+    (
+      await POST(
+        req({
+          operation: 'cancel',
+          ticketId: id,
+          reason: 'Customer requested cancellation',
+        }),
+      )
+    ).status,
+  ).toBe(200);
+  expect(callPrintDomain).toHaveBeenLastCalledWith(
+    'cancel',
+    { ticketId: id, printRequestId: printId, reason: 'Customer requested cancellation' },
+    'admin@mythoria.pt',
+  );
+  expect(logAdminAudit).toHaveBeenCalledWith(
+    expect.objectContaining({
+      action: 'print.cancel',
+      entityId: id,
+      metadata: { reason: 'Customer requested cancellation' },
+    }),
+  );
+});

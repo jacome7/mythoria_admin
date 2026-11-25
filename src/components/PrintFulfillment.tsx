@@ -9,6 +9,9 @@ interface PrintView {
   copies: number;
   binding: string;
   proofOnly?: boolean;
+  adminOrder?: boolean;
+  orderOrigin?: 'customer' | 'staff_proof' | 'admin_order';
+  luluConfigured?: boolean;
   squareEdition?: {
     revision: string;
     manifest: { key: string; generation: string; sha256: string; bytes: number };
@@ -18,6 +21,11 @@ interface PrintView {
   proof: {
     qaPassed: boolean;
     pageCount: number;
+    sourcePageCount?: number;
+    normalizedPageCount?: number;
+    addedBlankPages?: number;
+    coverDimensions?: { width: number; height: number };
+    podPackageId?: string;
     interiorUrl: string;
     coverUrl: string;
     sentAt: string | null;
@@ -30,8 +38,45 @@ interface PrintView {
     totalEur: number;
     perCopyEur: number;
     confirmationId: string;
+    podPackageId?: string;
+    normalizedPageCount?: number;
+    printCostExclTaxEur?: number;
+    shippingCostExclTaxEur?: number;
+    totalTaxEur?: number;
   } | null;
-  vendor: { id: string; status: string; tracking: unknown } | null;
+  vendor: {
+    id: string;
+    status: string;
+    tracking: unknown;
+    orderId?: string | number | null;
+    environment?: 'sandbox' | 'production';
+    createdAt?: string;
+    unpaid?: boolean;
+    cancelable?: boolean;
+    lines?: {
+      id?: string;
+      external_id?: string | null;
+      carrier_name?: string | null;
+      carrier?: string | null;
+      tracking_id?: string | null;
+      tracking_urls?: string[] | null;
+      status?: {
+        name: string;
+        changed?: string | null;
+        messages?: {
+          tracking_id?: string | null;
+          carrier_name?: string | null;
+          tracking_urls?: string[];
+        } | null;
+      } | null;
+    }[];
+    costs?: {
+      currency: string;
+      total?: number;
+      amountExclTax?: string;
+      fees: unknown[];
+    };
+  } | null;
   lastError: string | null;
   maxEurPerCopy: number;
   shippingAddress: ShippingAddress;
@@ -329,6 +374,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
   const [checkedInbox, setCheckedInbox] = useState(false);
   const [amount, setAmount] = useState('');
   const [correctedRevision, setCorrectedRevision] = useState('');
@@ -364,12 +410,24 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
       current = false;
     };
   }, [ticketId]);
+  useEffect(() => {
+    if (closed || !view || !['pending', 'preparing', 'submitting'].includes(view.status)) {
+      return;
+    }
+    const timer = setInterval(() => {
+      void command<PrintView>({ operation: 'get', ticketId })
+        .then((result) => setView(result))
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [closed, ticketId, view]);
   const quote = view?.quote;
+  const skipInboxCheck = Boolean(view?.proofOnly || view?.adminOrder);
   const ready =
     !closed &&
     view?.status === 'proof_ready' &&
     view.proof?.qaPassed &&
-    (Boolean(view.proof.sentAt) || view.proofOnly) &&
+    (Boolean(view.proof.sentAt) || skipInboxCheck) &&
     !view.holdReason;
   const canSubmit =
     ready &&
@@ -384,6 +442,12 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
     Number(amount) === quote.totalEur;
   const canEdit =
     !closed && view && ['pending', 'proof_ready', 'held', 'manual_review'].includes(view.status);
+  const vendorStatusUpper = view?.vendor?.status?.toUpperCase();
+  const isUnpaid = Boolean(view?.vendor?.unpaid || vendorStatusUpper === 'UNPAID');
+  const isProductionDelayed = vendorStatusUpper === 'PRODUCTION_DELAYED';
+  const trackingUrls = Array.isArray(view?.vendor?.tracking)
+    ? view.vendor.tracking.filter((item): item is string => typeof item === 'string')
+    : [];
   return (
     <div className="card bg-base-100 shadow-sm">
       <div className="card-body">
@@ -391,14 +455,37 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
         {message && <p role="alert">{message}</p>}
         {view && (
           <>
-            {view.proofOnly && (
+            {view.proofOnly ? (
               <p className="font-semibold">Staff proof · One copy · No customer charge</p>
-            )}
+            ) : view.adminOrder ? (
+              <p className="font-semibold">
+                Admin print order · {view.copies} {view.copies === 1 ? 'copy' : 'copies'} · No
+                customer charge
+              </p>
+            ) : null}
             <p>
               Provider: {view.provider} · Status: {view.status} · Copies: {view.copies} · Binding:{' '}
               {view.binding}
             </p>
             <p>Limit: €{view.maxEurPerCopy} per copy</p>
+            {view.status === 'uncertain' && (
+              <div className="alert alert-error text-sm" role="alert">
+                Submission state is uncertain. Click &quot;Refresh order&quot; to reconcile with
+                Lulu before creating or retrying any job.
+              </div>
+            )}
+            {view.provider === 'lulu' && isUnpaid && (
+              <div className="alert alert-warning text-sm" role="alert">
+                Lulu job is <strong>UNPAID</strong>. Fund your Lulu Developer account / payment
+                method or cancel this job before production can start.
+              </div>
+            )}
+            {view.provider === 'lulu' && isProductionDelayed && (
+              <div className="alert alert-info text-sm" role="status">
+                Lulu job is queued in <strong>PRODUCTION_DELAYED</strong> (cancelable until it moves
+                to production).
+              </div>
+            )}
             {view.squareEdition && (
               <div className="space-y-1">
                 <h4 className="font-semibold">Square hardcover (8.5 × 8.5 in)</h4>
@@ -496,10 +583,20 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
             {view.proof && (
               <div>
                 <p>
-                  Proof version {view.proofVersion} · {view.proof.pageCount} pages · QA{' '}
-                  {view.proof.qaPassed ? 'passed' : 'not passed'}
-                  {!view.proofOnly && ` · Emailed ${view.proof.sentAt || 'not sent'}`}
+                  Proof version {view.proofVersion} · {view.proof.pageCount} pages
+                  {view.proof.normalizedPageCount &&
+                    view.proof.normalizedPageCount !== view.proof.pageCount &&
+                    ` (Lulu normalized: ${view.proof.normalizedPageCount} pages)`}{' '}
+                  · QA {view.proof.qaPassed ? 'passed' : 'not passed'}
+                  {!skipInboxCheck && ` · Emailed ${view.proof.sentAt || 'not sent'}`}
                 </p>
+                {view.proof.coverDimensions && (
+                  <p className="text-xs text-base-content/70">
+                    Cover spread: {view.proof.coverDimensions.width.toFixed(1)} ×{' '}
+                    {view.proof.coverDimensions.height.toFixed(1)} pt
+                    {view.proof.podPackageId ? ` · SKU ${view.proof.podPackageId}` : ''}
+                  </p>
+                )}
                 {view.squareEdition && view.provider === 'lulu' && (
                   <p>Lulu file validation {view.proof.supplierValidated ? 'passed' : 'pending'}</p>
                 )}
@@ -537,16 +634,105 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               />
             )}
             {quote && (
-              <p>
-                Quote: €{quote.totalEur} total, €{quote.perCopyEur} per copy, shipping{' '}
-                {quote.shippingLevel}
-              </p>
+              <div className="space-y-1 text-sm">
+                <p>
+                  Quote: €{quote.totalEur} total, €{quote.perCopyEur} per copy, shipping{' '}
+                  {quote.shippingLevel}
+                </p>
+                {(quote.printCostExclTaxEur !== undefined ||
+                  quote.shippingCostExclTaxEur !== undefined ||
+                  quote.totalTaxEur !== undefined) && (
+                  <p className="text-xs text-base-content/70">
+                    Breakdown: print €{quote.printCostExclTaxEur ?? '—'} + shipping €
+                    {quote.shippingCostExclTaxEur ?? '—'} + tax €{quote.totalTaxEur ?? '—'}
+                  </p>
+                )}
+              </div>
             )}
             {view.provider === 'lulu' && view.vendor && (
-              <p>
-                Lulu order {view.vendor.id}: {view.vendor.status} · Tracking:{' '}
-                {JSON.stringify(view.vendor.tracking)}
-              </p>
+              <div className="space-y-2 rounded-lg border border-base-300 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">
+                    Lulu order {view.vendor.id}: {view.vendor.status}
+                  </span>
+                  {view.vendor.environment && (
+                    <span className="badge badge-outline badge-sm">{view.vendor.environment}</span>
+                  )}
+                  {view.vendor.orderId != null && (
+                    <span className="text-xs text-base-content/70">
+                      Order #{String(view.vendor.orderId)}
+                    </span>
+                  )}
+                </div>
+                {view.vendor.costs && (
+                  <p className="text-xs text-base-content/70">
+                    Actual Lulu cost: {view.vendor.costs.currency}{' '}
+                    {view.vendor.costs.total ?? view.vendor.costs.amountExclTax ?? '—'}
+                    {view.vendor.costs.amountExclTax &&
+                      ` (excl. tax: ${view.vendor.costs.amountExclTax})`}
+                    {quote ? ` · Quoted EUR ${quote.totalEur}` : ''}
+                  </p>
+                )}
+                {trackingUrls.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span>Tracking:</span>
+                    {trackingUrls.map((url, idx) => (
+                      <a
+                        key={url}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="link link-primary"
+                      >
+                        Shipment link {idx + 1}
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-base-content/70">
+                    Tracking: Pending carrier assignment
+                  </p>
+                )}
+                {view.vendor.lines?.map((line, index) => {
+                  const carrier =
+                    line.carrier_name ?? line.status?.messages?.carrier_name ?? line.carrier;
+                  const trackingId = line.tracking_id ?? line.status?.messages?.tracking_id;
+                  if (!carrier && !trackingId && !line.status?.name) return null;
+                  return (
+                    <p
+                      key={line.id ?? line.external_id ?? index}
+                      className="text-xs text-base-content/70"
+                    >
+                      Line {index + 1}: {line.status?.name ?? view.vendor?.status}
+                      {carrier ? ` · ${carrier}` : ''}
+                      {trackingId ? ` · #${trackingId}` : ''}
+                    </p>
+                  );
+                })}
+                {!closed && view.vendor.cancelable && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <input
+                      className="input input-bordered input-xs"
+                      aria-label="Cancellation reason"
+                      placeholder="Reason to cancel Lulu job"
+                      value={cancelReason}
+                      onChange={(event) => setCancelReason(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-error btn-xs"
+                      disabled={busy || !cancelReason.trim()}
+                      onClick={() => {
+                        const trimmed = cancelReason.trim();
+                        setCancelReason('');
+                        void run('cancel', { reason: trimmed });
+                      }}
+                    >
+                      Cancel Lulu job
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
             <div className="flex flex-wrap gap-2">
               {canEdit && (
@@ -579,7 +765,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               <button
                 className="btn btn-sm"
                 disabled={busy || closed}
-                onClick={() => void run('prepare')}
+                onClick={() => void run('prepare', { runImmediately: true })}
               >
                 {view.provider === 'lulu' ? 'Prepare proof and quote' : 'Prepare proof'}
               </button>
@@ -619,7 +805,9 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                   />
                   {view.proofOnly
                     ? 'I reviewed staff proof version'
-                    : 'I checked the inbox and reviewed proof version'}{' '}
+                    : view.adminOrder
+                      ? 'I reviewed admin proof version'
+                      : 'I checked the inbox and reviewed proof version'}{' '}
                   {view.proofVersion}.
                 </label>
                 <label>

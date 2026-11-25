@@ -74,6 +74,19 @@ interface CreateLinkedPrintTicketData {
   proofOnly?: { revision: string; requestedBy: string };
 }
 
+interface CreateAdminPrintTicketData {
+  storyId: string;
+  userId: string;
+  printRequestId: string;
+  printFormat: 'paperback' | 'hardcover';
+  numberOfCopies: number;
+  orderKind: 'staff_proof' | 'admin_order';
+  bookFormat: 'premium_square' | 'standard_a5';
+  requestedBy: string;
+  legacyTicketId?: string;
+  proofOnly?: { revision: string; requestedBy: string };
+}
+
 export interface CreatePaymentTicketData {
   amount: number;
   userId?: string;
@@ -329,6 +342,86 @@ export class TicketService {
             numberOfCopies: data.numberOfCopies,
             ...(data.proofOnly ? { proofOnly: data.proofOnly } : {}),
           },
+        })
+        .returning();
+      return ticket;
+    });
+  }
+
+  static async createOrLinkAdminPrintTicket(data: CreateAdminPrintTicketData): Promise<Ticket> {
+    const db = getBackofficeDb();
+    return db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${data.printRequestId}, 0))`,
+      );
+      const [existing] = await tx
+        .select()
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.category, 'print_request'),
+            sql`${tickets.metadata}->>'printRequestId' = ${data.printRequestId}`,
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        const metadata = existing.metadata as TicketMetadata | null;
+        if (metadata?.storyId !== data.storyId) {
+          throw new Error('Print request is linked to a different story');
+        }
+        return existing;
+      }
+
+      const nextMetadata = {
+        printRequestId: data.printRequestId,
+        storyId: data.storyId,
+        adminPrintOrder: true as const,
+        orderKind: data.orderKind,
+        bookFormat: data.bookFormat,
+        printFormat: data.printFormat,
+        numberOfCopies: data.numberOfCopies,
+        requestedBy: data.requestedBy,
+        ...(data.proofOnly ? { proofOnly: data.proofOnly } : {}),
+      };
+
+      if (data.legacyTicketId) {
+        const [legacy] = await tx
+          .select()
+          .from(tickets)
+          .where(eq(tickets.id, data.legacyTicketId))
+          .limit(1);
+        if (!legacy || legacy.category !== 'print_request') {
+          throw new Error('Legacy print ticket not found');
+        }
+        const currentMeta = (legacy.metadata as TicketMetadata | null) ?? {};
+        if (currentMeta.storyId && currentMeta.storyId !== data.storyId) {
+          throw new Error('Legacy ticket belongs to a different story');
+        }
+        if (currentMeta.printRequestId && currentMeta.printRequestId !== data.printRequestId) {
+          throw new Error('Legacy ticket is already linked to another print request');
+        }
+        const [updated] = await tx
+          .update(tickets)
+          .set({
+            metadata: { ...currentMeta, ...nextMetadata },
+            updatedAt: new Date(),
+          })
+          .where(eq(tickets.id, legacy.id))
+          .returning();
+        return updated;
+      }
+
+      const [ticket] = await tx
+        .insert(tickets)
+        .values({
+          userId: data.orderKind === 'staff_proof' ? null : data.userId,
+          category: 'print_request',
+          subject:
+            data.orderKind === 'staff_proof'
+              ? `Admin staff print proof for story ${data.storyId}`
+              : `Admin Lulu print order for story ${data.storyId} (${data.numberOfCopies} ${data.printFormat})`,
+          description: `Admin (${data.requestedBy}) initiated ${data.orderKind} (${data.bookFormat}, ${data.printFormat}, ${data.numberOfCopies} copy/copies) for story ${data.storyId}.`,
+          metadata: nextMetadata,
         })
         .returning();
       return ticket;

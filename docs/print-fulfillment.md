@@ -41,3 +41,10 @@ Open **Printing costs** under **Financials**. The range selector offers Last 7 d
 The table shows Lulu's tax-exclusive total in the original currency and its EUR equivalent when available. Requests handled by other providers have an untracked cost. The homepage **Revenue vs costs** chart subtracts the same recorded EUR totals and AI costs from revenue. Pending prices and conversions are flagged in the charts. A priced job can appear in the total while Lulu is awaiting payment.
 
 The WebApp owns price capture, conversion and backfill. Apply its additive cost migration, `0055_print_fulfillment_costs`, before rolling out these Admin routes. See [the shared rollout runbook](https://github.com/jacome7/Mythoria-webapp/blob/master/docs/PRINT_FULFILLMENT.md).
+
+## Admin-Initiated Lulu Orders & Lifecycle Controls
+
+- **From Story Pages (`/stories/[storyId]`)**: Both `PremiumStoryActions` (for published 8.5×8.5" Premium Square books) and `StoryActionPanel` (for published Standard A5 books) include collapsible **Order / Dispatch via Lulu** panels (`AdminLuluOrderForm` -> `POST /api/admin/stories/[storyId]/lulu-print`) supporting `1–10` copy admin print-and-ship orders and single-copy staff proofs.
+- **From Legacy Print Tickets (`/tickets/[id]`)**: Open or in-progress unlinked `print_request` tickets display **Upgrade & Dispatch via Lulu Fulfillment**, linking a newly prepared `print_request` / `print_fulfillments` pair back to the existing ticket via `POST /api/tickets/admin-print`.
+- **In-Ticket Operations (`PrintFulfillment`)**: Supports immediate proof/quote preparation (`runImmediately: true` with 4-second polling while active), proof cover-dimension and normalized page-count display, quote cost breakdowns, structured tracking URLs and carrier IDs, `UNPAID` / `PRODUCTION_DELAYED` / `uncertain` operational alerts, and **Cancel Lulu job** (requires an audit reason).
+- **Printing Costs (`/printing-costs`)**: Displays `Quoted (incl. tax)` alongside `Cost excl. tax` and badged vendor statuses.

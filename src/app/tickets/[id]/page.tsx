@@ -7,6 +7,7 @@ import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/uti
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import type { TicketMetadata, TicketPaymentPackage } from '@/lib/ticketing/types';
+import { AdminLuluOrderForm } from '@/components/AdminLuluOrderForm';
 import { PrintFulfillment } from '@/components/PrintFulfillment';
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
@@ -580,15 +581,56 @@ export default function TicketDetailPage() {
           {!metadata.printRequestId &&
             metadata.storyId &&
             (ticket?.status === 'open' || ticket?.status === 'in_progress') && (
-              <Link
-                href={{
-                  pathname: `/stories/${metadata.storyId}`,
-                  query: { legacyPrintTicket: ticketId },
-                }}
-                className="btn btn-sm btn-outline self-start"
-              >
-                Open story for legacy print
-              </Link>
+              <div className="space-y-3">
+                <Link
+                  href={{
+                    pathname: `/stories/${metadata.storyId}`,
+                    query: { legacyPrintTicket: ticketId },
+                  }}
+                  className="btn btn-sm btn-outline self-start"
+                >
+                  Open story for legacy print
+                </Link>
+                <details className="rounded-lg border border-base-300 p-3">
+                  <summary className="cursor-pointer text-sm font-semibold">
+                    Upgrade &amp; Dispatch via Lulu Fulfillment
+                  </summary>
+                  <p className="my-2 text-xs text-base-content/70">
+                    Links a Lulu fulfillment order directly to this ticket so proof QA, quote
+                    confirmation, and dispatch stay tracked here.
+                  </p>
+                  <AdminLuluOrderForm
+                    storyId={metadata.storyId}
+                    hasPublishedPremiumEdition={Boolean(
+                      metadata.bookFormat === 'premium_square' ||
+                      metadata.proofOnly ||
+                      metadata.printFormat === 'hardcover',
+                    )}
+                    defaultBookFormat={
+                      metadata.bookFormat === 'premium_square' ? 'premium_square' : 'standard_a5'
+                    }
+                    defaultBinding={
+                      metadata.printFormat === 'hardcover' ? 'hardcover' : 'paperback'
+                    }
+                    defaultCopies={metadata.numberOfCopies ?? 1}
+                    defaultShipping={{
+                      name: metadata.enrichedUser?.displayName ?? metadata.name ?? '',
+                      email: metadata.enrichedUser?.email ?? metadata.email ?? '',
+                      phone_number: metadata.enrichedAddress?.phone ?? metadata.phone ?? '',
+                      street1: metadata.enrichedAddress?.line1 ?? '',
+                      street2: metadata.enrichedAddress?.line2 ?? '',
+                      city: metadata.enrichedAddress?.city ?? '',
+                      state_code: metadata.enrichedAddress?.stateRegion ?? '',
+                      postcode: metadata.enrichedAddress?.postalCode ?? '',
+                      country_code: metadata.enrichedAddress?.country ?? '',
+                    }}
+                    legacyTicketId={ticketId}
+                    onLinked={async () => {
+                      await fetchTicket();
+                    }}
+                  />
+                </details>
+              </div>
             )}
           <div className="space-y-4">
             {/* User Information */}

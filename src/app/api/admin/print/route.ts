@@ -28,9 +28,19 @@ const requestSchema = z.discriminatedUnion('operation', [
     maxEurPerCopy: z.number().min(0).max(99999999.99).finite(),
     hardcoverCredits: z.number().int().positive().max(1000000).nullable().optional(),
   }),
-  ...(['get', 'prepare', 'clear', 'revise', 'reconcile'] as const).map((operation) =>
+  ...(['get', 'clear', 'revise', 'reconcile'] as const).map((operation) =>
     z.object({ operation: z.literal(operation), ticketId: z.string().uuid() }),
   ),
+  z.object({
+    operation: z.literal('prepare'),
+    ticketId: z.string().uuid(),
+    runImmediately: z.boolean().optional(),
+  }),
+  z.object({
+    operation: z.literal('cancel'),
+    ticketId: z.string().uuid(),
+    reason: z.string().trim().min(1).max(500),
+  }),
   z.object({
     operation: z.literal('select'),
     ticketId: z.string().uuid(),
@@ -129,7 +139,9 @@ export async function POST(request: Request) {
                 reason: command.reason,
               },
             }
-          : {}),
+          : command.operation === 'cancel'
+            ? { metadata: { reason: command.reason } }
+            : {}),
       });
     }
     const data = await callPrintDomain(command.operation, input, actor.email);

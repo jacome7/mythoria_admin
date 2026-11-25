@@ -59,11 +59,12 @@ MCP transport update (2026-10-27): `POST /api/mcp` accepts authenticated JSON-RP
 | Notifications | `GET /api/mail-marketing/*` | Proxy routes for notification-engine APIs (campaign controls, stats). |
 | Postmaster | `GET /api/postmaster/traffic-stats` | Google Postmaster telemetry for deliverability dashboards. |
 
-### Paid print fulfillment
+### Paid & admin print fulfillment
 
-- `POST /api/admin/print` accepts `getConfig` and `setConfig` for print settings, plus `get`, `select`, `prepare`, `revise`, `hold`, `clear`, `correctShipping`, `submit`, and `reconcile` with a linked `ticketId`. Lulu submission requires the current `confirmationId`, `checkedInbox: true`, and `confirmedTotalEur`.
+- `POST /api/admin/print` accepts `getConfig` and `setConfig` for print settings, plus `get`, `select`, `prepare` (optional `runImmediately`), `revise`, `hold`, `clear`, `correctShipping`, `correctSquareEdition`, `submit`, `reconcile`, and `cancel` (`reason`) with a linked `ticketId`. Lulu submission requires the current `confirmationId`, `checkedInbox: true`, and `confirmedTotalEur`.
+- `POST /api/admin/stories/[storyId]/lulu-print` creates an Admin print-and-ship order (`admin_order` 1–10 copies or `staff_proof` 1 copy) for either `premium_square` (8.5×8.5" Hardcover) or `standard_a5` (Paperback or Hardcover), optionally upgrades an open/in-progress `legacyTicketId`, and prepares Lulu PDFs & shipping quote immediately when `prepareNow !== false`.
 - `POST /api/admin/print/manual` accepts `ticketId`, `partnerId`, `proofVersion`, `checkedInbox: true`, `subject`, and `bodyText`. A successful response reports `outcome` as `sent` or `uncertain`.
-- `POST /api/tickets/paid-print` requires the service API key and an `orderDetails` object with `fulfillmentVersion: 1` and a valid `printRequestId`. Creation and retries return the ticket ID and the matching stored print request ID. The original `POST /api/tickets` keeps unversioned print tickets on the legacy workflow.
+- `POST /api/tickets/paid-print` and `POST /api/tickets/admin-print` require the service API key and an `orderDetails` object with `fulfillmentVersion: 1` and a valid `printRequestId`. `admin-print` also supports linking an existing unlinked `legacyTicketId`. The original `POST /api/tickets` keeps unversioned print tickets on the legacy workflow.
 - `POST /api/admin/stories/[storyId]/request-print` accepts an optional `legacyTicketId` for an open legacy print ticket for the story that predates its first paid print reservation.
 
 Both fulfillment routes require an authorized Admin session. See [print fulfillment operations](print-fulfillment.md) for the staff workflow and runtime settings.
