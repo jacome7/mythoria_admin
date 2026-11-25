@@ -27,6 +27,24 @@ const reservationSchema = z.object({
   interiorUri: z.string().startsWith('gs://'),
   coverUri: z.string().startsWith('gs://'),
   proofFiles: z.object({ interior: artifactSchema, cover: artifactSchema }),
+  squareOrder: z
+    .object({
+      copies: z.number().int().min(1).max(10),
+      proofOnly: z.boolean(),
+      shipping: z.object({
+        name: z.string(),
+        street1: z.string(),
+        street2: z.string().optional(),
+        city: z.string(),
+        postcode: z.string(),
+        country_code: z.string(),
+        state_code: z.string().optional(),
+        phone_number: z.string(),
+        email: z.email(),
+        recipient_tax_id: z.string().optional(),
+      }),
+    })
+    .optional(),
   downloadLinks: z
     .object({
       interior: z.url({ protocol: /^https$/ }),
@@ -89,6 +107,29 @@ export async function POST(request: Request) {
       ),
     );
     let outcome: 'sent' | 'uncertain' = 'uncertain';
+    let message = bodyText;
+    if (reservation.squareOrder) {
+      const { copies, proofOnly, shipping } = reservation.squareOrder;
+      message = [
+        bodyText,
+        '',
+        proofOnly ? 'Prova de produção' : 'Encomenda',
+        `Exemplares: ${copies} · Capa dura quadrada, 8,5 × 8,5 pol. (216 × 216 mm)`,
+        `Versão da prova: ${proofVersion}`,
+        '',
+        'Morada de entrega',
+        shipping.name,
+        shipping.street1,
+        shipping.street2,
+        [shipping.postcode, shipping.city, shipping.state_code].filter(Boolean).join(' '),
+        shipping.country_code,
+        shipping.phone_number,
+        shipping.email,
+        shipping.recipient_tax_id ? `NIF do destinatário: ${shipping.recipient_tax_id}` : undefined,
+      ]
+        .filter((line) => line !== undefined)
+        .join('\n');
+    }
     try {
       const response = await fetch(emailEndpoint, {
         method: 'POST',
@@ -101,7 +142,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           toEmail: partner.email,
           subject,
-          bodyText,
+          bodyText: message,
           coverPdfUri: reservation.coverUri,
           interiorPdfUri: reservation.interiorUri,
           proofFiles: reservation.proofFiles,

@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { adminService } from '@/db/services';
 import { ALLOWED_DOMAINS } from '@/config/auth';
+import { premiumEditionSummary } from '@/lib/premium-edition';
+
+function metadataResult(story: NonNullable<Awaited<ReturnType<typeof adminService.featureStory>>>) {
+  return story.premiumEdition
+    ? { isFeatured: story.isFeatured, featureImageUri: story.featureImageUri }
+    : story;
+}
 
 export async function PATCH(
   request: Request,
@@ -32,15 +39,11 @@ export async function PATCH(
         return NextResponse.json({ error: 'Story not found' }, { status: 404 });
       }
 
-      return NextResponse.json(updatedStory);
+      return NextResponse.json(metadataResult(updatedStory));
     }
 
     // Otherwise, this is a feature request
     const { featureImageUri } = body;
-
-    if (!featureImageUri || typeof featureImageUri !== 'string') {
-      return NextResponse.json({ error: 'Feature image URI is required' }, { status: 400 });
-    }
 
     // First check if story exists and is public
     const story = await adminService.getStoryById(storyId);
@@ -52,14 +55,32 @@ export async function PATCH(
       return NextResponse.json({ error: 'Only public stories can be featured' }, { status: 400 });
     }
 
-    // Feature the story (set isFeatured = true and update featureImageUri)
-    const updatedStory = await adminService.featureStory(storyId, featureImageUri);
+    const premium = premiumEditionSummary(story.features);
+    if (premium) {
+      if (premium.state !== 'published' || story.status !== 'published' || !story.featureImageUri)
+        return NextResponse.json(
+          { error: 'The published edition and its feature image must be available.' },
+          { status: 409 },
+        );
+      if (featureImageUri !== undefined)
+        return NextResponse.json(
+          { error: 'Feature the published edition with its existing artwork.' },
+          { status: 409 },
+        );
+    } else if (!featureImageUri || typeof featureImageUri !== 'string') {
+      return NextResponse.json({ error: 'Feature image URI is required' }, { status: 400 });
+    }
+
+    const updatedStory = await adminService.featureStory(
+      storyId,
+      premium ? undefined : featureImageUri,
+    );
 
     if (!updatedStory) {
       return NextResponse.json({ error: 'Failed to feature story' }, { status: 500 });
     }
 
-    return NextResponse.json(updatedStory);
+    return NextResponse.json(metadataResult(updatedStory));
   } catch (error) {
     console.error('Error featuring story:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

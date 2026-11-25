@@ -43,7 +43,8 @@ MCP transport update (2026-10-27): `POST /api/mcp` accepts authenticated JSON-RP
 | Leads | `POST /api/admin/leads/import` | CSV upload endpoint used by the admin UI (multipart form data). |
 | Stories | `GET /api/admin/stories` | Story moderation feed. Query params: `page`, `limit`, `search`, `status`, `featured`, `target_audience`, `novel_style`, `graphical_style`, `sortBy`, `sortOrder`. |
 | Stories | `PATCH /api/admin/stories/[id]` | Update status/moderation metadata. |
-| Stories | `POST /api/admin/stories/[id]/generate-audiobook` | Dispatches privileged narration jobs without touching credits. Body: `{ voice?, includeBackgroundMusic }`. Missing/empty `voice` uses the recommended voice for the story target audience; an unknown voice returns 400. Voices depend on `NEXT_PUBLIC_TTS_PROVIDER` (default `google-genai`: Charon, Aoede, Puck, Kore, Fenrir, Orus, Zephyr, Sulafat; `openai`: 11 OpenAI voices). |
+| Stories | `POST /api/admin/stories/[id]/generate-audiobook` | Dispatches privileged narration jobs without touching credits. Body: `{ voice?, includeBackgroundMusic, premiumRevision? }`. Missing or empty `voice` uses the recommendation for the audience. An unknown voice returns 400. Premium requests pin the currently published revision and write a staff audit event. |
+| Stories | `GET /api/admin/stories/[id]/audio/[chapterIndex]` | Plays a conventional chapter or premium page track by zero-based track index. Premium tracks also require `runId` in the query string and use the authenticated SGW proxy. The premium Story Actions panel labels tracks by their printed page numbers. |
 | Stories | `GET /api/admin/stories/[id]/audio/[chapterIndex]` | Streams proxied chapter audio from Cloud Storage so admins can listen per chapter. |
 | Workflows | `GET /api/workflows` | Workflow run history + filters. |
 | Workflows | `GET /api/workflows/[runId]` | Detailed run diagnostics. |

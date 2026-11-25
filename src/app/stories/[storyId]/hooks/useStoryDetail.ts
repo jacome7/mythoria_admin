@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import type { PremiumEditionSummary } from '@/lib/premium-edition';
 
 export type AudiobookChapterMap = Record<string, unknown> | null;
 
@@ -13,6 +14,8 @@ export interface AudioChapterEntry {
 }
 
 export interface StoryDetail {
+  premiumEdition?: PremiumEditionSummary | null;
+  premiumAudio?: { runId: string; tracks: { pageNumber: number; duration: number }[] } | null;
   storyId: string;
   title: string;
   author: {

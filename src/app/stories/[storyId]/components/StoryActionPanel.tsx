@@ -16,6 +16,7 @@ interface StoryActionPanelProps {
   story: StoryDetail;
   storyId: string;
   onStoryRefresh: () => Promise<void>;
+  audiobookOnly?: boolean;
 }
 
 interface ChapterSummary {
@@ -26,7 +27,12 @@ interface ChapterSummary {
 
 const FALLBACK_TITLE = (chapterNumber: number) => `Chapter ${chapterNumber}`;
 
-export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryActionPanelProps) {
+export function StoryActionPanel({
+  story,
+  storyId,
+  onStoryRefresh,
+  audiobookOnly = false,
+}: StoryActionPanelProps) {
   const [isGeneratingPdfs, setIsGeneratingPdfs] = useState(false);
   const [pdfGenMessage, setPdfGenMessage] = useState<string | null>(null);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
@@ -99,7 +105,9 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
     }
   };
 
-  const audioAvailable = hasAudiobook(story.audiobookUri) || story.hasAudio;
+  const audioAvailable = audiobookOnly
+    ? Boolean(story.premiumAudio)
+    : hasAudiobook(story.audiobookUri) || story.hasAudio;
   const [narrationPanelOpen, setNarrationPanelOpen] = useState(false);
   const [listenPanelOpen, setListenPanelOpen] = useState(audioAvailable);
 
@@ -123,6 +131,7 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
   });
 
   const fetchChapters = useCallback(async () => {
+    if (audiobookOnly) return;
     setIsLoadingChapters(true);
     try {
       const response = await fetch(`/api/admin/stories/${storyId}/chapters`);
@@ -142,13 +151,26 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
     } finally {
       setIsLoadingChapters(false);
     }
-  }, [storyId]);
+  }, [audiobookOnly, storyId]);
 
   useEffect(() => {
-    if (listenPanelOpen && audioAvailable && chapters.length === 0 && !isLoadingChapters) {
+    if (
+      !audiobookOnly &&
+      listenPanelOpen &&
+      audioAvailable &&
+      chapters.length === 0 &&
+      !isLoadingChapters
+    ) {
       fetchChapters();
     }
-  }, [listenPanelOpen, audioAvailable, chapters.length, fetchChapters, isLoadingChapters]);
+  }, [
+    audiobookOnly,
+    listenPanelOpen,
+    audioAvailable,
+    chapters.length,
+    fetchChapters,
+    isLoadingChapters,
+  ]);
 
   const previousAudioAvailable = useRef(audioAvailable);
   useEffect(() => {
@@ -189,7 +211,12 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
       const response = await fetch(`/api/admin/stories/${storyId}/generate-audiobook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voice: selectedVoice, includeBackgroundMusic }),
+        body: JSON.stringify({
+          voice: selectedVoice,
+          includeBackgroundMusic,
+          premiumRevision:
+            story.premiumEdition?.state === 'published' ? story.premiumEdition.revision : undefined,
+        }),
       });
       const result = await response.json();
       if (!response.ok) {
@@ -253,38 +280,42 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="card-title">Story Actions</h2>
-            <div className="badge badge-outline">Story #{story.storyId.slice(0, 8)}</div>
+        {!audiobookOnly && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="card-title">Story Actions</h2>
+              <div className="badge badge-outline">Story #{story.storyId.slice(0, 8)}</div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {story.status === 'published' ? (
+                <Link href={`/stories/${storyId}/read`} className="btn btn-primary">
+                  Read Story
+                </Link>
+              ) : (
+                <div className="btn btn-disabled pointer-events-none">
+                  Read Story (not published)
+                </div>
+              )}
+              <button
+                className="btn btn-secondary"
+                onClick={handlePrimaryActionClick}
+                disabled={actionDisabled && !audioAvailable}
+              >
+                {narrationButtonLabel}
+              </button>
+              <button
+                className={`btn btn-outline ${isGeneratingPdfs ? 'loading' : ''}`}
+                onClick={handleGeneratePdfs}
+                disabled={isGeneratingPdfs || actionDisabled}
+              >
+                {isGeneratingPdfs ? 'Triggering PDFs...' : 'Generate PDFs (Cover & Interior)'}
+              </button>
+              {pdfGenMessage && <p className="text-sm text-base-content/80">{pdfGenMessage}</p>}
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            {story.status === 'published' ? (
-              <Link href={`/stories/${storyId}/read`} className="btn btn-primary">
-                Read Story
-              </Link>
-            ) : (
-              <div className="btn btn-disabled pointer-events-none">Read Story (not published)</div>
-            )}
-            <button
-              className="btn btn-secondary"
-              onClick={handlePrimaryActionClick}
-              disabled={actionDisabled && !audioAvailable}
-            >
-              {narrationButtonLabel}
-            </button>
-            <button
-              className={`btn btn-outline ${isGeneratingPdfs ? 'loading' : ''}`}
-              onClick={handleGeneratePdfs}
-              disabled={isGeneratingPdfs || actionDisabled}
-            >
-              {isGeneratingPdfs ? 'Triggering PDFs...' : 'Generate PDFs (Cover & Interior)'}
-            </button>
-            {pdfGenMessage && <p className="text-sm text-base-content/80">{pdfGenMessage}</p>}
-          </div>
-        </div>
+        )}
 
-        {(story.interiorPdfUri || story.coverPdfUri || story.featureImageUri) && (
+        {!audiobookOnly && (story.interiorPdfUri || story.coverPdfUri || story.featureImageUri) && (
           <>
             <div className="divider" />
 
@@ -415,7 +446,11 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
               <button
                 className={`btn btn-primary ${isGeneratingAudio ? 'loading' : ''}`}
                 onClick={handleNarrationRequest}
-                disabled={isGeneratingAudio || actionDisabled}
+                disabled={
+                  isGeneratingAudio ||
+                  actionDisabled ||
+                  (audiobookOnly && story.audiobookStatus === 'generating')
+                }
               >
                 {isGeneratingAudio ? 'Contacting narrators...' : 'Generate narration'}
               </button>
@@ -433,8 +468,9 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
             <div>
               <p className="text-lg font-semibold">Listen & QA</p>
               <p className="text-sm text-base-content/70">
-                Stream each chapter right here. Playback proxies every audio file through the admin
-                API.
+                {audiobookOnly
+                  ? 'Listen to the narrated pages of this edition.'
+                  : 'Stream each chapter right here. Playback proxies every audio file through the admin API.'}
               </p>
             </div>
             <button
@@ -459,6 +495,20 @@ export function StoryActionPanel({ story, storyId, onStoryRefresh }: StoryAction
                 <div className="flex items-center justify-center py-6">
                   <span className="loading loading-spinner loading-md" />
                 </div>
+              ) : audiobookOnly && story.premiumAudio ? (
+                <ul className="space-y-3">
+                  {story.premiumAudio.tracks.map(({ pageNumber }, index) => (
+                    <li key={pageNumber} className="grid gap-1">
+                      <span>Page {pageNumber}</span>
+                      <audio
+                        controls
+                        preload="none"
+                        aria-label={`Page ${pageNumber}`}
+                        src={`${audioEndpoint}/${index}?runId=${story.premiumAudio?.runId}`}
+                      />
+                    </li>
+                  ))}
+                </ul>
               ) : audioChapters.length > 0 ? (
                 <AudioChapterList chapters={audioChapters} {...audioPlayer} />
               ) : (

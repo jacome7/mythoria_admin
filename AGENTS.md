@@ -96,4 +96,4 @@ See [../docs/SURVEYS.md](../docs/SURVEYS.md) and [docs/survey-analytics.md](docs
 
 Story Whisperer support operations resolve an interview to the owner's shared voice account through the WebApp. See [staff operations](docs/how-to/biographer-operations.md).
 
-Premium story retries resume the original SGW run. Premium square print orders require the explicit release action on the linked paid ticket. See [print fulfillment operations](docs/print-fulfillment.md).
+Premium story retries resume the original SGW run. Open published premium editions through the Admin reader. Premium square print orders and one-copy staff proofs require the explicit release action on their linked ticket. See [print fulfillment operations](docs/print-fulfillment.md).

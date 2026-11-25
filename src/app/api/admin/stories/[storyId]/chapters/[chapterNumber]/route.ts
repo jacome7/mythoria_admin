@@ -34,6 +34,11 @@ export async function GET(
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
+    if (story.premiumEdition)
+      return NextResponse.json(
+        { code: 'premium_edition', error: 'Open the premium edition reader.' },
+        { status: 409, headers: { 'Cache-Control': 'private, no-store' } },
+      );
 
     // Get the latest version of every chapter for reading and navigation.
     const allChapters = await adminService.getStoryChapters(storyId);

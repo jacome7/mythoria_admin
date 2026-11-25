@@ -71,6 +71,7 @@ interface CreateLinkedPrintTicketData {
   printRequestId: string;
   printFormat: 'paperback' | 'hardcover';
   numberOfCopies: number;
+  proofOnly?: { revision: string; requestedBy: string };
 }
 
 export interface CreatePaymentTicketData {
@@ -300,7 +301,11 @@ export class TicketService {
         .limit(1);
       if (existing) {
         const metadata = existing.metadata as TicketMetadata | null;
-        if (metadata?.storyId !== data.storyId || existing.userId !== data.userId) {
+        if (
+          metadata?.storyId !== data.storyId ||
+          existing.userId !== (data.proofOnly ? null : data.userId) ||
+          metadata.proofOnly?.revision !== data.proofOnly?.revision
+        ) {
           throw new Error('Print request is linked to a different ticket owner or story');
         }
         return existing;
@@ -309,15 +314,20 @@ export class TicketService {
       const [ticket] = await tx
         .insert(tickets)
         .values({
-          userId: data.userId,
+          userId: data.proofOnly ? null : data.userId,
           category: 'print_request',
-          subject: `Print Request for Story ${data.storyId}`,
-          description: `User requested print for story ID: ${data.storyId}`,
+          subject: data.proofOnly
+            ? `Staff print proof for story ${data.storyId}`
+            : `Print Request for Story ${data.storyId}`,
+          description: data.proofOnly
+            ? `Staff requested one square hardcover proof of revision ${data.proofOnly.revision}.`
+            : `User requested print for story ID: ${data.storyId}`,
           metadata: {
             printRequestId: data.printRequestId,
             storyId: data.storyId,
             printFormat: data.printFormat,
             numberOfCopies: data.numberOfCopies,
+            ...(data.proofOnly ? { proofOnly: data.proofOnly } : {}),
           },
         })
         .returning();

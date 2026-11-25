@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { ALLOWED_DOMAINS } from '@/config/auth';
 import { adminService } from '@/db/services';
+import { premiumEditionSummary } from '@/lib/premium-edition';
+import { premiumAudiobookMetadata } from '@/lib/premium-audiobook';
+import { getPremiumAudioTrack } from '@/services/premium-audiobook';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ storyId: string; chapterIndex: string }> },
 ) {
   try {
@@ -19,14 +22,27 @@ export async function GET(
     }
 
     const { storyId, chapterIndex } = await params;
-    const chapterIdx = Number.parseInt(chapterIndex, 10);
-    if (!storyId || Number.isNaN(chapterIdx) || chapterIdx < 0) {
+    const chapterIdx = Number(chapterIndex);
+    if (!storyId || !/^\d+$/.test(chapterIndex) || !Number.isSafeInteger(chapterIdx)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
     const story = await adminService.getStoryById(storyId);
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
+    }
+
+    const premium = premiumEditionSummary(story.features);
+    if (premium) {
+      const metadata =
+        premium.state === 'published' && story.status === 'published'
+          ? premiumAudiobookMetadata(premium.revision, story.audiobookUri)
+          : null;
+      const runId = new URL(request.url).searchParams.get('runId');
+      if (!metadata || runId !== metadata.runId || !metadata.tracks[chapterIdx]) {
+        return new NextResponse(null, { status: 404 });
+      }
+      return await getPremiumAudioTrack(storyId, runId, chapterIdx, request.headers.get('range'));
     }
 
     if (!story.audiobookUri || typeof story.audiobookUri !== 'object') {

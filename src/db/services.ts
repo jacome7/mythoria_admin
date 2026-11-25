@@ -25,6 +25,7 @@ import type {
   StoriesCreatedAggregation,
 } from '@/lib/analytics/registrations';
 import type { RevenueAggregation } from '@/lib/analytics/revenue';
+import { premiumEditionSummary } from '@/lib/premium-edition';
 import type { ServiceUsageAggregation, ServiceUsageEventType } from '@/lib/analytics/service-usage';
 import { SERVICE_USAGE_EVENT_TYPES } from '@/lib/analytics/service-usage';
 import {
@@ -481,7 +482,10 @@ export const adminService = {
 
   async getTotalPrintRequestsCount() {
     const db = getMythoriaDb();
-    const result = await db.select({ value: count() }).from(printRequests);
+    const result = await db
+      .select({ value: count() })
+      .from(printRequests)
+      .where(sql`${printRequests.printingOptions}->>'staffProofRevision' is null`);
     return result[0]?.value || 0;
   },
 
@@ -1126,6 +1130,7 @@ export const adminService = {
       .select({
         storyId: stories.storyId,
         title: stories.title,
+        features: stories.features,
         status: stories.status,
         chapterCount: stories.chapterCount,
         createdAt: stories.createdAt,
@@ -1158,7 +1163,9 @@ export const adminService = {
       .innerJoin(authors, eq(stories.authorId, authors.authorId))
       .where(eq(stories.storyId, storyId));
 
-    return story;
+    if (!story) return undefined;
+    const { features, ...details } = story;
+    return { ...details, premiumEdition: premiumEditionSummary(features) };
   },
 
   async updateStory(storyId: string, updates: Partial<typeof stories.$inferSelect>) {
@@ -1166,22 +1173,38 @@ export const adminService = {
     const [updatedStory] = await db
       .update(stories)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(stories.storyId, storyId))
+      .where(
+        and(
+          eq(stories.storyId, storyId),
+          sql`not coalesce(${stories.features} ? 'premiumBook', false)`,
+        ),
+      )
       .returning();
 
     return updatedStory;
   },
 
-  async featureStory(storyId: string, featureImageUri: string) {
+  async featureStory(storyId: string, featureImageUri?: string) {
     const db = getMythoriaDb();
     const [updatedStory] = await db
       .update(stories)
       .set({
         isFeatured: true,
-        featureImageUri: featureImageUri,
+        ...(featureImageUri !== undefined ? { featureImageUri } : {}),
         updatedAt: new Date(),
       })
-      .where(eq(stories.storyId, storyId))
+      .where(
+        and(
+          eq(stories.storyId, storyId),
+          eq(stories.isPublic, true),
+          featureImageUri === undefined
+            ? and(
+                eq(stories.status, 'published'),
+                sql`coalesce(${stories.features} ? 'premiumBook', false)`,
+              )
+            : sql`not coalesce(${stories.features} ? 'premiumBook', false)`,
+        ),
+      )
       .returning();
 
     // Return the story with author information
@@ -1233,7 +1256,10 @@ export const adminService = {
     const orderColumn = sortBy === 'status' ? printRequests.status : printRequests.requestedAt;
     const orderDirection = sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
-    const query = db.select().from(printRequests);
+    const query = db
+      .select()
+      .from(printRequests)
+      .where(sql`${printRequests.printingOptions}->>'staffProofRevision' is null`);
     // if (whereCondition) {
     //   query.where(whereCondition);
     // }
@@ -1674,7 +1700,7 @@ export const adminService = {
     const story = await this.getStoryByIdWithAuthor(storyId);
     if (!story) return null;
 
-    const chapters = await this.getStoryChapters(storyId);
+    const chapters = story.premiumEdition ? [] : await this.getStoryChapters(storyId);
 
     return {
       ...story,

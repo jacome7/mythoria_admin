@@ -41,6 +41,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
     if (!storyWithChapters) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
+    if (storyWithChapters.premiumEdition)
+      return NextResponse.json(
+        { code: 'premium_edition', error: 'Open the premium edition reader.' },
+        { status: 409, headers: { 'Cache-Control': 'private, no-store' } },
+      );
 
     // Transform story data for the story reader
     const transformedStory = {
