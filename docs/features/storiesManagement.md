@@ -13,6 +13,10 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 3. Detail screen shows metadata, chapter table, feature/restart actions, PDF generation, and audiobook generation.
 4. Read-only flows (`/stories/[storyId]/read`, `/read/chapter/[chapterNumber]`) help verify generated content chapter-by-chapter.
 
+For premium editions with the lettered cover design, the Admin reader shows the selected style logo and publication QR on the back cover. **Preview Page Artwork** displays the pinned rendering alongside access to the transcript. The live dedication view uses the same smaller italic signature as the pinned version 1 artwork.
+
+Published Premium Children Books show **Print PDFs** on the story page. Admin opens an existing verified package for the current edition or starts a staff export when the package is missing. Staff exports provide RGB and CMYK versions of the square interior and casewrap cover. If an existing package contains only RGB, staff can download those files or request the full set. The action shows the queue, generation and retry states. Downloads require Admin access and redirect to short-lived links for the exact stored file version. The staff proof and print-and-ship controls continue to handle physical orders.
+
 ## Backend and API touchpoints
 
 - `GET /api/admin/stories`
@@ -23,6 +27,8 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 - `POST /api/admin/stories/[storyId]/restart`
 - `POST /api/workflows/[runId]/retry`
 - `POST /api/stories/[storyId]/generate-pdfs`
+- `GET` and `POST /api/admin/stories/[storyId]/premium-print?revision=<uuid>`
+- `GET /api/admin/stories/[storyId]/premium-print/[runId]/[part]?revision=<uuid>`
 - `POST /api/admin/stories/[storyId]/generate-audiobook`
 - `GET /api/admin/stories/[storyId]/audio/[chapterIndex]`
 

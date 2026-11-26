@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { AdminLuluOrderForm } from '@/components/AdminLuluOrderForm';
 import type { PremiumEditionSummary } from '@/lib/premium-edition';
+import { PremiumPrintActions } from './PremiumPrintActions';
 
 const fields = [
   { name: 'name', label: 'Staff recipient', maxLength: 120, required: true },
@@ -71,6 +72,7 @@ export function PremiumStoryActions({
             <Link href={`/stories/${storyId}/read`} className="btn btn-primary">
               Read Premium Edition
             </Link>
+            <PremiumPrintActions key={revision} storyId={storyId} revision={revision} />
             {ticketId ? (
               <Link href={`/tickets/${ticketId}`} className="btn btn-outline">
                 Open Staff Proof Ticket

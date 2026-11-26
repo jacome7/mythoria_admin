@@ -61,6 +61,9 @@ MCP transport update (2026-10-27): `POST /api/mcp` accepts authenticated JSON-RP
 
 ### Paid & admin print fulfillment
 
+- `GET /api/admin/stories/[storyId]/premium-print?revision=<uuid>` reads the current published edition's PDF export status. `POST` starts or retries a staff export with an authorized Admin session and trusted request origin. The response lists the available parts when ready.
+- `GET /api/admin/stories/[storyId]/premium-print/[runId]/[part]?revision=<uuid>` authorizes and audits an individual PDF download and redirects to a five-minute, generation-pinned GCS URL. Supported parts are `interior`, `cover`, `interiorCmyk` and `coverCmyk`.
+
 - `POST /api/admin/print` accepts `getConfig` and `setConfig` for print settings, plus `get`, `select`, `prepare` (optional `runImmediately`), `revise`, `hold`, `clear`, `correctShipping`, `correctSquareEdition`, `submit`, `reconcile`, and `cancel` (`reason`) with a linked `ticketId`. Lulu submission requires the current `confirmationId`, `checkedInbox: true`, and `confirmedTotalEur`.
 - `POST /api/admin/stories/[storyId]/lulu-print` creates an Admin print-and-ship order (`admin_order` 1–10 copies or `staff_proof` 1 copy) for either `premium_square` (8.5×8.5" Hardcover) or `standard_a5` (Paperback or Hardcover), optionally upgrades an open/in-progress `legacyTicketId`, and prepares Lulu PDFs & shipping quote immediately when `prepareNow !== false`.
 - `POST /api/admin/print/manual` accepts `ticketId`, `partnerId`, `proofVersion`, `checkedInbox: true`, `subject`, and `bodyText`. A successful response reports `outcome` as `sent` or `uncertain`.

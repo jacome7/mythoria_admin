@@ -10,6 +10,8 @@ export interface AdminPremiumEdition {
   title: string;
   locale: string;
   editionLayout?: string;
+  generationDesignVersion?: 1;
+  coverBrandLogo?: string;
   audience?: 'children_0-2' | 'children_3-6';
   openingDesign?: { background: string };
   specification?: {
@@ -23,8 +25,10 @@ export interface AdminPremiumEdition {
     number: number;
     kind: string;
     text: string;
+    dedicationSignature?: string;
     renderMode?: 'embedded_art' | 'illustration' | 'typeset';
     image?: string;
+    previewImage?: string;
     imageDescription?: string;
     textBox?: { x: number; y: number; width: number; height: number };
   }[];
@@ -39,6 +43,7 @@ export default function AdminPremiumEditionReader({
 }) {
   const [index, setIndex] = useState(0);
   const [failed, setFailed] = useState<string>();
+  const [logoFailed, setLogoFailed] = useState(false);
   const [previewPage, setPreviewPage] = useState<number>();
   const lastIndex = book.pages.length + 1;
   const page = book.pages[index - 1];
@@ -47,7 +52,7 @@ export default function AdminPremiumEditionReader({
       ? 'front'
       : index === lastIndex
         ? 'back'
-        : page?.image && page.renderMode !== 'typeset'
+        : (page?.image || page?.previewImage) && page.renderMode !== 'typeset'
           ? String(page.number)
           : undefined;
   const title =
@@ -55,6 +60,15 @@ export default function AdminPremiumEditionReader({
   const isTextPage = page && [1, 2, 3, 4, 33].includes(page.number);
   const showImage = image && (!isTextPage || previewPage === page.number);
   const visibleImage = showImage && failed !== image;
+  const brandedCover =
+    book.generationDesignVersion === 1 && (image === 'front' || image === 'back');
+  const publisher = 'https://mythoria.pt';
+  const logoPath =
+    !logoFailed &&
+    book.coverBrandLogo &&
+    /^\/images\/logo\/[\w-]+\.(?:jpg|png)$/.test(book.coverBrandLogo)
+      ? book.coverBrandLogo
+      : '/images/logo/Logo_transparent_background_1024x683.png';
   const embedded =
     page?.renderMode === 'embedded_art' ||
     (!page?.renderMode && book.editionLayout === 'embedded-lettering-v2');
@@ -131,9 +145,31 @@ export default function AdminPremiumEditionReader({
               fill
               unoptimized
               sizes="(min-width: 720px) 680px, calc(100vw - 2rem)"
-              className="object-contain"
+              className={brandedCover ? 'scale-[1.0294] object-contain' : 'object-contain'}
               onError={() => setFailed(image)}
             />
+          )}
+          {brandedCover && visibleImage && image === 'back' && (
+            <div className="absolute bottom-[9%] left-[9%] grid h-[15%] w-[36%] grid-cols-[minmax(0,1fr)_32%] items-center gap-[6%] bg-[#f5e6d3] p-[2.3%]">
+              <div className="relative h-full">
+                <Image
+                  src={publisher + logoPath}
+                  alt="Mythoria"
+                  fill
+                  unoptimized
+                  className="object-contain"
+                  onError={() => setLogoFailed(true)}
+                />
+              </div>
+              <Image
+                src={publisher + '/images/logo/publication-qr.png'}
+                alt="mythoria.pt"
+                width={72}
+                height={72}
+                unoptimized
+                className="h-auto w-full"
+              />
+            </div>
           )}
           {showImage && !visibleImage && (
             <p className="p-4 text-sm" role="alert">
@@ -197,6 +233,11 @@ export default function AdminPremiumEditionReader({
                           </p>
                         ),
                       )}
+                    </>
+                  ) : page.dedicationSignature ? (
+                    <>
+                      {page.text.slice(0, -page.dedicationSignature.length)}
+                      <span className="text-[0.7em] italic">{page.dedicationSignature}</span>
                     </>
                   ) : (
                     page.text
