@@ -1,3 +1,4 @@
+import { getStoryImageUrl } from '@/lib/storyImageUrl';
 import { AudioChapter } from './types';
 
 type StructuredAudiobookChapter = {
@@ -51,7 +52,10 @@ export function getAudioChapters(
         chapterTitle: chapterFromDb?.title || entry.chapterTitle || fallbackTitle(number),
         audioUri: entry.audioUri,
         duration: entry.duration ?? 0,
-        imageUri: chapterFromDb?.imageUri || entry.imageUri,
+        imageUri:
+          getStoryImageUrl(chapterFromDb?.imageUri) ??
+          getStoryImageUrl(entry.imageUri) ??
+          undefined,
       } satisfies AudioChapter;
     });
   }
@@ -83,7 +87,7 @@ export function getAudioChapters(
           chapterTitle: chapterFromDb?.title || fallbackTitle(number),
           audioUri: uri,
           duration: 0,
-          imageUri: chapterFromDb?.imageUri || undefined,
+          imageUri: getStoryImageUrl(chapterFromDb?.imageUri) ?? undefined,
         });
       }
     });
