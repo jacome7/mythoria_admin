@@ -1,5 +1,7 @@
 # Print fulfillment operations
 
+For the manager's step-by-step procedure, field requirements and recovery paths, see [Submit a physical book to Lulu](how-to/submit-a-lulu-print-order.md). See also the [manager experience review](lulu-manager-experience.md).
+
 Updated 2026-11-25.
 
 The tickets page exposes the WebApp-owned default provider and per-copy landed EUR ceiling. The initial provider is **None / manual**, and changes apply to future orders. Set Admin `PRINT_INTERNAL_AUDIENCE` to the exact same OIDC audience as the WebApp setting, and set `WEBAPP_URL` to the WebApp base URL. WebApp `PRINT_ADMIN_SERVICE_ACCOUNT` must equal the email of the Admin runtime identity that signs the ID token. Configure the audience on the Admin runtime before switching WebApp checkout to paid print fulfillment. Cloud Build preserves the runtime value. Configure the WebApp scheduler, private proof bucket and vendor prerequisites before enabling checkout or Lulu. [Shared rollout runbook](https://github.com/jacome7/Mythoria-webapp/blob/master/docs/PRINT_FULFILLMENT.md)

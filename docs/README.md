@@ -10,6 +10,9 @@ We apply the Diátaxis model so that each document answers a single type of ques
 
 ## How-to guides (task-oriented)
 
+- [Submit a physical book to Lulu](how-to/submit-a-lulu-print-order.md) covers the staff inputs, proof review, supplier release and follow-up for each entry point.
+- [Lulu manager experience review](lulu-manager-experience.md) documents observed friction and proposed improvements.
+
 | Doc                                | Scope                                                                     |
 | ---------------------------------- | ------------------------------------------------------------------------- |
 | `docs/deployment.md`               | Deploying to Cloud Run via Cloud Build, managing secrets, rollback steps. |
