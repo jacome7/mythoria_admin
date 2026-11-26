@@ -81,7 +81,7 @@ export function PremiumPrintActions({ storyId, revision }: { storyId: string; re
 
   return (
     <div className="space-y-2 rounded-lg border border-base-300 p-3">
-      <h3 className="font-semibold">Print PDFs</h3>
+      <h3 className="font-semibold">Download print PDFs</h3>
       {error && (
         <p className="text-sm text-error" role="alert">
           {error}

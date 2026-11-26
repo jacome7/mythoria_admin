@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { StoryDetail } from '@/app/stories/[storyId]/hooks/useStoryDetail';
-import { AdminLuluOrderForm } from '@/components/AdminLuluOrderForm';
+import { AdminPrintOrderEntry } from '@/components/AdminLuluOrderForm';
 import {
   useAudioPlayer,
   AudioChapterList,
@@ -18,6 +18,7 @@ interface StoryActionPanelProps {
   storyId: string;
   onStoryRefresh: () => Promise<void>;
   audiobookOnly?: boolean;
+  legacyTicketId?: string;
 }
 
 interface ChapterSummary {
@@ -33,6 +34,7 @@ export function StoryActionPanel({
   storyId,
   onStoryRefresh,
   audiobookOnly = false,
+  legacyTicketId,
 }: StoryActionPanelProps) {
   const [isGeneratingPdfs, setIsGeneratingPdfs] = useState(false);
   const [pdfGenMessage, setPdfGenMessage] = useState<string | null>(null);
@@ -53,12 +55,7 @@ export function StoryActionPanel({
   );
   const [isSendingPrint, setIsSendingPrint] = useState(false);
   const [printMessage, setPrintMessage] = useState<string | null>(null);
-  const [legacyTicketId, setLegacyTicketId] = useState<string | undefined>(undefined);
-
-  useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get('legacyPrintTicket');
-    if (param) setLegacyTicketId(param);
-  }, []);
+  const [compareLegacyShipment, setCompareLegacyShipment] = useState(false);
 
   useEffect(() => {
     if (isPrintModalOpen && printShops.length === 0) {
@@ -79,12 +76,11 @@ export function StoryActionPanel({
   }, [isPrintModalOpen, printShops.length]);
 
   const handleSendPrintRequest = async () => {
+    if (!legacyTicketId) return;
     setIsSendingPrint(true);
     setPrintMessage(null);
+    setCompareLegacyShipment(false);
     try {
-      const legacyPrintTicketId = new URLSearchParams(window.location.search).get(
-        'legacyPrintTicket',
-      );
       const response = await fetch(`/api/admin/stories/${storyId}/request-print`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,14 +90,15 @@ export function StoryActionPanel({
           bodyText: printBody,
           coverPdfUri: story.coverPdfUri,
           interiorPdfUri: story.interiorPdfUri,
-          ...(legacyPrintTicketId ? { legacyTicketId: legacyPrintTicketId } : {}),
+          legacyTicketId,
         }),
       });
       const result = await response.json();
       if (response.ok) {
-        setPrintMessage('Print request sent successfully!');
+        setPrintMessage('Print request sent to the printer.');
         setTimeout(() => setIsPrintModalOpen(false), 2000);
       } else {
+        setCompareLegacyShipment(result.code === 'print_legacy_compare');
         setPrintMessage(result.error || 'Failed to send print request.');
       }
     } catch (error) {
@@ -332,6 +329,9 @@ export function StoryActionPanel({
             <div className="divider" />
 
             <div className="space-y-3">
+              {(story.interiorPdfUri || story.coverPdfUri) && (
+                <h3 className="font-semibold">Download print PDFs</h3>
+              )}
               {story.interiorPdfUri && (
                 <div>
                   <span className="font-semibold">Interior PDF:</span>
@@ -372,13 +372,13 @@ export function StoryActionPanel({
                   </div>
                 </div>
               )}
-              {story.interiorPdfUri && story.coverPdfUri && (
+              {legacyTicketId && story.interiorPdfUri && story.coverPdfUri && (
                 <div className="mt-4 pt-2 border-t border-base-300">
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={() => setIsPrintModalOpen(true)}
                   >
-                    Request Print
+                    Send to manual printer
                   </button>
                 </div>
               )}
@@ -386,23 +386,13 @@ export function StoryActionPanel({
           </>
         )}
 
-        {!audiobookOnly && story.status === 'published' && (
-          <details className="rounded-lg border border-base-300 p-3">
-            <summary className="cursor-pointer font-semibold">
-              Order Print &amp; Ship via Lulu
-            </summary>
-            <p className="my-2 text-sm text-base-content/70">
-              Generate Lulu-compliant PDFs, quote shipping, and dispatch a Standard A5 Paperback or
-              Hardcover print job directly to Lulu.
-            </p>
-            <AdminLuluOrderForm
-              storyId={storyId}
-              hasPublishedPremiumEdition={false}
-              defaultBookFormat="standard_a5"
-              defaultBinding="paperback"
-              legacyTicketId={legacyTicketId}
-            />
-          </details>
+        {!audiobookOnly && story.status === 'published' && !legacyTicketId && (
+          <AdminPrintOrderEntry storyId={storyId} defaultBookFormat="standard_a5" />
+        )}
+        {!audiobookOnly && legacyTicketId && (
+          <Link href={`/tickets/${legacyTicketId}`} className="btn btn-outline btn-sm">
+            Open print ticket
+          </Link>
         )}
 
         <section className="rounded-xl border border-base-300 overflow-hidden">
@@ -619,10 +609,15 @@ export function StoryActionPanel({
 
                 {printMessage && (
                   <div
-                    className={`alert ${printMessage.includes('success') ? 'alert-success' : 'alert-error'} mt-2`}
+                    className={`alert ${printMessage === 'Print request sent to the printer.' ? 'alert-success' : 'alert-error'} mt-2`}
                   >
-                    <div className="flex-1">
-                      <label>{printMessage}</label>
+                    <div className="space-y-1">
+                      <p>{printMessage}</p>
+                      {compareLegacyShipment && legacyTicketId && (
+                        <Link href={`/tickets/${legacyTicketId}`} className="link">
+                          Open original ticket
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}

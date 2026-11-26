@@ -19,6 +19,7 @@
     "test:coverage": "jest --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx -r dotenv/config ./src/db/migrate.ts",
+    "db:migrate:staff-print-destinations": "tsx ./scripts/apply-staff-print-destinations-migration.ts",
     "db:push": "drizzle-kit push",
     "db:reset": "tsx -r dotenv/config ./src/db/reset.ts",
     "db:setup": "npm run db:reset && npm run db:push",

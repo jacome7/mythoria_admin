@@ -71,6 +71,7 @@ const requestSchema = z.discriminatedUnion('operation', [
     operation: z.literal('correctShipping'),
     ticketId: z.string().uuid(),
     customerConfirmed: z.literal(true),
+    expectedProofVersion: z.number().int().positive().optional(),
     shippingAddress: z.object({
       name: z.string().trim().min(1).max(120),
       street1: z.string().trim().min(1).max(255),

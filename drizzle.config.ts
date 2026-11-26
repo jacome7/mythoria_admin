@@ -16,6 +16,7 @@ export default defineConfig({
     './src/db/schema/referral-rbac.ts',
     './src/db/schema/survey-rbac.ts',
     './src/db/schema/admin-audit.ts',
+    './src/db/schema/staff-print-destinations.ts',
     './src/db/schema/campaigns.ts',
   ],
   out: './drizzle',

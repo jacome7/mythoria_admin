@@ -65,12 +65,24 @@ MCP transport update (2026-10-27): `POST /api/mcp` accepts authenticated JSON-RP
 - `GET /api/admin/stories/[storyId]/premium-print/[runId]/[part]?revision=<uuid>` authorizes and audits an individual PDF download and redirects to a five-minute, generation-pinned GCS URL. Supported parts are `interior`, `cover`, `interiorCmyk` and `coverCmyk`.
 
 - `POST /api/admin/print` accepts `getConfig` and `setConfig` for print settings, plus `get`, `select`, `prepare` (optional `runImmediately`), `revise`, `hold`, `clear`, `correctShipping`, `correctSquareEdition`, `submit`, `reconcile`, and `cancel` (`reason`) with a linked `ticketId`. Lulu submission requires the current `confirmationId`, `checkedInbox: true`, and `confirmedTotalEur`.
-- `POST /api/admin/stories/[storyId]/lulu-print` creates an Admin print-and-ship order (`admin_order` 1–10 copies or `staff_proof` 1 copy) for either `premium_square` (8.5×8.5" Hardcover) or `standard_a5` (Paperback or Hardcover), optionally upgrades an open/in-progress `legacyTicketId`, and prepares Lulu PDFs & shipping quote immediately when `prepareNow !== false`.
+- `GET /api/admin/stories/[storyId]/print-orders` reads the published edition, eligible paid-ticket matches, and the customer's delivery address candidate for a new Admin shipment. For legacy entry, pass `legacyTicketId` and the ticket's `requestedThrough` timestamp. The response is private and uncached.
+- `POST /api/admin/stories/[storyId]/print-orders` accepts an `intentId` (UUID), product, copy count, purpose, provider, confirmed shipping details, and an optional `legacyTicketId`. It returns the linked ticket and preparation status, or a `possible_match` result with existing tickets. Use `allowRepeat: true` to confirm a separate Admin shipment. For an unlinked legacy ticket with possible paid matches, compare the tickets and send `confirmSeparateLegacyShipment: true` with the same intent to proceed on the original ticket. Send `{ operation: 'recover', intentId }` to recover a pending or completed attempt. Creation calls the WebApp's `createAdminOrderV2` operation. Keep the same route and intent when checking a request during a partial rollout or rollback.
+- `POST /api/admin/stories/[storyId]/lulu-print` remains available for authorized clients using the legacy payload. An intent-bearing client must use `print-orders`.
 - `POST /api/admin/print/manual` accepts `ticketId`, `partnerId`, `proofVersion`, `checkedInbox: true`, `subject`, and `bodyText`. A successful response reports `outcome` as `sent` or `uncertain`.
 - `POST /api/tickets/paid-print` and `POST /api/tickets/admin-print` require the service API key and an `orderDetails` object with `fulfillmentVersion: 1` and a valid `printRequestId`. `admin-print` also supports linking an existing unlinked `legacyTicketId`. The original `POST /api/tickets` keeps unversioned print tickets on the legacy workflow.
-- `POST /api/admin/stories/[storyId]/request-print` accepts an optional `legacyTicketId` for an open legacy print ticket for the story that predates its first paid print reservation.
+- `POST /api/admin/stories/[storyId]/request-print` requires a `legacyTicketId` for original manual dispatch on an active legacy print ticket. A possible paid match returns `409` with `print_legacy_compare` and directs staff to compare on the original ticket before using the upgrade workflow.
 
 Both fulfillment routes require an authorized Admin session. See [print fulfillment operations](print-fulfillment.md) for the staff workflow and runtime settings.
+
+### Print orders queue
+
+`GET /api/tickets/print-orders` requires an authorized Admin session. Use `search` for the book title, order reference, or ticket ID. `purpose` accepts `customer`, `staff_proof`, `admin_order`, or `legacy`. `action` accepts `needs_attention`, `awaiting_review`, `ready`, `with_supplier`, `preparing`, `legacy`, or `closed`. `sort` accepts `updated_desc` (default), `updated_asc`, or `title_asc`. The last-updated sort uses the latest ticket, print request, or fulfillment update. Ticket ID breaks ties.
+
+The response returns `data`, counts per action for the current search and purpose, and `pagination.total` for the current action filter. `limit` defaults to 25 and accepts 1–100. Start at `page=1`. Pass `pagination.nextCursor` as `after` or `pagination.previousCursor` as `before` for subsequent pages, and increment or decrement `page` for the displayed page number. Keep the search, filters and sort fixed during cursor navigation.
+
+Each request reads the print ticket category in bounded batches from `backoffice_db` and matches fulfillment and story records by indexed IDs in `mythoria_db`. Exact counts consider all matching tickets, including legacy tickets. The join retains one page and one batch in application memory. The queue uses stored fulfillment state and supplier status. Live release requirements and private proof previews are evaluated in ticket detail.
+
+`POST /api/tickets/[id]/print-owner` accepts `{ "action": "claim" }` or `{ "action": "release" }` from an authorized Admin session. It returns `409` when the ticket is closed or assigned to another staff member. Ticket ownership appears in the queue's `owner` field.
 
 ### Email campaigns
 

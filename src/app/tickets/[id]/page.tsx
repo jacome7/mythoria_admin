@@ -7,8 +7,9 @@ import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/uti
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import type { TicketMetadata, TicketPaymentPackage } from '@/lib/ticketing/types';
-import { AdminLuluOrderForm } from '@/components/AdminLuluOrderForm';
+import { AdminPrintOrderEntry } from '@/components/AdminLuluOrderForm';
 import { PrintFulfillment } from '@/components/PrintFulfillment';
+import { PrintTicketOwner } from '@/components/PrintTicketOwner';
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 const EURO_FORMATTER = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' });
@@ -571,14 +572,35 @@ export default function TicketDetailPage() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body">
           <h3 className="card-title text-lg">Print Request Details</h3>
-          {metadata.printRequestId && (
+          {ticket && (
+            <PrintTicketOwner
+              ticketId={ticketId}
+              owner={metadata.printOwner}
+              email={session?.user?.email}
+              active={ticket.status === 'open' || ticket.status === 'in_progress'}
+              reload={fetchTicket}
+            />
+          )}
+          {ticket && metadata.printRequestId && (
             <PrintFulfillment
               key={ticketId}
               ticketId={ticketId}
-              closed={ticket?.status === 'closed' || ticket?.status === 'resolved'}
+              ticketStatus={ticket.status}
+              ticketCreatedAt={ticket.createdAt}
+              ticketUpdatedAt={ticket.updatedAt}
             />
           )}
+          {!metadata.printRequestId && metadata.legacyPrintDispatch && (
+            <div className="rounded-lg bg-base-200 p-3 text-sm" role="status">
+              {metadata.legacyPrintDispatch.status === 'sent'
+                ? 'The request was sent to the manual printer. Follow up with the printer on this ticket.'
+                : metadata.legacyPrintDispatch.status === 'dispatching'
+                  ? 'The manual printer request is being sent. Refresh this ticket to check delivery.'
+                  : 'Delivery to the manual printer is uncertain. Check the printer’s inbox or confirm delivery with the printer before taking further action.'}
+            </div>
+          )}
           {!metadata.printRequestId &&
+            !metadata.legacyPrintDispatch &&
             metadata.storyId &&
             (ticket?.status === 'open' || ticket?.status === 'in_progress') && (
               <div className="space-y-3">
@@ -589,47 +611,35 @@ export default function TicketDetailPage() {
                   }}
                   className="btn btn-sm btn-outline self-start"
                 >
-                  Open story for legacy print
+                  Open story and print PDFs
                 </Link>
-                <details className="rounded-lg border border-base-300 p-3">
-                  <summary className="cursor-pointer text-sm font-semibold">
-                    Upgrade &amp; Dispatch via Lulu Fulfillment
-                  </summary>
-                  <p className="my-2 text-xs text-base-content/70">
-                    Links a Lulu fulfillment order directly to this ticket so proof QA, quote
-                    confirmation, and dispatch stay tracked here.
-                  </p>
-                  <AdminLuluOrderForm
-                    storyId={metadata.storyId}
-                    hasPublishedPremiumEdition={Boolean(
-                      metadata.bookFormat === 'premium_square' ||
-                      metadata.proofOnly ||
-                      metadata.printFormat === 'hardcover',
-                    )}
-                    defaultBookFormat={
-                      metadata.bookFormat === 'premium_square' ? 'premium_square' : 'standard_a5'
-                    }
-                    defaultBinding={
-                      metadata.printFormat === 'hardcover' ? 'hardcover' : 'paperback'
-                    }
-                    defaultCopies={metadata.numberOfCopies ?? 1}
-                    defaultShipping={{
-                      name: metadata.enrichedUser?.displayName ?? metadata.name ?? '',
-                      email: metadata.enrichedUser?.email ?? metadata.email ?? '',
-                      phone_number: metadata.enrichedAddress?.phone ?? metadata.phone ?? '',
-                      street1: metadata.enrichedAddress?.line1 ?? '',
-                      street2: metadata.enrichedAddress?.line2 ?? '',
-                      city: metadata.enrichedAddress?.city ?? '',
-                      state_code: metadata.enrichedAddress?.stateRegion ?? '',
-                      postcode: metadata.enrichedAddress?.postalCode ?? '',
-                      country_code: metadata.enrichedAddress?.country ?? '',
-                    }}
-                    legacyTicketId={ticketId}
-                    onLinked={async () => {
-                      await fetchTicket();
-                    }}
-                  />
-                </details>
+                <AdminPrintOrderEntry
+                  storyId={metadata.storyId}
+                  defaultBookFormat={
+                    metadata.bookFormat ?? (metadata.proofOnly ? 'premium_square' : 'standard_a5')
+                  }
+                  defaultBinding={metadata.printFormat === 'hardcover' ? 'hardcover' : 'paperback'}
+                  defaultCopies={metadata.numberOfCopies ?? 1}
+                  purchaser={metadata.enrichedUser?.displayName ?? metadata.name}
+                  legacyAddress={
+                    metadata.enrichedAddress
+                      ? {
+                          name: metadata.name ?? metadata.enrichedUser?.displayName,
+                          email: metadata.email ?? metadata.enrichedUser?.email,
+                          phone_number: metadata.enrichedAddress.phone ?? metadata.phone,
+                          street1: metadata.enrichedAddress.line1,
+                          street2: metadata.enrichedAddress.line2,
+                          city: metadata.enrichedAddress.city,
+                          state_code: metadata.enrichedAddress.stateRegion,
+                          postcode: metadata.enrichedAddress.postalCode,
+                          country_code: metadata.enrichedAddress.country,
+                        }
+                      : undefined
+                  }
+                  legacyTicketId={ticketId}
+                  requestedThrough={ticket.createdAt}
+                  onLinked={fetchTicket}
+                />
               </div>
             )}
           <div className="space-y-4">
@@ -954,7 +964,7 @@ export default function TicketDetailPage() {
                 : renderMetadata(ticket.metadata))}
 
             {/* Comments */}
-            <div className="card bg-base-100 shadow-xl">
+            <div id="ticket-comments" className="card bg-base-100 shadow-xl">
               <div className="card-body">
                 <h3 className="card-title">Comments ({comments.length})</h3>
 

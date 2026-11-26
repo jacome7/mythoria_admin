@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticateRequest, unauthorizedResponse } from '@/lib/auth/middleware';
-import { TicketService } from '@/lib/ticketing/service';
+import { LegacyPrintConflict, TicketService } from '@/lib/ticketing/service';
 import type { TicketMetadata } from '@/lib/ticketing/types';
 
 const schema = z.object({
@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
       { status: 201, headers },
     );
   } catch (error) {
+    if (error instanceof LegacyPrintConflict)
+      return NextResponse.json({ error: error.message }, { status: 409, headers });
     console.error('Admin print ticket linkage failed', { printRequestId, error });
     return NextResponse.json(
       { error: 'Could not link admin print ticket' },

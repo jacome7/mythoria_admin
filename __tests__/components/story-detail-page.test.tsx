@@ -103,6 +103,10 @@ describe('StoryDetailPage', () => {
     expect(screen.queryByText('Interior PDF:')).not.toBeInTheDocument();
     expect(screen.queryByText('Cover PDF:')).not.toBeInTheDocument();
     expect(screen.queryByText('Not available')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Order a printed copy')).toHaveLength(1);
+    expect(
+      screen.queryByRole('button', { name: 'Send to manual printer' }),
+    ).not.toBeInTheDocument();
   });
 
   it('plays and downloads the complete premium audiobook at index zero', () => {
@@ -120,6 +124,8 @@ describe('StoryDetailPage', () => {
     });
 
     render(<StoryDetailPage />);
+    expect(screen.getAllByText('Order a printed copy')).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'Download print PDFs' })).toBeInTheDocument();
     const audioUrl = `/api/admin/stories/${story.storyId}/audio/0?runId=${runId}`;
     expect(screen.getByLabelText('Full audiobook')).toHaveAttribute('src', audioUrl);
     expect(screen.getByRole('link', { name: 'Download audiobook' })).toHaveAttribute(
@@ -139,7 +145,10 @@ describe('StoryDetailPage', () => {
       })
       .mockResolvedValueOnce({
         ok: false,
-        json: async () => ({ error: 'Synthetic outcome' }),
+        json: async () => ({
+          error: 'Compare paid print orders on the original ticket.',
+          code: 'print_legacy_compare',
+        }),
       });
     globalThis.fetch = fetchMock;
     window.history.replaceState(null, '', `?legacyPrintTicket=${legacyTicketId}`);
@@ -155,10 +164,17 @@ describe('StoryDetailPage', () => {
     });
     try {
       render(<StoryDetailPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'Request Print' }));
+      expect(screen.queryByText('Order a printed copy')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Send to manual printer' }));
       await screen.findByRole('option', { name: 'Printer' });
       fireEvent.click(screen.getByRole('button', { name: 'Send Email' }));
-      await screen.findByText('Synthetic outcome');
+      expect(
+        await screen.findByText('Compare paid print orders on the original ticket.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Open original ticket' })).toHaveAttribute(
+        'href',
+        `/tickets/${legacyTicketId}`,
+      );
       expect(fetchMock).toHaveBeenLastCalledWith(
         `/api/admin/stories/${story.storyId}/request-print`,
         expect.objectContaining({

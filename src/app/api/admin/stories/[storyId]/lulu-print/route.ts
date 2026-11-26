@@ -8,6 +8,7 @@ const headers = { 'Cache-Control': 'private, no-store' };
 
 const requestSchema = z
   .object({
+    intentId: z.never().optional(),
     bookFormat: z.enum(['premium_square', 'standard_a5']),
     binding: z.enum(['paperback', 'hardcover']),
     copies: z.number().int().min(1).max(10),

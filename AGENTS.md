@@ -49,6 +49,8 @@ Use this playbook whenever you script or automate changes in the repo.
 
 WebApp owns paid orders, proof versions, provider settings and supplier authorization. The initial provider is None / manual. Admin links checkout tickets to print requests, verifies the operator reviewed the current proof and inbox, and forwards the reserved file identities to Notification Engine for manual dispatch. See [print fulfillment operations](docs/print-fulfillment.md) for the OIDC contract, legacy ticket flow and rollout prerequisites.
 
+Phase 2 uses the original ticket for legacy upgrades. Reuse WebApp’s order intent when retrying a staff shipment. The staff destination address book belongs to Admin’s backoffice database. Its schema, owner-scoped API and release command are documented in [print fulfillment operations](docs/print-fulfillment.md#saved-staff-destinations).
+
 ## Email campaigns module
 
 The multi-campaign marketing system is spread across:

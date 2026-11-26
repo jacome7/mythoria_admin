@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getDisplaySubject, getFormattedTicketNumber } from '@/lib/ticketing/utils';
 import { formatAdminDate } from '@/lib/date-utils';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
-import { PrintSettings } from '@/components/PrintFulfillment';
+import { TicketNavigation } from '@/components/TicketNavigation';
 
 interface Ticket {
   id: string;
@@ -188,7 +188,9 @@ export default function TicketsPage() {
   return (
     <div className="min-h-screen bg-base-200">
       <main className="container mx-auto p-4">
-        <PrintSettings />
+        <div className="mb-4">
+          <TicketNavigation current="/tickets" />
+        </div>
         <div className="mb-4 md:mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-base-content mb-1 md:mb-2">
             Customer Tickets

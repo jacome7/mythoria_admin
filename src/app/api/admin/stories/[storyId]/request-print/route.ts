@@ -1,14 +1,20 @@
+import { createHash } from 'node:crypto';
 import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getBackofficeDb, getMythoriaDb } from '@/db';
 import { partners, stories } from '@/db/schema';
 import { tickets } from '@/db/schema/tickets';
-import { and, eq, lte, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { authenticateAdmin, proxyToNotificationEngine } from '@/lib/api-helpers';
-import { TicketService } from '@/lib/ticketing/service';
+import { LegacyPrintConflict, TicketService } from '@/lib/ticketing/service';
 import type { TicketMetadata } from '@/lib/ticketing/types';
 import { callPrintDomain, PrintDomainError } from '@/services/print';
+
+const confirmedDelivery = z.object({
+  success: z.literal(true),
+  data: z.object({ deliveryStatus: z.literal('sent') }),
+});
 
 const requestPrintSchema = z.object({
   partnerId: z.string().uuid('Invalid partner ID'),
@@ -16,7 +22,7 @@ const requestPrintSchema = z.object({
   bodyText: z.string().min(1, 'Body is required'),
   coverPdfUri: z.string().url('Invalid Cover PDF URI'),
   interiorPdfUri: z.string().url('Invalid Interior PDF URI'),
-  legacyTicketId: z.uuid().optional(),
+  legacyTicketId: z.uuid().toLowerCase(),
 });
 
 export async function POST(
@@ -44,22 +50,18 @@ export async function POST(
 
     const { partnerId, subject, bodyText, coverPdfUri, interiorPdfUri, legacyTicketId } =
       parsed.data;
-    let legacyTicketCreatedAt: Date | undefined;
-    if (legacyTicketId) {
-      const legacyTicket = await TicketService.getTicketById(legacyTicketId);
-      const metadata = legacyTicket?.metadata as TicketMetadata | null;
-      if (
-        legacyTicket?.category !== 'print_request' ||
-        !['open', 'in_progress'].includes(legacyTicket.status) ||
-        metadata?.storyId?.toLowerCase() !== storyId.toLowerCase() ||
-        metadata.printRequestId
-      ) {
-        return Response.json(
-          { error: 'An open legacy print ticket for this story is required.' },
-          { status: 409 },
-        );
-      }
-      legacyTicketCreatedAt = legacyTicket.createdAt;
+    const legacyTicket = await TicketService.getTicketById(legacyTicketId);
+    const metadata = legacyTicket?.metadata as TicketMetadata | null;
+    if (
+      legacyTicket?.category !== 'print_request' ||
+      !['open', 'in_progress'].includes(legacyTicket.status) ||
+      metadata?.storyId?.toLowerCase() !== storyId.toLowerCase() ||
+      metadata.printRequestId
+    ) {
+      return Response.json(
+        { error: 'An open legacy print ticket for this story is required.' },
+        { status: 409 },
+      );
     }
 
     const linked = await getBackofficeDb()
@@ -71,7 +73,7 @@ export async function POST(
           sql`${tickets.metadata}->>'storyId' = ${storyId.toLowerCase()}`,
           sql`${tickets.metadata}->>'printRequestId' is not null`,
           sql`${tickets.metadata}->>'proofOnly' is null`,
-          legacyTicketCreatedAt ? lte(tickets.createdAt, legacyTicketCreatedAt) : undefined,
+          sql`${tickets.metadata}->>'adminPrintOrder' is null`,
         ),
       )
       .limit(1);
@@ -81,9 +83,6 @@ export async function POST(
         'hasPaidOrderForStory',
         {
           storyId,
-          ...(legacyTicketCreatedAt
-            ? { requestedThrough: legacyTicketCreatedAt.toISOString() }
-            : {}),
         },
         actor.email,
       );
@@ -93,7 +92,11 @@ export async function POST(
     }
     if (paidOrderExists) {
       return Response.json(
-        { error: 'This story has a paid print order. Handle fulfillment from its ticket.' },
+        {
+          code: 'print_legacy_compare',
+          error:
+            'Compare the paid orders from the original legacy ticket before choosing how to fulfill this shipment.',
+        },
         { status: 409 },
       );
     }
@@ -132,7 +135,6 @@ export async function POST(
       return Response.json({ error: 'Partner does not have an email configured' }, { status: 400 });
     }
 
-    // Proxy the request to the notification-engine
     const notificationPayload = {
       toEmail: partnerEmail,
       subject,
@@ -140,18 +142,60 @@ export async function POST(
       coverPdfUri,
       interiorPdfUri,
     };
-
-    const response = await proxyToNotificationEngine('/email/admin-print-request', {
-      method: 'POST',
-      body: notificationPayload,
-    });
-
-    return response;
+    const fingerprint = createHash('sha256')
+      .update(JSON.stringify(notificationPayload))
+      .digest('hex');
+    const reservation = await TicketService.reserveLegacyPrintDispatch(
+      legacyTicketId,
+      storyId,
+      fingerprint,
+    );
+    if (reservation.alreadySent) return Response.json({ success: true });
+    const uncertain = () =>
+      Response.json(
+        {
+          error:
+            'Printer delivery is unconfirmed. Check the printer inbox and the original ticket before taking further action.',
+        },
+        { status: 503 },
+      );
+    let outcome: 'sent' | 'uncertain' = 'uncertain';
+    try {
+      const response = await proxyToNotificationEngine('/email/admin-print-request', {
+        method: 'POST',
+        body: notificationPayload,
+        idempotencyKey: `legacy-print:${reservation.reservationId}`,
+        preserveStatus: true,
+      });
+      if (
+        response.status !== 200 ||
+        !confirmedDelivery.safeParse(
+          await response
+            .clone()
+            .json()
+            .catch(() => null),
+        ).success
+      )
+        return uncertain();
+      outcome = 'sent';
+      return response;
+    } catch {
+      return uncertain();
+    } finally {
+      await TicketService.finishLegacyPrintDispatch(
+        legacyTicketId,
+        reservation.reservationId,
+        outcome,
+      );
+    }
   } catch (error) {
+    if (error instanceof LegacyPrintConflict) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
     if (error instanceof PrintDomainError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    console.error('Error in request-print route:', error);
+    console.error('Legacy printer dispatch could not be recorded');
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

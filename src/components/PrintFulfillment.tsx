@@ -1,8 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { formatAdminDateTime } from '@/lib/date-utils';
+import {
+  AdminPrintAddressFields,
+  type AdminLuluShippingDefaults,
+} from '@/components/AdminPrintDelivery';
+import { classifyPrintOrder } from '@/lib/print-order-state';
 
 interface PrintView {
+  printRequestId?: string;
   provider: string;
   status: string;
   proofVersion: number;
@@ -46,8 +53,8 @@ interface PrintView {
     totalTaxEur?: number;
   } | null;
   vendor: {
-    id: string;
-    status: string;
+    id?: string;
+    status?: string;
     tracking: unknown;
     orderId?: string | number | null;
     environment?: 'sandbox' | 'production';
@@ -81,6 +88,16 @@ interface PrintView {
   lastError: string | null;
   maxEurPerCopy: number;
   shippingAddress: ShippingAddress;
+  purchaserEmail?: string | null;
+  addressReview?: {
+    proofVersion: number;
+    suggested: Partial<
+      Pick<
+        ShippingAddress,
+        'street1' | 'street2' | 'city' | 'postcode' | 'country_code' | 'state_code'
+      >
+    >;
+  };
   taxIdPresent: boolean;
 }
 
@@ -94,6 +111,89 @@ interface ShippingAddress {
   state_code?: string;
   phone_number: string;
   email: string;
+}
+
+const editableStatuses = ['pending', 'proof_ready', 'held', 'manual_review'];
+const luluReconciliationStatuses = ['submitting', 'uncertain', 'submitted'];
+
+function luluReleaseBlock(view: PrintView) {
+  if (view.squareLuluBlockReason) return view.squareLuluBlockReason;
+  if (view.luluConfigured === false) return 'Lulu is unavailable for this environment.';
+  if (view.status !== 'proof_ready') return null;
+  if (view.squareEdition && !view.proof?.supplierValidated)
+    return 'Lulu has not validated this square proof.';
+  if (!view.quote) return 'The current proof has no Lulu quote.';
+  if (
+    view.maxEurPerCopy <= 0 ||
+    Math.round(view.quote.totalEur * 100) > Math.round(view.maxEurPerCopy * 100) * view.copies
+  )
+    return 'The Lulu quote exceeds the current per-copy cost limit.';
+  return null;
+}
+
+function luluTrackingUrls(vendor: PrintView['vendor']) {
+  const tracking = Array.isArray(vendor?.tracking) ? vendor.tracking : [];
+  const links = vendor?.lines?.flatMap((line) => [
+    ...(line.tracking_urls ?? []),
+    ...(line.status?.messages?.tracking_urls ?? []),
+  ]);
+  return [...new Set([...tracking, ...(links ?? [])])].filter(
+    (url): url is string => typeof url === 'string' && /^https?:\/\//i.test(url),
+  );
+}
+
+function StateHistory({
+  view,
+  ticketStatus,
+  ticketCreatedAt,
+  ticketUpdatedAt,
+}: {
+  view: PrintView;
+  ticketStatus: string;
+  ticketCreatedAt?: string;
+  ticketUpdatedAt?: string;
+}) {
+  const events = [
+    { at: ticketCreatedAt, label: 'Ticket created' },
+    {
+      at: ticketUpdatedAt === ticketCreatedAt ? undefined : ticketUpdatedAt,
+      label: 'Ticket last updated',
+    },
+    { at: view.proof?.sentAt, label: `Proof version ${view.proofVersion} emailed` },
+    { at: view.vendor?.createdAt, label: 'Lulu job created' },
+    ...(view.vendor?.lines?.map((line, index) => ({
+      at: line.status?.changed,
+      label: `Lulu line ${index + 1} changed to ${line.status?.name}`,
+    })) ?? []),
+  ]
+    .flatMap(({ at, label }) => {
+      const formatted = formatAdminDateTime(at);
+      return at && formatted ? [{ at, formatted, label }] : [];
+    })
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+
+  return (
+    <details className="rounded-lg border border-base-300 p-3 text-sm">
+      <summary className="cursor-pointer font-semibold">Print state and history</summary>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt>Support ticket status</dt>
+        <dd>{ticketStatus}</dd>
+        <dt>Mythoria fulfillment status</dt>
+        <dd>{view.status}</dd>
+        <dt>{view.provider === 'lulu' ? 'Lulu job status' : 'Manual dispatch outcome'}</dt>
+        <dd>{view.vendor?.status ?? '—'}</dd>
+      </dl>
+      {events.length > 0 && (
+        <ol className="mt-2 list-disc space-y-1 pl-5">
+          {events.map(({ at, formatted, label }) => (
+            <li key={label}>
+              {label} <time dateTime={at}>{formatted}</time>
+            </li>
+          ))}
+        </ol>
+      )}
+    </details>
+  );
 }
 
 async function command<T>(body: Record<string, unknown>): Promise<T> {
@@ -370,7 +470,17 @@ function ManualPrint({
   );
 }
 
-export function PrintFulfillment({ ticketId, closed }: { ticketId: string; closed: boolean }) {
+export function PrintFulfillment({
+  ticketId,
+  ticketStatus,
+  ticketCreatedAt,
+  ticketUpdatedAt,
+}: {
+  ticketId: string;
+  ticketStatus: string;
+  ticketCreatedAt?: string;
+  ticketUpdatedAt?: string;
+}) {
   const [view, setView] = useState<PrintView | null>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -411,54 +521,114 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
       current = false;
     };
   }, [ticketId]);
+  const closed = ticketStatus === 'closed' || ticketStatus === 'resolved';
+  const status = view?.status;
   useEffect(() => {
-    if (closed || !view || !['pending', 'preparing', 'submitting'].includes(view.status)) {
+    if (closed || busy || !status || !['pending', 'preparing', 'submitting'].includes(status)) {
       return;
     }
+    let current = true;
+    let refreshing = false;
     const timer = setInterval(() => {
+      if (refreshing) return;
+      refreshing = true;
       void command<PrintView>({ operation: 'get', ticketId })
-        .then((result) => setView(result))
-        .catch(() => {});
+        .then((result) => {
+          if (current) setView(result);
+        })
+        .catch(() => {})
+        .finally(() => {
+          refreshing = false;
+        });
     }, 4000);
-    return () => clearInterval(timer);
-  }, [closed, ticketId, view]);
+    return () => {
+      current = false;
+      clearInterval(timer);
+    };
+  }, [closed, busy, ticketId, status]);
   const quote = view?.quote;
-  const squareLuluBlockReason = view?.squareEdition ? view.squareLuluBlockReason : null;
   const skipInboxCheck = Boolean(view?.proofOnly || view?.adminOrder);
-  const ready =
+  const releaseBlock = view?.provider === 'lulu' ? luluReleaseBlock(view) : null;
+  const hasVendor = Boolean(view?.vendor?.id || view?.vendor?.status);
+  const orderState = view
+    ? classifyPrintOrder({
+        ticketStatus,
+        fulfillmentStatus: view.status,
+        vendorStatus: view.vendor?.status,
+        hasVendor,
+        provider: view.provider,
+        purpose:
+          view.orderOrigin ??
+          (view.proofOnly ? 'staff_proof' : view.adminOrder ? 'admin_order' : 'customer'),
+        held: Boolean(view.holdReason),
+        proofSent: Boolean(view.proof?.sentAt),
+        qaPassed: view.proof?.qaPassed,
+        hasQuote: Boolean(quote),
+        blockReason: releaseBlock,
+      })
+    : null;
+  const editable = Boolean(
+    view &&
     !closed &&
+    !hasVendor &&
+    orderState?.stage !== 'supplier' &&
+    editableStatuses.includes(view.status),
+  );
+  const onHold = status === 'held' || Boolean(view?.holdReason);
+  const luluSelectionBlock =
+    view?.squareLuluBlockReason ||
+    (view?.luluConfigured === false ? 'Lulu is unavailable for this environment.' : null);
+  const mayPrepare =
+    editable &&
+    !onHold &&
+    view?.proof?.qaPassed !== false &&
+    (status === 'pending' ||
+      status === 'manual_review' ||
+      (view?.provider === 'lulu' && view.squareEdition && !view.proof?.supplierValidated));
+  const ready =
+    editable &&
     view?.status === 'proof_ready' &&
     view.proof?.qaPassed &&
     (Boolean(view.proof.sentAt) || skipInboxCheck) &&
-    !view.holdReason;
-  const canSubmit =
-    ready &&
-    view.provider === 'lulu' &&
-    !squareLuluBlockReason &&
-    (!view.squareEdition ||
-      (view.proof?.supplierValidated &&
-        view.maxEurPerCopy > 0 &&
-        quote &&
-        Math.round(quote.totalEur * 100) <= Math.round(view.maxEurPerCopy * 100) * view.copies)) &&
-    quote &&
-    checkedInbox &&
-    Number(amount) === quote.totalEur;
-  const canEdit =
-    !closed && view && ['pending', 'proof_ready', 'held', 'manual_review'].includes(view.status);
+    !onHold;
   const vendorStatusUpper = view?.vendor?.status?.toUpperCase();
   const isUnpaid = Boolean(view?.vendor?.unpaid || vendorStatusUpper === 'UNPAID');
+  const isCanceled = vendorStatusUpper === 'CANCELED' || vendorStatusUpper === 'CANCELLED';
+  const needsSupplierFollowUp =
+    isCanceled || vendorStatusUpper === 'ERROR' || vendorStatusUpper === 'REJECTED';
   const isProductionDelayed = vendorStatusUpper === 'PRODUCTION_DELAYED';
-  const trackingUrls = Array.isArray(view?.vendor?.tracking)
-    ? view.vendor.tracking.filter((item): item is string => typeof item === 'string')
-    : [];
+  const mayReconcileLulu =
+    view?.provider === 'lulu' && status && luluReconciliationStatuses.includes(status);
+  const luluSubmissionUnconfirmed = status !== 'submitted' || !hasVendor;
+  const trackingUrls = luluTrackingUrls(view?.vendor ?? null);
   return (
     <div className="card bg-base-100 shadow-sm">
       <div className="card-body">
         <h3 className="card-title">Print fulfillment</h3>
         {message && <p role="alert">{message}</p>}
+        {!view &&
+          (message ? (
+            <button
+              type="button"
+              className="btn btn-sm self-start"
+              disabled={busy}
+              onClick={() => void run('get')}
+            >
+              Retry loading order
+            </button>
+          ) : (
+            <p role="status">Loading print order…</p>
+          ))}
         {view && (
           <>
-            {squareLuluBlockReason && <p role="alert">{squareLuluBlockReason}</p>}
+            {orderState && (
+              <p className="font-semibold" role="status">
+                {orderState.label}
+              </p>
+            )}
+            {editable && luluSelectionBlock && (
+              <p>{luluSelectionBlock} Use the manual printer path if approved for this order.</p>
+            )}
             {view.proofOnly ? (
               <p className="font-semibold">Staff proof · One copy · No customer charge</p>
             ) : view.adminOrder ? (
@@ -468,28 +638,17 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               </p>
             ) : null}
             <p>
-              Provider: {view.provider} · Status: {view.status} · Copies: {view.copies} · Binding:{' '}
+              {view.printRequestId && `Order #${view.printRequestId.slice(0, 8).toUpperCase()} · `}
+              Provider {view.provider} · {view.copies} {view.copies === 1 ? 'copy' : 'copies'} ·{' '}
               {view.binding}
             </p>
             <p>Limit: €{view.maxEurPerCopy} per copy</p>
-            {view.status === 'uncertain' && (
-              <div className="alert alert-error text-sm" role="alert">
-                Submission state is uncertain. Click &quot;Refresh order&quot; to reconcile with
-                Lulu before creating or retrying any job.
-              </div>
-            )}
-            {view.provider === 'lulu' && isUnpaid && (
-              <div className="alert alert-warning text-sm" role="alert">
-                Lulu job is <strong>UNPAID</strong>. Fund your Lulu Developer account / payment
-                method or cancel this job before production can start.
-              </div>
-            )}
-            {view.provider === 'lulu' && isProductionDelayed && (
-              <div className="alert alert-info text-sm" role="status">
-                Lulu job is queued in <strong>PRODUCTION_DELAYED</strong> (cancelable until it moves
-                to production).
-              </div>
-            )}
+            <StateHistory
+              view={view}
+              ticketStatus={ticketStatus}
+              ticketCreatedAt={ticketCreatedAt}
+              ticketUpdatedAt={ticketUpdatedAt}
+            />
             {view.squareEdition && (
               <div className="space-y-1">
                 <h4 className="font-semibold">Square hardcover (8.5 × 8.5 in)</h4>
@@ -507,6 +666,9 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
             )}
             <div className="space-y-1">
               <h4 className="font-semibold">Shipping address for this order</h4>
+              {view.purchaserEmail && (
+                <p className="text-sm">Purchaser and proof recipient: {view.purchaserEmail}</p>
+              )}
               <address className="not-italic text-sm">
                 <div>{view.shippingAddress.name}</div>
                 <div>{view.shippingAddress.street1}</div>
@@ -528,20 +690,26 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
               </address>
             </div>
             {view.lastError && <p role="alert">{view.lastError}</p>}
-            {view.holdReason && <p>Hold: {view.holdReason}</p>}
-            {view.holdReason && !closed && (
+            {view.holdReason && <p>Hold reason — {view.holdReason}</p>}
+            {view.holdReason && editable && (
               <ShippingCorrection
                 key={`${view.proofVersion}-${view.shippingAddress.street1}`}
                 address={view.shippingAddress}
+                provider={view.provider === 'lulu' ? 'lulu' : 'manual'}
+                suggested={view.addressReview?.suggested}
                 taxIdPresent={view.taxIdPresent}
                 busy={busy}
                 proofOnly={view.proofOnly}
                 submit={(shippingAddress) =>
-                  void run('correctShipping', { customerConfirmed: true, shippingAddress })
+                  void run('correctShipping', {
+                    customerConfirmed: true,
+                    expectedProofVersion: view.proofVersion,
+                    shippingAddress,
+                  })
                 }
               />
             )}
-            {view.squareEdition && !view.proofOnly && view.status === 'held' && !closed && (
+            {view.squareEdition && !view.proofOnly && view.status === 'held' && editable && (
               <form
                 key={view.squareEdition.revision}
                 className="space-y-2"
@@ -653,7 +821,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                 )}
               </div>
             )}
-            {view.provider === 'lulu' && view.vendor && (
+            {view.provider === 'lulu' && view.vendor?.id && (
               <div className="space-y-2 rounded-lg border border-base-300 p-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">
@@ -677,6 +845,28 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                     {quote ? ` · Quoted EUR ${quote.totalEur}` : ''}
                   </p>
                 )}
+                {needsSupplierFollowUp ? (
+                  <div className="space-y-1">
+                    <h4 className="font-semibold">
+                      {isCanceled ? 'Cancellation follow-up' : 'Supplier failure follow-up'}
+                    </h4>
+                    <p>
+                      Verify the supplier outcome and any payment or credit in Lulu. Record any
+                      customer refund or replacement separately in the{' '}
+                      <a href="#ticket-comments" className="link">
+                        ticket comments
+                      </a>
+                      .
+                    </p>
+                  </div>
+                ) : isUnpaid ? (
+                  <p className="text-warning">
+                    Pay for this job in the Lulu Developer Portal or cancel it before production.
+                    Refresh the order after taking action.
+                  </p>
+                ) : isProductionDelayed ? (
+                  <p>Production is delayed. Lulu can still accept a cancellation at this stage.</p>
+                ) : null}
                 {trackingUrls.length > 0 ? (
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span>Tracking:</span>
@@ -692,11 +882,9 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                       </a>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-base-content/70">
-                    Tracking: Pending carrier assignment
-                  </p>
-                )}
+                ) : !isUnpaid && !needsSupplierFollowUp ? (
+                  <p className="text-xs text-base-content/70">Tracking is currently unavailable.</p>
+                ) : null}
                 {view.vendor.lines?.map((line, index) => {
                   const carrier =
                     line.carrier_name ?? line.status?.messages?.carrier_name ?? line.carrier;
@@ -713,44 +901,93 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                     </p>
                   );
                 })}
-                {!closed && view.vendor.cancelable && (
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <input
-                      className="input input-bordered input-xs"
-                      aria-label="Cancellation reason"
-                      placeholder="Reason to cancel Lulu job"
-                      value={cancelReason}
-                      onChange={(event) => setCancelReason(event.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-error btn-xs"
-                      disabled={busy || !cancelReason.trim()}
-                      onClick={() => {
-                        const trimmed = cancelReason.trim();
-                        setCancelReason('');
-                        void run('cancel', { reason: trimmed });
-                      }}
-                    >
-                      Cancel Lulu job
-                    </button>
-                  </div>
-                )}
+                {!closed &&
+                  status === 'submitted' &&
+                  view.vendor.cancelable &&
+                  !needsSupplierFollowUp && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <input
+                        className="input input-bordered input-xs"
+                        aria-label="Cancellation reason"
+                        placeholder="Reason to cancel Lulu job"
+                        maxLength={500}
+                        value={cancelReason}
+                        onChange={(event) => setCancelReason(event.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-error btn-xs"
+                        disabled={busy || !cancelReason.trim()}
+                        onClick={() => void run('cancel', { reason: cancelReason.trim() })}
+                      >
+                        Cancel Lulu job
+                      </button>
+                    </div>
+                  )}
               </div>
             )}
-            <div className="flex flex-wrap gap-2">
-              {canEdit && (
-                <>
+            {mayReconcileLulu && (
+              <div className="space-y-2">
+                {luluSubmissionUnconfirmed && (
+                  <p>
+                    Lulu submission is unconfirmed. Reconcile the order with Lulu before you retry
+                    or arrange another shipment.
+                  </p>
+                )}
+                <button
+                  className="btn btn-sm"
+                  disabled={busy}
+                  onClick={() => void run('reconcile')}
+                >
+                  {luluSubmissionUnconfirmed ? 'Reconcile with Lulu' : 'Refresh order'}
+                </button>
+              </div>
+            )}
+            {status === 'manual_dispatching' && (
+              <div className="space-y-2">
+                <p>Refresh the dispatch status to check whether the printer email was sent.</p>
+                <button
+                  className="btn btn-sm"
+                  disabled={busy}
+                  onClick={() => void run('reconcile')}
+                >
+                  Refresh dispatch status
+                </button>
+              </div>
+            )}
+            {status === 'manual_uncertain' && (
+              <p>
+                Check the delivery record and contact the printer before sending the proof again.
+                Record the outcome in the{' '}
+                <a href="#ticket-comments" className="link">
+                  ticket comments
+                </a>
+                .
+              </p>
+            )}
+            {status === 'manual_sent' && (
+              <p>
+                The proof was sent to the printer. Confirm production and delivery with the printer
+                and record the outcome in the{' '}
+                <a href="#ticket-comments" className="link">
+                  ticket comments
+                </a>
+                .
+              </p>
+            )}
+            {editable && (
+              <>
+                <div className="flex flex-wrap gap-2">
                   <button
                     className="btn btn-sm"
-                    disabled={busy || closed || Boolean(squareLuluBlockReason)}
+                    disabled={busy || Boolean(luluSelectionBlock)}
                     onClick={() => void run('select', { provider: 'lulu' })}
                   >
                     {view.squareEdition ? 'Prepare for Lulu' : 'Select Lulu'}
                   </button>
                   <button
                     className="btn btn-sm"
-                    disabled={busy || closed}
+                    disabled={busy}
                     onClick={() => void run('select', { provider: 'manual' })}
                   >
                     {view.squareEdition ? 'Prepare for manual printer' : 'Select manual'}
@@ -758,50 +995,85 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                   {!view.squareEdition && (
                     <button
                       className="btn btn-sm"
-                      disabled={busy || closed}
+                      disabled={busy}
                       onClick={() => void run('revise')}
                     >
                       Revise proof
                     </button>
                   )}
-                </>
-              )}
-              <button
-                className="btn btn-sm"
-                disabled={
-                  busy || closed || (view.provider === 'lulu' && Boolean(squareLuluBlockReason))
-                }
-                onClick={() => void run('prepare', { runImmediately: true })}
-              >
-                {view.provider === 'lulu' ? 'Prepare proof and quote' : 'Prepare proof'}
-              </button>
-              <button className="btn btn-sm" disabled={busy} onClick={() => void run('reconcile')}>
-                Refresh order
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <input
-                className="input input-bordered input-sm"
-                placeholder="Reason for hold"
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-              <button
-                className="btn btn-sm"
-                disabled={busy || closed || !reason.trim()}
-                onClick={() => void run('hold', { reason: reason.trim() })}
-              >
-                Put on hold
-              </button>
-              <button
-                className="btn btn-sm"
-                disabled={busy || closed || !view.holdReason}
-                onClick={() => void run('clear')}
-              >
-                Clear hold
-              </button>
-            </div>
-            {view.provider === 'lulu' && quote && !closed && (
+                  {mayPrepare && (
+                    <button
+                      className="btn btn-sm"
+                      disabled={busy || (view.provider === 'lulu' && Boolean(luluSelectionBlock))}
+                      onClick={() => void run('prepare', { runImmediately: true })}
+                    >
+                      {view.provider === 'lulu' ? 'Prepare proof and quote' : 'Prepare proof'}
+                    </button>
+                  )}
+                </div>
+                {onHold ? (
+                  <div className="space-y-2">
+                    <p>
+                      Resolve the hold reason, then clear the hold to resume preparation or review.
+                    </p>
+                    <button
+                      className="btn btn-sm"
+                      disabled={busy}
+                      onClick={() => void run('clear')}
+                    >
+                      Clear hold
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      className="input input-bordered input-sm"
+                      aria-label="Reason for hold"
+                      placeholder="Reason for hold"
+                      maxLength={500}
+                      value={reason}
+                      onChange={(event) => setReason(event.target.value)}
+                    />
+                    <button
+                      className="btn btn-sm"
+                      disabled={busy || !reason.trim()}
+                      onClick={() => void run('hold', { reason: reason.trim() })}
+                    >
+                      Put on hold
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            {editable && !onHold && status === 'manual_review' && (
+              <p>
+                {view.proof?.qaPassed === false
+                  ? view.squareEdition
+                    ? view.proofOnly
+                      ? 'Prepare a staff proof from the corrected published edition.'
+                      : 'Put the order on hold and bind the corrected published edition to generate a new proof.'
+                    : 'Correct the source issue and choose Revise proof to generate new files.'
+                  : 'Review the preparation issue, then prepare the proof again once it is resolved.'}
+              </p>
+            )}
+            {editable && !onHold && status === 'proof_ready' && !ready && (
+              <p>
+                {view.proof?.qaPassed
+                  ? 'Confirm delivery of the current proof email before releasing this order.'
+                  : 'Review the proof files and correct any QA issues before generating a new proof.'}
+              </p>
+            )}
+            {ready && releaseBlock && releaseBlock !== luluSelectionBlock && (
+              <p>
+                {releaseBlock}{' '}
+                {quote && (!view.squareEdition || view.proof?.supplierValidated)
+                  ? 'Review the limit in Print settings or use the manual printer path.'
+                  : view.squareEdition
+                    ? 'Prepare a new proof and quote before release.'
+                    : 'Revise the proof to prepare a new quote.'}
+              </p>
+            )}
+            {ready && view.provider === 'lulu' && quote && !releaseBlock && (
               <div className="space-y-2">
                 <label className="flex gap-2">
                   <input
@@ -828,7 +1100,7 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
                 </label>
                 <button
                   className="btn btn-primary btn-sm"
-                  disabled={busy || !canSubmit}
+                  disabled={busy || !checkedInbox || Number(amount) !== quote.totalEur}
                   onClick={() =>
                     void run('submit', {
                       confirmationId: quote.confirmationId,
@@ -855,67 +1127,109 @@ export function PrintFulfillment({ ticketId, closed }: { ticketId: string; close
 
 function ShippingCorrection({
   address,
+  provider,
+  suggested,
   taxIdPresent,
   busy,
   proofOnly,
   submit,
 }: {
   address: ShippingAddress;
+  provider: 'manual' | 'lulu';
+  suggested?: NonNullable<PrintView['addressReview']>['suggested'];
   taxIdPresent: boolean;
   busy: boolean;
   proofOnly?: boolean;
-  submit: (address: ShippingAddress & { recipient_tax_id?: string }) => void;
+  submit: (address: AdminLuluShippingDefaults) => void;
 }) {
-  const [form, setForm] = useState(address);
-  const [taxId, setTaxId] = useState('');
+  const [form, setForm] = useState<AdminLuluShippingDefaults>(address);
   const [confirmed, setConfirmed] = useState(false);
-  const fields: { key: keyof ShippingAddress; label: string; required?: boolean }[] = [
-    { key: 'name', label: 'Recipient', required: true },
-    { key: 'street1', label: 'Street', required: true },
-    { key: 'street2', label: 'Address line 2' },
-    { key: 'city', label: 'City', required: true },
-    { key: 'postcode', label: 'Postal code' },
-    { key: 'country_code', label: 'Country code', required: true },
-    { key: 'state_code', label: 'State or region' },
-    { key: 'phone_number', label: 'Phone' },
-    { key: 'email', label: 'Email', required: true },
-  ];
+  const fields = {
+    country_code: 'Country',
+    street1: 'Street',
+    street2: 'Address line 2',
+    city: 'City',
+    postcode: 'Postal code',
+    state_code: 'State or region',
+  };
+  const keepTaxId =
+    taxIdPresent &&
+    form.country_code === address.country_code &&
+    form.name?.trim() === address.name.trim();
+  function edit(next: AdminLuluShippingDefaults) {
+    setForm(next);
+    setConfirmed(false);
+  }
   return (
     <form
       className="space-y-2"
       onSubmit={(event) => {
         event.preventDefault();
         if (confirmed)
-          submit({ ...form, ...(taxId.trim() ? { recipient_tax_id: taxId.trim() } : {}) });
+          submit({ ...form, recipient_tax_id: form.recipient_tax_id?.trim() || undefined });
       }}
     >
       <h4 className="font-semibold">Correct shipping address</h4>
+      {suggested &&
+        (Object.keys(suggested).length ? (
+          <div className="space-y-2">
+            <table className="table table-sm">
+              <caption className="text-left">Lulu address check</caption>
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Entered</th>
+                  <th>Suggested</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(Object.keys(fields) as Array<keyof typeof fields>).map((key) => {
+                  const label = fields[key];
+                  const value = suggested[key];
+                  if (value === undefined) return null;
+                  return (
+                    <tr key={key}>
+                      <th scope="row">{label}</th>
+                      <td>{address[key] || '—'}</td>
+                      <td>{value || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <button
+              className="btn btn-sm"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                edit({
+                  ...form,
+                  ...(suggested.country_code && suggested.country_code !== form.country_code
+                    ? { state_code: '', recipient_tax_id: '' }
+                    : {}),
+                  ...suggested,
+                });
+              }}
+            >
+              Use suggested fields
+            </button>
+          </div>
+        ) : (
+          <p role="status">
+            Lulu could not verify this address. Confirm the missing or incorrect details with the
+            recipient.
+          </p>
+        ))}
       <p>
         Enter the confirmed {proofOnly ? 'staff' : 'customer'} address. Saving keeps the order on
         hold and requires a new proof.
       </p>
-      {fields.map(({ key, label, required }) => (
-        <label key={key} className="block">
-          {label}
-          <input
-            className="input input-bordered input-sm w-full"
-            required={required}
-            value={form[key] || ''}
-            onChange={(event) => setForm({ ...form, [key]: event.target.value })}
-          />
-        </label>
-      ))}
-      <label className="block">
-        Tax ID{' '}
-        {taxIdPresent
-          ? '(already provided; leave blank to retain for the same country)'
-          : '(if required)'}
-        <input
-          className="input input-bordered input-sm w-full"
-          value={taxId}
-          onChange={(event) => setTaxId(event.target.value)}
-        />
-      </label>
+      <AdminPrintAddressFields
+        shipping={form}
+        onChange={edit}
+        provider={provider}
+        taxIdOnFile={keepTaxId}
+      />
       <label className="flex gap-2">
         <input
           type="checkbox"

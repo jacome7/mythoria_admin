@@ -29,13 +29,17 @@ export async function proxyToNotificationEngine(
   options: {
     method?: string;
     body?: unknown;
+    idempotencyKey?: string;
+    preserveStatus?: boolean;
   } = {},
 ): Promise<NextResponse> {
-  const { method = 'POST', body } = options;
+  const { method = 'POST', body, idempotencyKey, preserveStatus = false } = options;
 
   const headers: Record<string, string> = {
     'x-api-key': process.env.NOTIFICATION_ENGINE_API_KEY || '',
   };
+
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
 
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
@@ -85,5 +89,8 @@ export async function proxyToNotificationEngine(
     });
   }
 
-  return NextResponse.json(data ?? { success: true });
+  return NextResponse.json(
+    data ?? { success: true },
+    preserveStatus ? { status: response.status } : undefined,
+  );
 }

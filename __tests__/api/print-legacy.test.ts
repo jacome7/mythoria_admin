@@ -2,7 +2,7 @@
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/admin/stories/[storyId]/request-print/route';
 import { proxyToNotificationEngine } from '@/lib/api-helpers';
-import { TicketService } from '@/lib/ticketing/service';
+import { LegacyPrintConflict, TicketService } from '@/lib/ticketing/service';
 import { callPrintDomain } from '@/services/print';
 
 jest.mock('@/lib/api-helpers', () => ({
@@ -13,7 +13,14 @@ jest.mock('@/services/print', () => ({
   callPrintDomain: jest.fn(),
   PrintDomainError: class extends Error {},
 }));
-jest.mock('@/lib/ticketing/service', () => ({ TicketService: { getTicketById: jest.fn() } }));
+jest.mock('@/lib/ticketing/service', () => ({
+  LegacyPrintConflict: class extends Error {},
+  TicketService: {
+    getTicketById: jest.fn(),
+    reserveLegacyPrintDispatch: jest.fn(),
+    finishLegacyPrintDispatch: jest.fn(),
+  },
+}));
 jest.mock('@/db', () => {
   const select = (lookup: () => unknown) => ({
     select: () => ({
@@ -40,7 +47,7 @@ const legacyTicket = {
 };
 const coverPdfUri = 'gs://stories/story/cover.pdf';
 const interiorPdfUri = 'gs://stories/story/interior.pdf';
-const request = (cover = coverPdfUri, ticketId?: string) =>
+const request = (cover = coverPdfUri, ticketId: string | null = legacyTicketId) =>
   POST(
     new NextRequest(`https://admin.example/api/admin/stories/${storyId}/request-print`, {
       method: 'POST',
@@ -60,10 +67,15 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockReadTickets.mockReturnValue([]);
   mockReadStoryOrPartner.mockReset();
+  jest.mocked(TicketService.getTicketById).mockResolvedValue(legacyTicket as never);
+  jest
+    .mocked(TicketService.reserveLegacyPrintDispatch)
+    .mockResolvedValue({ reservationId: legacyTicketId });
+  jest.mocked(TicketService.finishLegacyPrintDispatch).mockResolvedValue(undefined);
   jest.mocked(callPrintDomain).mockResolvedValue(false);
   jest
     .mocked(proxyToNotificationEngine)
-    .mockResolvedValue(Response.json({ success: true }) as never);
+    .mockResolvedValue(Response.json({ success: true, data: { deliveryStatus: 'sent' } }) as never);
   jest.replaceProperty(process, 'env', {
     ...process.env,
     PRINT_INTERNAL_AUDIENCE: 'https://webapp.example',
@@ -117,24 +129,18 @@ it('blocks manual dispatch of premium books even before a paid ticket exists', a
   expect(proxyToNotificationEngine).not.toHaveBeenCalled();
 });
 
-it('allows the verified legacy ticket to use the original dispatch path past a later paid reservation', async () => {
-  jest.mocked(TicketService.getTicketById).mockResolvedValueOnce(legacyTicket as never);
-  jest
-    .mocked(callPrintDomain)
-    .mockImplementationOnce(
-      async (_operation, input) => !('requestedThrough' in (input as object)),
-    );
-  mockReadStoryOrPartner
-    .mockReturnValueOnce([{ coverPdfUri, interiorPdfUri }])
-    .mockReturnValueOnce([{ email: 'printer@example.com' }]);
+it('routes an ambiguous paid match to the original ticket for explicit comparison', async () => {
+  jest.mocked(callPrintDomain).mockResolvedValueOnce(true);
 
-  expect((await request(coverPdfUri, legacyTicketId)).status).toBe(200);
+  const response = await request();
+  expect(response.status).toBe(409);
+  expect(await response.json()).toMatchObject({ code: 'print_legacy_compare' });
   expect(callPrintDomain).toHaveBeenCalledWith(
     'hasPaidOrderForStory',
-    { storyId, requestedThrough: createdAt.toISOString() },
+    { storyId },
     'admin@mythoria.pt',
   );
-  expect(proxyToNotificationEngine).toHaveBeenCalledTimes(1);
+  expect(proxyToNotificationEngine).not.toHaveBeenCalled();
 });
 
 it.each([
@@ -151,9 +157,57 @@ it.each([
   expect(proxyToNotificationEngine).not.toHaveBeenCalled();
 });
 
-it('rejects a legacy ticket created after an existing paid reservation', async () => {
+it('requires comparison for a legacy ticket created after an existing paid reservation', async () => {
   jest.mocked(TicketService.getTicketById).mockResolvedValueOnce(legacyTicket as never);
   jest.mocked(callPrintDomain).mockResolvedValueOnce(true);
   expect((await request(coverPdfUri, legacyTicketId)).status).toBe(409);
   expect(proxyToNotificationEngine).not.toHaveBeenCalled();
+});
+
+it('rejects direct dispatch without the original ticket', async () => {
+  expect((await request(coverPdfUri, null)).status).toBe(400);
+  expect(proxyToNotificationEngine).not.toHaveBeenCalled();
+});
+
+it('persists an uncertain delivery and does not retry email after the reservation', async () => {
+  mockReadStoryOrPartner.mockImplementation(() => [
+    { coverPdfUri, interiorPdfUri, email: 'printer@example.com' },
+  ]);
+  jest
+    .mocked(proxyToNotificationEngine)
+    .mockRejectedValueOnce(new Error('Timeout after acceptance'));
+  expect((await request()).status).toBe(503);
+  expect(TicketService.finishLegacyPrintDispatch).toHaveBeenCalledWith(
+    legacyTicketId,
+    legacyTicketId,
+    'uncertain',
+  );
+  expect(proxyToNotificationEngine).toHaveBeenCalledWith(
+    '/email/admin-print-request',
+    expect.objectContaining({ idempotencyKey: `legacy-print:${legacyTicketId}` }),
+  );
+
+  jest
+    .mocked(TicketService.reserveLegacyPrintDispatch)
+    .mockRejectedValueOnce(new LegacyPrintConflict('Verify the prior delivery'));
+  expect((await request()).status).toBe(409);
+  expect(proxyToNotificationEngine).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  { status: 202, body: { success: true, data: { deliveryStatus: 'pending' } } },
+  { status: 200, body: { success: true } },
+])('holds printer delivery without explicit sent evidence ($status)', async ({ status, body }) => {
+  mockReadStoryOrPartner
+    .mockReturnValueOnce([{ coverPdfUri, interiorPdfUri }])
+    .mockReturnValueOnce([{ email: 'printer@example.com' }]);
+  jest
+    .mocked(proxyToNotificationEngine)
+    .mockResolvedValueOnce(Response.json(body, { status }) as never);
+  expect((await request()).status).toBe(503);
+  expect(TicketService.finishLegacyPrintDispatch).toHaveBeenCalledWith(
+    legacyTicketId,
+    legacyTicketId,
+    'uncertain',
+  );
 });

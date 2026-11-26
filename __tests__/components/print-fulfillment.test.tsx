@@ -40,6 +40,28 @@ function json(data: unknown) {
   return { ok: true, json: async () => ({ data }) };
 }
 
+it('compares entered and suggested delivery fields and requires fresh confirmation after edits', async () => {
+  fetchMock.mockResolvedValue(
+    json({
+      ...manualOrder,
+      provider: 'lulu',
+      status: 'held',
+      holdReason: 'Confirm delivery address',
+      addressReview: { proofVersion: 3, suggested: { city: 'Porto' } },
+    }),
+  );
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
+  expect(await screen.findByRole('table', { name: 'Lulu address check' })).toHaveTextContent(
+    'Lisbon',
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Use suggested fields' }));
+  expect(screen.getByLabelText('City')).toHaveValue('Porto');
+  const confirm = screen.getByText('The customer confirmed this address.');
+  fireEvent.click(confirm);
+  fireEvent.change(screen.getByLabelText('City'), { target: { value: 'Gaia' } });
+  expect(screen.getByRole('button', { name: 'Save customer-confirmed address' })).toBeDisabled();
+});
+
 it('keeps settings disabled until the configured defaults are loaded', async () => {
   fetchMock.mockResolvedValueOnce(
     json({ defaultProvider: 'none', maxEurPerCopy: 0, hardcoverCredits: null }),
@@ -71,7 +93,7 @@ it('shows nonblocking proof warnings and requires an inbox check for manual disp
       },
     ]),
   );
-  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
 
   expect(await screen.findByText('An image is below 300 PPI.')).toBeInTheDocument();
   expect(
@@ -105,7 +127,7 @@ it('releases only the current square proof through Lulu after explicit review an
     quote: { shippingLevel: 'EXPRESS', totalEur: 20, perCopyEur: 20, confirmationId: ticketId },
   };
   fetchMock.mockResolvedValue(json(squareOrder));
-  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
   const release = await screen.findByRole('button', { name: 'Release square order to Lulu' });
   expect(release).toBeDisabled();
   expect(screen.queryByRole('button', { name: 'Select manual' })).not.toBeInTheDocument();
@@ -128,7 +150,7 @@ it('releases only the current square proof through Lulu after explicit review an
 });
 
 it.each(['lulu', 'manual'])(
-  'blocks square Lulu actions while retaining manual preparation (%s)',
+  'blocks square Lulu actions while keeping manual fulfillment available (%s)',
   async (provider) => {
     const order = {
       ...manualOrder,
@@ -145,18 +167,16 @@ it.each(['lulu', 'manual'])(
       quote: { shippingLevel: 'EXPRESS', totalEur: 20, perCopyEur: 20, confirmationId: ticketId },
     };
     fetchMock.mockResolvedValue(json(order));
-    render(<PrintFulfillment ticketId={ticketId} closed={false} />);
-    expect(await screen.findByText('This edition is not approved for Lulu.')).toBeInTheDocument();
+    render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
+    expect(await screen.findByText(/This edition is not approved for Lulu\./)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Prepare for Lulu' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Prepare for manual printer' })).toBeEnabled();
-    if (provider === 'lulu') {
-      expect(screen.getByRole('button', { name: 'Prepare proof and quote' })).toBeDisabled();
-      fireEvent.click(screen.getByLabelText('I reviewed staff proof version 3.'));
-      fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '20' } });
-      expect(screen.getByRole('button', { name: 'Submit one proof to Lulu' })).toBeDisabled();
-    } else {
-      expect(screen.getByRole('button', { name: 'Prepare proof' })).toBeEnabled();
-    }
+    expect(
+      screen.queryByRole('button', { name: 'Prepare proof and quote' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Submit one proof to Lulu' }),
+    ).not.toBeInTheDocument();
   },
 );
 
@@ -182,8 +202,12 @@ it('shows UNPAID operational alert and supports canceling a cancelable Lulu job'
   };
   fetchMock.mockResolvedValueOnce(json(unpaidOrder)).mockResolvedValueOnce(json(canceledOrder));
 
-  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
-  expect(await screen.findByText(/Fund your Lulu Developer account/i)).toBeInTheDocument();
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
+  expect(
+    await screen.findByText(/Pay for this job in the Lulu Developer Portal/i),
+  ).toBeInTheDocument();
+  expect(screen.queryByLabelText('Confirm total EUR')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Put on hold' })).not.toBeInTheDocument();
   const cancelBtn = screen.getByRole('button', { name: 'Cancel Lulu job' });
   expect(cancelBtn).toBeDisabled();
   fireEvent.change(screen.getByLabelText('Cancellation reason'), {
@@ -199,6 +223,18 @@ it('shows UNPAID operational alert and supports canceling a cancelable Lulu job'
     reason: 'Fix shipping postcode',
   });
   expect(await screen.findByText(/Lulu order 7701: CANCELED/i)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Cancellation follow-up' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'ticket comments' })).toHaveAttribute(
+    'href',
+    '#ticket-comments',
+  );
+  expect(screen.getByRole('button', { name: 'Refresh order' })).toBeEnabled();
+  expect(screen.queryByRole('button', { name: 'Cancel Lulu job' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Prepare proof and quote' })).not.toBeInTheDocument();
+  const history = screen.getByText('Print state and history').closest('details');
+  expect(history).toHaveTextContent('Support ticket statusopen');
+  expect(history).toHaveTextContent('Mythoria fulfillment statussubmitted');
+  expect(history).toHaveTextContent('Lulu job statusCANCELED');
 });
 
 it('allows multi-copy adminOrder Lulu submission without an emailed customer proof timestamp', async () => {
@@ -219,11 +255,90 @@ it('allows multi-copy adminOrder Lulu submission without an emailed customer pro
     quote: { shippingLevel: 'EXPRESS', totalEur: 60, perCopyEur: 20, confirmationId: ticketId },
   };
   fetchMock.mockResolvedValue(json(adminOrder));
-  render(<PrintFulfillment ticketId={ticketId} closed={false} />);
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
   const submit = await screen.findByRole('button', { name: 'Submit to Lulu' });
   expect(submit).toBeDisabled();
   expect(screen.getByText(/Admin print order · 3 copies/i)).toBeInTheDocument();
   fireEvent.click(screen.getByLabelText('I reviewed admin proof version 3.'));
   fireEvent.change(screen.getByLabelText('Confirm total EUR'), { target: { value: '60' } });
   expect(submit).toBeEnabled();
+});
+
+it('offers reconciliation without preparing or releasing an uncertain Lulu order', async () => {
+  const order = {
+    ...manualOrder,
+    provider: 'lulu',
+    status: 'uncertain',
+    quote: { shippingLevel: 'GROUND', totalEur: 24.5, perCopyEur: 24.5, confirmationId: ticketId },
+  };
+  fetchMock.mockResolvedValue(json(order));
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="open" />);
+
+  const reconcile = await screen.findByRole('button', { name: 'Reconcile with Lulu' });
+  await act(async () => {
+    fireEvent.click(reconcile);
+  });
+  expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ operation: 'reconcile', ticketId });
+  expect(screen.queryByLabelText('Confirm total EUR')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Prepare proof and quote' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Select manual' })).not.toBeInTheDocument();
+});
+
+it('shows the current hold reason with correction controls and hides release', async () => {
+  fetchMock.mockResolvedValueOnce(
+    json({
+      ...manualOrder,
+      provider: 'lulu',
+      status: 'held',
+      holdReason: 'Customer reported a shipping issue.',
+      quote: { shippingLevel: 'EXPRESS', totalEur: 20, perCopyEur: 20, confirmationId: ticketId },
+    }),
+  );
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="in_progress" />);
+
+  expect(await screen.findByText(/Customer reported a shipping issue/)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Correct shipping address' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Clear hold' })).toBeEnabled();
+  expect(screen.queryByLabelText('Confirm total EUR')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Prepare proof and quote' })).not.toBeInTheDocument();
+});
+
+it('shows persisted Lulu shipment tracking on a resolved support ticket', async () => {
+  fetchMock.mockResolvedValueOnce(
+    json({
+      ...manualOrder,
+      provider: 'lulu',
+      status: 'submitted',
+      vendor: {
+        id: '7702',
+        status: 'SHIPPED',
+        createdAt: '2026-11-24T12:00:00Z',
+        tracking: ['https://carrier.example/path'],
+        lines: [
+          {
+            id: '1',
+            status: {
+              name: 'SHIPPED',
+              changed: '2026-11-25T12:00:00Z',
+              messages: {
+                tracking_urls: ['https://carrier.example/path', 'https://carrier.example/second'],
+              },
+            },
+          },
+        ],
+      },
+    }),
+  );
+  render(<PrintFulfillment ticketId={ticketId} ticketStatus="resolved" />);
+
+  const links = await screen.findAllByRole('link', { name: /Shipment link/ });
+  expect(links.map((link) => link.getAttribute('href'))).toEqual([
+    'https://carrier.example/path',
+    'https://carrier.example/second',
+  ]);
+  expect(screen.getByRole('button', { name: 'Refresh order' })).toBeEnabled();
+  const history = screen.getByText('Print state and history').closest('details');
+  expect(history).toHaveTextContent('Lulu job created');
+  expect(history).toHaveTextContent('Lulu line 1 changed to SHIPPED');
+  expect(screen.queryByRole('button', { name: 'Submit to Lulu' })).not.toBeInTheDocument();
 });

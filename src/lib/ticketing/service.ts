@@ -1,4 +1,6 @@
-import { getBackofficeDb } from '@/db';
+import { randomUUID } from 'node:crypto';
+import { getBackofficeDb, getMythoriaDb } from '@/db';
+import { printFulfillmentsRead } from '@/db/schema/print-costs';
 import {
   tickets,
   ticketComments,
@@ -122,6 +124,8 @@ export interface TicketWithComments {
     phone?: string;
   } | null;
 }
+
+export class LegacyPrintConflict extends Error {}
 
 export class TicketService {
   /**
@@ -348,6 +352,105 @@ export class TicketService {
     });
   }
 
+  private static activeLegacyPrintMetadata(ticket: Ticket | undefined, storyId: string) {
+    if (
+      !ticket ||
+      ticket.category !== 'print_request' ||
+      !['open', 'in_progress'].includes(ticket.status)
+    ) {
+      throw new LegacyPrintConflict('An active legacy print ticket is required.');
+    }
+    const metadata = this.normalizeMetadata(ticket.metadata, true);
+    if (metadata.storyId?.toLowerCase() !== storyId.toLowerCase() || metadata.printRequestId) {
+      throw new LegacyPrintConflict(
+        'This legacy ticket belongs to a different story or already has a print order.',
+      );
+    }
+    return { ticket, metadata };
+  }
+
+  private static async verifyUnlinkedPrintTicket(ticketId: string) {
+    const [linked] = await getMythoriaDb()
+      .select({ id: printFulfillmentsRead.printRequestId })
+      .from(printFulfillmentsRead)
+      .where(eq(printFulfillmentsRead.ticketId, ticketId))
+      .limit(1);
+    if (linked) throw new LegacyPrintConflict('This ticket already has a linked print order.');
+  }
+
+  static async reserveLegacyPrintDispatch(ticketId: string, storyId: string, fingerprint: string) {
+    return getBackofficeDb().transaction(async (tx) => {
+      const [ticket] = await tx
+        .select()
+        .from(tickets)
+        .where(eq(tickets.id, ticketId))
+        .limit(1)
+        .for('update');
+      const { metadata } = this.activeLegacyPrintMetadata(ticket, storyId);
+      const existing = metadata.legacyPrintDispatch;
+      if (existing) {
+        if (existing.fingerprint === fingerprint && existing.status === 'sent') {
+          return { alreadySent: true as const };
+        }
+        throw new LegacyPrintConflict(
+          'A legacy printer dispatch has already started. Verify its outcome on the original ticket.',
+        );
+      }
+      await this.verifyUnlinkedPrintTicket(ticketId);
+      const reservationId = randomUUID();
+      await tx
+        .update(tickets)
+        .set({
+          metadata: {
+            ...metadata,
+            legacyPrintDispatch: {
+              reservationId,
+              fingerprint,
+              status: 'dispatching',
+              updatedAt: new Date().toISOString(),
+            },
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(tickets.id, ticketId));
+      return { reservationId };
+    });
+  }
+
+  static async finishLegacyPrintDispatch(
+    ticketId: string,
+    reservationId: string,
+    status: 'sent' | 'uncertain',
+  ) {
+    await getBackofficeDb().transaction(async (tx) => {
+      const [ticket] = await tx
+        .select()
+        .from(tickets)
+        .where(eq(tickets.id, ticketId))
+        .limit(1)
+        .for('update');
+      if (!ticket) return;
+      const metadata = this.normalizeMetadata(ticket.metadata, true);
+      const dispatch = metadata.legacyPrintDispatch;
+      if (
+        !dispatch ||
+        dispatch.reservationId !== reservationId ||
+        dispatch.status !== 'dispatching'
+      )
+        return;
+      await tx
+        .update(tickets)
+        .set({
+          metadata: {
+            ...metadata,
+            legacyPrintDispatch: { ...dispatch, status, updatedAt: new Date().toISOString() },
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(tickets.id, ticketId));
+    });
+  }
+
   static async createOrLinkAdminPrintTicket(data: CreateAdminPrintTicketData): Promise<Ticket> {
     const db = getBackofficeDb();
     return db.transaction(async (tx) => {
@@ -366,8 +469,13 @@ export class TicketService {
         .limit(1);
       if (existing) {
         const metadata = existing.metadata as TicketMetadata | null;
-        if (metadata?.storyId !== data.storyId) {
-          throw new Error('Print request is linked to a different story');
+        if (
+          metadata?.storyId !== data.storyId ||
+          (data.legacyTicketId && existing.id !== data.legacyTicketId)
+        ) {
+          throw new LegacyPrintConflict(
+            'This print request already belongs to a different ticket.',
+          );
         }
         return existing;
       }
@@ -389,24 +497,25 @@ export class TicketService {
           .select()
           .from(tickets)
           .where(eq(tickets.id, data.legacyTicketId))
-          .limit(1);
-        if (!legacy || legacy.category !== 'print_request') {
-          throw new Error('Legacy print ticket not found');
+          .limit(1)
+          .for('update');
+        const { metadata: currentMeta, ticket } = this.activeLegacyPrintMetadata(
+          legacy,
+          data.storyId,
+        );
+        if (currentMeta.legacyPrintDispatch) {
+          throw new LegacyPrintConflict(
+            'A legacy printer dispatch has already started. Verify its outcome on the original ticket.',
+          );
         }
-        const currentMeta = (legacy.metadata as TicketMetadata | null) ?? {};
-        if (currentMeta.storyId && currentMeta.storyId !== data.storyId) {
-          throw new Error('Legacy ticket belongs to a different story');
-        }
-        if (currentMeta.printRequestId && currentMeta.printRequestId !== data.printRequestId) {
-          throw new Error('Legacy ticket is already linked to another print request');
-        }
+        await this.verifyUnlinkedPrintTicket(ticket.id);
         const [updated] = await tx
           .update(tickets)
           .set({
             metadata: { ...currentMeta, ...nextMetadata },
             updatedAt: new Date(),
           })
-          .where(eq(tickets.id, legacy.id))
+          .where(eq(tickets.id, ticket.id))
           .returning();
         return updated;
       }
@@ -566,21 +675,19 @@ export class TicketService {
   /**
    * Ensure metadata is consistently represented as an object
    */
-  private static normalizeMetadata(raw: unknown): TicketMetadata {
-    if (!raw) {
+  private static normalizeMetadata(raw: unknown, forUpdate = false): TicketMetadata {
+    if (raw == null) return {};
+    try {
+      const value: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error('Expected ticket metadata to be an object');
+      }
+      return value as TicketMetadata;
+    } catch {
+      if (forUpdate) throw new Error('Cannot update unreadable ticket metadata.');
+      console.error('Could not read ticket metadata');
       return {};
     }
-
-    if (typeof raw === 'string') {
-      try {
-        return JSON.parse(raw) as TicketMetadata;
-      } catch (error) {
-        console.error('Failed to parse ticket metadata string:', error);
-        return {};
-      }
-    }
-
-    return raw as TicketMetadata;
   }
 
   /**
@@ -744,9 +851,27 @@ export class TicketService {
     return null;
   }
 
-  /**
-   * Update ticket metadata without affecting other fields
-   */
+  static async setPrintOwner(id: string, actor: string, claim: boolean) {
+    return getBackofficeDb().transaction(async (tx) => {
+      const [ticket] = await tx
+        .select({ status: tickets.status, metadata: tickets.metadata })
+        .from(tickets)
+        .where(and(eq(tickets.id, id), eq(tickets.category, 'print_request')))
+        .for('update');
+      if (!ticket) return 'missing';
+      if (ticket.status === 'resolved' || ticket.status === 'closed') return 'closed';
+      const metadata = this.normalizeMetadata(ticket.metadata, true);
+      const owner = actor.toLowerCase();
+      if (metadata.printOwner && metadata.printOwner.toLowerCase() !== owner) return 'taken';
+      if (claim === Boolean(metadata.printOwner)) return 'unchanged';
+      if (claim) metadata.printOwner = owner;
+      else delete metadata.printOwner;
+      await tx.update(tickets).set({ metadata, updatedAt: new Date() }).where(eq(tickets.id, id));
+      return 'updated';
+    });
+  }
+
+  /** Update ticket metadata without affecting other fields. */
   static async updateMetadata(ticketId: string, metadata: TicketMetadata): Promise<void> {
     const db = getBackofficeDb();
 

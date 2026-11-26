@@ -4,6 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { FiChevronDown } from 'react-icons/fi';
+import { ticketNavigationItems } from '@/components/TicketNavigation';
+
+const printNavigationItems = ticketNavigationItems.filter(({ href }) => href !== '/tickets');
 
 export default function AdminHeader() {
   const { data: session } = useSession();
@@ -110,10 +114,52 @@ export default function AdminHeader() {
                 Server Status
               </Link>
             </li>
-            <li>
-              <Link href="/tickets" onClick={closeDropdown}>
-                Tickets
-              </Link>
+            <li
+              className="relative"
+              onBlur={(event) => {
+                if (
+                  activeDropdown === 'tickets' &&
+                  !event.currentTarget.contains(event.relatedTarget)
+                ) {
+                  closeDropdown();
+                }
+              }}
+            >
+              <div className="flex gap-0 p-0 hover:bg-transparent">
+                <Link
+                  href="/tickets"
+                  onClick={closeDropdown}
+                  className="rounded-box px-3 py-1.5 hover:bg-base-200"
+                >
+                  Tickets
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn-square btn-ghost btn-xs"
+                  aria-label="Show ticket pages"
+                  aria-expanded={activeDropdown === 'tickets'}
+                  aria-controls="ticket-pages"
+                  onClick={() => handleDropdownToggle('tickets')}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') closeDropdown();
+                  }}
+                >
+                  <FiChevronDown aria-hidden="true" />
+                </button>
+              </div>
+              <ul
+                id="ticket-pages"
+                hidden={activeDropdown !== 'tickets'}
+                className={`menu absolute top-full left-0 z-10 m-0 w-44 rounded-box bg-base-100 p-2 shadow ${activeDropdown === 'tickets' ? '' : 'hidden'}`}
+              >
+                {printNavigationItems.map(({ href, label }) => (
+                  <li key={href}>
+                    <Link href={href} onClick={closeDropdown}>
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </li>
             <li>
               <Link href="/workflows" onClick={closeDropdown}>
@@ -361,6 +407,15 @@ export default function AdminHeader() {
                 <Link href="/tickets" onClick={closeDrawer}>
                   Tickets
                 </Link>
+                <ul>
+                  {printNavigationItems.map(({ href, label }) => (
+                    <li key={href}>
+                      <Link href={href} onClick={closeDrawer}>
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </li>
               <li>
                 <Link href="/workflows" onClick={closeDrawer}>

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { z } from 'zod';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import { formatAdminDateTime } from '@/lib/date-utils';
 import { useStoryDetail } from '@/app/stories/[storyId]/hooks/useStoryDetail';
@@ -20,6 +22,13 @@ export default function StoryDetailPage() {
     storyId,
     !loading && !!session?.user,
   );
+  const [legacyTicketId, setLegacyTicketId] = useState<string>();
+  useEffect(() => {
+    const ticket = z
+      .uuid()
+      .safeParse(new URLSearchParams(window.location.search).get('legacyPrintTicket'));
+    setLegacyTicketId(ticket.success ? ticket.data : undefined);
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -136,7 +145,12 @@ export default function StoryDetailPage() {
 
           {story.premiumEdition ? (
             <>
-              <PremiumStoryActions storyId={storyId} edition={story.premiumEdition} />
+              <PremiumStoryActions
+                storyId={storyId}
+                edition={story.premiumEdition}
+                storyPublished={story.status === 'published'}
+                legacyTicketId={legacyTicketId}
+              />
               {story.premiumEdition.state === 'published' && story.status === 'published' && (
                 <StoryActionPanel
                   story={story}
@@ -147,7 +161,12 @@ export default function StoryDetailPage() {
               )}
             </>
           ) : (
-            <StoryActionPanel story={story} storyId={storyId} onStoryRefresh={fetchStory} />
+            <StoryActionPanel
+              story={story}
+              storyId={storyId}
+              onStoryRefresh={fetchStory}
+              legacyTicketId={legacyTicketId}
+            />
           )}
         </div>
 

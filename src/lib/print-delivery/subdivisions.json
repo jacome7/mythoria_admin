@@ -1,0 +1,650 @@
+{
+  "AU": {
+    "ACT": [
+      "Australian Capital Territory",
+      "Território da Capital Australiana",
+      "Territorio de la Capital Australiana",
+      "Territoire de la capitale australienne"
+    ],
+    "NSW": [
+      "New South Wales",
+      "Nova Gales do Sul",
+      "Nueva Gales del Sur",
+      "Nouvelle-Galles du Sud"
+    ],
+    "NT": [
+      "Northern Territory",
+      "Território do Norte",
+      "Territorio del Norte",
+      "Territoire du Nord"
+    ],
+    "QLD": ["Queensland"],
+    "SA": [
+      "South Australia",
+      "Austrália Meridional",
+      "Australia Meridional",
+      "Australie-Méridionale"
+    ],
+    "TAS": ["Tasmania", "Tasmânia", "Tasmania", "Tasmanie", "Tasmanien"],
+    "VIC": ["Victoria", "Vitória"],
+    "WA": [
+      "Western Australia",
+      "Austrália Ocidental",
+      "Australia Occidental",
+      "Australie-Occidentale"
+    ]
+  },
+  "BR": {
+    "AC": ["Acre", "Acre", "Estado de Acre"],
+    "AL": ["Alagoas"],
+    "AM": ["Amazonas", "Amazonas", "Estado de Amazonas"],
+    "AP": ["Amapá"],
+    "BA": ["Bahia", "Bahia", "Estado de Bahía"],
+    "CE": ["Ceará"],
+    "DF": [
+      "Federal District",
+      "Distrito Federal",
+      "Distrito Federal",
+      "District Fédéral",
+      "Bundesdistrikt von Brasilien"
+    ],
+    "ES": ["Espírito Santo", "Espírito Santo", "Estado de Espírito Santo"],
+    "GO": ["Goiás", "Goiás", "Estado de Goiás"],
+    "MA": ["Maranhão"],
+    "MG": ["Minas Gerais", "Minas Gerais", "Estado de Minas Gerais"],
+    "MS": ["Mato Grosso do Sul", "Mato Grosso do Sul", "Mato Grosso del Sur"],
+    "MT": ["Mato Grosso"],
+    "PA": ["Pará"],
+    "PB": ["Paraíba"],
+    "PE": ["Pernambuco", "Pernambuco", "Pernambuco", "Pernambouc"],
+    "PI": ["Piauí"],
+    "PR": ["Paraná"],
+    "RJ": [
+      "Rio de Janeiro",
+      "Rio de Janeiro",
+      "Estado de Río de Janeiro",
+      "État de Rio de Janeiro"
+    ],
+    "RN": ["Rio Grande do Norte", "Rio Grande do Norte", "Río Grande del Norte"],
+    "RO": ["Rondônia", "Rondônia", "Rondonia"],
+    "RR": ["Roraima"],
+    "RS": ["Rio Grande do Sul", "Rio Grande do Sul", "Río Grande del Sur"],
+    "SC": ["Santa Catarina"],
+    "SE": ["Sergipe"],
+    "SP": ["São Paulo", "São Paulo", "São Paulo", "État de São Paulo"],
+    "TO": ["Tocantins"]
+  },
+  "CA": {
+    "AB": ["Alberta"],
+    "BC": ["British Columbia", "Colúmbia Britânica", "Columbia Británica", "Colombie-Britannique"],
+    "MB": ["Manitoba"],
+    "NB": ["New Brunswick", "Nova Brunswick", "Nuevo Brunswick", "Nouveau-Brunswick"],
+    "NL": [
+      "Newfoundland and Labrador",
+      "Terra Nova e Labrador",
+      "Terranova y Labrador",
+      "Terre-Neuve-et-Labrador",
+      "Neufundland und Labrador"
+    ],
+    "NS": ["Nova Scotia", "Nova Escócia", "Nueva Escocia", "Nouvelle-Écosse"],
+    "NT": [
+      "Northwest Territories",
+      "Territórios do Noroeste",
+      "Territorios del Noroeste",
+      "Territoires du Nord-Ouest",
+      "Nordwest-Territorien"
+    ],
+    "NU": ["Nunavut"],
+    "ON": ["Ontario", "Ontário"],
+    "PE": [
+      "Prince Edward Island",
+      "Ilha do Príncipe Eduardo",
+      "Isla del Príncipe Eduardo",
+      "Île-du-Prince-Édouard"
+    ],
+    "QC": ["Quebec", "Quebec", "Quebec", "Québec", "Québec"],
+    "SK": ["Saskatchewan"],
+    "YT": ["Yukon", "Yukon", "Yukón"]
+  },
+  "ES": {
+    "A": [
+      "Alicante",
+      "Alicante",
+      "Provincia de Alicante",
+      "province d’Alicante",
+      "Provinz Alicante"
+    ],
+    "AB": [
+      "Albacete",
+      "Albacete",
+      "Provincia de Albacete",
+      "province d’Albacete",
+      "Provinz Albacete"
+    ],
+    "AL": ["Almería", "Almeria", "Provincia de Almería", "province d’Almería", "Provinz Almería"],
+    "AV": ["Ávila", "Ávila", "Provincia de Ávila", "province d’Ávila", "Provinz Ávila"],
+    "B": [
+      "Barcelona",
+      "Barcelona",
+      "Provincia de Barcelona",
+      "province de Barcelone",
+      "Provinz Barcelona"
+    ],
+    "BA": [
+      "Badajoz",
+      "Badajoz (província)",
+      "Provincia de Badajoz",
+      "province de Badajoz",
+      "Provinz Badajoz"
+    ],
+    "BI": ["Biscay", "Biscaia", "Vizcaya", "Biscaye", "Bizkaia"],
+    "BU": ["Burgos", "Burgos", "Provincia de Burgos", "province de Burgos", "Provinz Burgos"],
+    "C": [
+      "A Coruña",
+      "Corunha",
+      "Provincia de La Coruña",
+      "province de La Corogne",
+      "Provinz A Coruña"
+    ],
+    "CA": ["Cádiz", "Cádis", "Provincia de Cádiz", "province de Cadix", "Provinz Cádiz"],
+    "CC": [
+      "Cáceres",
+      "Cáceres (província)",
+      "Provincia de Cáceres",
+      "province de Cáceres",
+      "Provinz Cáceres"
+    ],
+    "CE": ["Ceuta"],
+    "CO": [
+      "Córdoba",
+      "Córdova (província da Espanha)",
+      "Provincia de Córdoba",
+      "province de Cordoue"
+    ],
+    "CR": [
+      "Ciudad Real",
+      "Cidade Real",
+      "Provincia de Ciudad Real",
+      "province de Ciudad Real",
+      "Provinz Ciudad Real"
+    ],
+    "CS": [
+      "Castellón",
+      "Castellón",
+      "Provincia de Castellón",
+      "province de Castellón",
+      "Provinz Castellón"
+    ],
+    "CU": ["Cuenca", "Cuenca", "Provincia de Cuenca", "province de Cuenca", "Provinz Cuenca"],
+    "GC": [
+      "Las Palmas",
+      "Las Palmas",
+      "Provincia de Las Palmas",
+      "province de Las Palmas",
+      "Provinz Las Palmas"
+    ],
+    "GI": ["Girona", "Girona", "Provincia de Gerona", "province de Gérone", "Provinz Girona"],
+    "GR": ["Granada", "Granada", "Provincia de Granada", "province de Grenade", "Provinz Granada"],
+    "GU": [
+      "Guadalajara",
+      "Guadalajara",
+      "Provincia de Guadalajara",
+      "province de Guadalajara",
+      "Provinz Guadalajara"
+    ],
+    "H": [
+      "Huelva",
+      "Província de Huelva",
+      "Provincia de Huelva",
+      "province de Huelva",
+      "Provinz Huelva"
+    ],
+    "HU": ["Huesca", "Huesca", "Provincia de Huesca", "province de Huesca", "Provinz Huesca"],
+    "J": ["Jaén", "Jaén", "Provincia de Jaén", "province de Jaén"],
+    "L": [
+      "Lleida",
+      "Província de Lérida",
+      "Provincia de Lérida",
+      "province de Lérida",
+      "Provinz Lleida"
+    ],
+    "LE": ["León", "Leão", "Provincia de León", "province de León", "Provinz León"],
+    "LO": ["La Rioja Province", "La Rioja", "La Rioja", "La Rioja", "La Rioja"],
+    "LU": ["Lugo", "Lugo", "Provincia de Lugo", "province de Lugo", "Provinz Lugo"],
+    "M": [
+      "Madrid Province",
+      "Madrid Province",
+      "provincia de Madrid",
+      "province de Madrid",
+      "Provinz Madrid"
+    ],
+    "MA": ["Málaga", "Málaga", "provincia de Málaga", "province de Málaga"],
+    "ML": ["Melilla"],
+    "MU": ["Murcia", "Murcia", "provincia de Murcia", "province de Murcie"],
+    "NA": [
+      "Navarra",
+      "Navarra²",
+      "Navarra²",
+      "communauté forale de Navarre²",
+      "Autonome Gemeinschaft Navarra²"
+    ],
+    "O": [
+      "Asturias Province",
+      "Asturias Province",
+      "provincia de Asturias",
+      "Asturies²",
+      "Provinz Asturien"
+    ],
+    "OR": ["Ourense", "Ourense", "Provincia de Orense", "province d’Ourense", "Provinz Ourense"],
+    "P": [
+      "Palencia",
+      "Palência",
+      "Provincia de Palencia",
+      "province de Palencia",
+      "Provinz Palencia"
+    ],
+    "PM": [
+      "Balears Province",
+      "Baleares²",
+      "Islas Baleares²",
+      "Îles Baléares²",
+      "Balearische Inseln²"
+    ],
+    "PO": [
+      "Pontevedra",
+      "Pontevedra",
+      "Provincia de Pontevedra",
+      "province de Pontevedra",
+      "Provinz Pontevedra"
+    ],
+    "S": [
+      "Cantabria Province",
+      "Cantábria²",
+      "Cantabria²",
+      "Cantabrie²",
+      "Autonome Gemeinschaft Kantabrien²"
+    ],
+    "SA": [
+      "Salamanca",
+      "Salamanca",
+      "Provincia de Salamanca",
+      "province de Salamanque",
+      "Provinz Salamanca"
+    ],
+    "SE": [
+      "Seville",
+      "Província de Sevilha",
+      "Provincia de Sevilla",
+      "province de Séville",
+      "Sevilla"
+    ],
+    "SG": ["Segovia", "Segóvia", "Provincia de Segovia", "province de Ségovie", "Provinz Segovia"],
+    "SO": ["Soria", "Sória", "Provincia de Soria", "province de Soria", "Provinz Soria"],
+    "SS": ["Gipuzkoa", "Guipúscoa", "Guipúzcoa", "Guipuscoa"],
+    "T": ["Tarragona", "Tarragona", "provincia de Tarragona", "province de Tarragone"],
+    "TE": [
+      "Teruel",
+      "Teruel (província)",
+      "Provincia de Teruel",
+      "province de Teruel",
+      "Provinz Teruel"
+    ],
+    "TF": [
+      "Santa Cruz de Tenerife",
+      "Santa Cruz de Tenerife",
+      "Provincia de Santa Cruz de Tenerife",
+      "province de Santa Cruz de Ténérife",
+      "Provinz Santa Cruz de Tenerife"
+    ],
+    "TO": ["Toledo", "Toledo", "Provincia de Toledo", "province de Tolède", "Provinz Toledo"],
+    "V": [
+      "Valencia",
+      "Valência (província)",
+      "Provincia de Valencia",
+      "province de Valence",
+      "Provinz Valencia"
+    ],
+    "VA": [
+      "Valladolid",
+      "Valhadolide",
+      "Provincia de Valladolid",
+      "province de Valladolid",
+      "Provinz Valladolid"
+    ],
+    "VI": ["Álava", "Álava", "Álava", "province d’Alava"],
+    "Z": [
+      "Zaragoza",
+      "Saragoça",
+      "Provincia de Zaragoza",
+      "province de Saragosse",
+      "Provinz Saragossa"
+    ],
+    "ZA": ["Zamora", "Zamora", "Provincia de Zamora", "province de Zamora", "Provinz Zamora"]
+  },
+  "IT": {
+    "AG": ["Agrigento", "Agrigento", "Agrigento", "province d’Agrigente", "Provinz Agrigent"],
+    "AL": [
+      "Alessandria",
+      "Alexandria (província)",
+      "Alessandria",
+      "Province d’Alexandrie",
+      "Provinz Alessandria"
+    ],
+    "AN": ["Ancona", "Ancona", "Ancona", "province d’Ancône", "Provinz Ancona"],
+    "AO": ["Aosta", "Aosta", "Aosta", "Aoste"],
+    "AP": [
+      "Ascoli Piceno",
+      "Ascoli Piceno",
+      "Ascoli Piceno",
+      "province d’Ascoli Piceno",
+      "Provinz Ascoli Piceno"
+    ],
+    "AQ": ["L’Aquila", "Áquila", "L’Aquila", "Province de L’Aquila", "Provinz L’Aquila"],
+    "AR": ["Arezzo", "Arezzo", "Arezzo", "province d’Arezzo", "Provinz Arezzo"],
+    "AT": ["Asti", "Asti", "Asti", "Province d’Asti", "Provinz Asti"],
+    "AV": ["Avellino", "Avellino", "Avellino", "province d’Avellino", "Provinz Avellino"],
+    "BA": ["Bari", "Bari", "Bari", "province de Bari", "Provinz Bari"],
+    "BG": ["Bergamo", "Bérgamo", "Bérgamo", "Province de Bergame", "Provinz Bergamo"],
+    "BI": ["Biella", "Biella", "Biella", "Province de Biella", "Provinz Biella"],
+    "BL": ["Belluno", "Belluno", "Belluno", "province de Belluno", "Provinz Belluno"],
+    "BN": ["Benevento", "Benevento", "Benevento", "province de Bénévent", "Provinz Benevento"],
+    "BO": ["Bologna", "Bolonha", "Bolonia", "Province de Bologne", "Provinz Bologna"],
+    "BR": ["Brindisi", "Brindisi", "Brindisi", "Province de Brindisi", "Provinz Brindisi"],
+    "BS": ["Brescia", "Bréscia", "Brescia", "Province de Brescia", "Provinz Brescia"],
+    "BT": [
+      "Barletta-Andria-Trani",
+      "Barletta-Andria-Trani",
+      "Barletta-Andria-Trani",
+      "province de Barletta-Andria-Trani",
+      "Provinz Barletta-Andria-Trani"
+    ],
+    "BZ": [
+      "South Tyrol",
+      "Província autónoma de Bolzano",
+      "Bolzano",
+      "Province autonome de Bolzano",
+      "Südtirol"
+    ],
+    "CA": ["Cagliari", "Cagliari", "Cagliari", "Province de Cagliari", "Provinz Cagliari"],
+    "CB": [
+      "Campobasso",
+      "Campobasso",
+      "Campobasso",
+      "Province de Campobasso",
+      "Provinz Campobasso"
+    ],
+    "CE": ["Caserta", "Caserta", "Caserta", "Province de Caserte", "Provinz Caserta"],
+    "CH": ["Chieti", "Chieti", "Chieti", "Province de Chieti", "Provinz Chieti"],
+    "CI": [
+      "Carbonia-Iglesias",
+      "Carbonia-Iglesias",
+      "Carbonia-Iglesias",
+      "Province de Carbonia-Iglesias",
+      "Provinz Carbonia-Iglesias"
+    ],
+    "CL": [
+      "Caltanissetta",
+      "Caltanissetta",
+      "Caltanissetta",
+      "Province de Caltanissetta",
+      "Provinz Caltanissetta"
+    ],
+    "CN": ["Cuneo", "Cuneo", "Cuneo", "Province de Coni", "Provinz Cuneo"],
+    "CO": ["Como", "Como", "Como", "Province de Côme", "Provinz Como"],
+    "CR": ["Cremona", "Cremona", "Cremona", "Province de Crémone", "Provinz Cremona"],
+    "CS": ["Cosenza", "Cosenza", "Cosenza", "Province de Cosenza", "Provinz Cosenza"],
+    "CT": ["Catania", "Catânia", "Catania", "Province de Catane", "Provinz Catania"],
+    "CZ": ["Catanzaro", "Catanzaro", "Catanzaro", "Province de Catanzaro", "Provinz Catanzaro"],
+    "EN": ["Enna", "Enna", "Enna", "Province d’Enna", "Provinz Enna"],
+    "FC": [
+      "Forlì-Cesena",
+      "Forlì-Cesena",
+      "Forlì-Cesena",
+      "Province de Forlì-Cesena",
+      "Provinz Forlì-Cesena"
+    ],
+    "FE": ["Ferrara", "Ferrara", "Ferrara", "Province de Ferrare", "Provinz Ferrara"],
+    "FG": ["Foggia", "Foggia", "Foggia", "Province de Foggia", "Provinz Foggia"],
+    "FI": ["Florence", "Florença", "Florencia", "Province de Florence", "Provinz Florenz"],
+    "FM": ["Fermo", "Fermo", "Fermo", "Province de Fermo", "Provinz Fermo"],
+    "FR": ["Frosinone", "Frosinone", "Frosinone", "Province de Frosinone", "Provinz Frosinone"],
+    "GE": [
+      "Genoa",
+      "Cidade Metropolitana de Genoa",
+      "Ciudad metropolitana de Génova",
+      "Ville métropolitaine de Gênes",
+      "Metropolitanstadt Genua"
+    ],
+    "GO": ["Gorizia", "Gorizia", "Gorizia", "Province de Gorizia", "Provinz Görz"],
+    "GR": ["Grosseto", "Grosseto", "Grosseto", "Province de Grosseto", "Provinz Grosseto"],
+    "IM": ["Imperia", "Impéria", "Imperia", "Province d’Imperia", "Provinz Imperia"],
+    "IS": ["Isernia", "Isérnia", "Isernia", "Province d’Isernia", "Provinz Isernia"],
+    "KR": ["Crotone", "Crotone", "Crotona", "Province de Crotone", "Provinz Crotone"],
+    "LC": ["Lecco", "Lecco", "Lecco", "Province de Lecco", "Provinz Lecco"],
+    "LE": ["Lecce", "Lecce", "Lecce", "Province de Lecce", "Provinz Lecce"],
+    "LI": ["Livorno", "Livorno", "Livorno", "Province de Livourne", "Provinz Livorno"],
+    "LO": ["Lodi", "Lodi", "Lodi", "Province de Lodi", "Provinz Lodi"],
+    "LT": ["Latina", "Latina", "Latina", "province de Latina", "Provinz Latina"],
+    "LU": ["Lucca", "Lucca", "Lucca", "Province de Lucques", "Provinz Lucca"],
+    "MB": [
+      "Monza and Brianza",
+      "Província de Monza e Brianza",
+      "Monza y Brianza",
+      "Province de Monza et de la Brianza",
+      "Provinz Monza und Brianza"
+    ],
+    "MC": ["Macerata", "Macerata", "Macerata", "Province de Macerata", "Provinz Macerata"],
+    "ME": ["Messina", "Messina", "Mesina", "Province de Messine", "Metropolitanstadt Messina"],
+    "MI": ["Milan", "Milão", "Milán", "province de Milan", "Provinz Mailand"],
+    "MN": ["Mantua", "Mântua (província)", "Mantua", "Province de Mantoue", "Provinz Mantua"],
+    "MO": ["Modena", "Módena", "Módena", "Province de Modène", "Provinz Modena"],
+    "MS": [
+      "Massa and Carrara",
+      "Massa-Carrara",
+      "Massa y Carrara",
+      "Province de Massa-Carrara",
+      "Provinz Massa-Carrara"
+    ],
+    "MT": ["Matera", "Matera", "Matera", "Province de Matera", "Provinz Matera"],
+    "NA": [
+      "Naples",
+      "Nápoles",
+      "Ciudad metropolitana de Nápoles",
+      "Ville métropolitaine de Naples",
+      "Metropolitanstadt Neapel"
+    ],
+    "NO": ["Novara", "Novara", "Novara", "Province de Novare", "Provinz Novara"],
+    "NU": ["Nuoro", "Nuoro", "Nuoro", "Province de Nuoro", "Provinz Nuoro"],
+    "OG": ["Ogliastra", "Ogliastra", "Ogliastra", "Province de l’Ogliastra", "Provinz Ogliastra"],
+    "OR": ["Oristano", "Oristano", "Oristán", "Province d’Oristano", "Provinz Oristano"],
+    "OT": [
+      "Olbia-Tempio",
+      "Olbia-Tempio",
+      "Olbia-Tempio",
+      "Province d’Olbia-Tempio",
+      "Provinz Olbia-Tempio"
+    ],
+    "PA": ["Palermo", "Palermo", "Palermo", "Province de Palerme", "Provinz Palermo"],
+    "PC": ["Piacenza", "Placência", "Piacenza", "Province de Plaisance", "Provinz Piacenza"],
+    "PD": ["Padua", "Pádua", "Padua", "Province de Padoue", "Provinz Padua"],
+    "PE": ["Pescara", "Pescara", "Pescara", "Province de Pescara", "Provinz Pescara"],
+    "PG": ["Perugia", "Perúgia", "Perugia", "Province de Pérouse", "Provinz Perugia"],
+    "PI": ["Pisa", "Pisa", "Pisa", "Province de Pise", "Provinz Pisa"],
+    "PN": ["Pordenone", "Pordenone", "Pordenone", "Province de Pordenone", "Provinz Pordenone"],
+    "PO": ["Prato", "Prato", "Prato", "Province de Prato", "Provinz Prato"],
+    "PR": ["Parma", "Parma", "Parma", "Province de Parme", "Provinz Parma"],
+    "PT": ["Pistoia", "Pistoia", "Pistoia", "Province de Pistoia", "Provinz Pistoia"],
+    "PU": [
+      "Pesaro and Urbino",
+      "Pesaro e Urbino",
+      "Pesaro y Urbino",
+      "Province de Pesaro et d’Urbino",
+      "Provinz Pesaro und Urbino"
+    ],
+    "PV": ["Pavia", "Pavia", "Pavía", "province de Pavie", "Provinz Pavia"],
+    "PZ": ["Potenza", "Potenza", "Potenza", "Province de Potenza", "Provinz Potenza"],
+    "RA": ["Ravenna", "Ravena", "Rávena", "Province de Ravenne", "Provinz Ravenna"],
+    "RC": [
+      "Reggio Calabria",
+      "Reggio Calabria",
+      "Reggio Calabria",
+      "Province de Reggio de Calabre",
+      "Provinz Reggio Calabria"
+    ],
+    "RE": [
+      "Reggio Emilia",
+      "Reggio Emilia",
+      "Reggio Emilia",
+      "Province de Reggio d’Émilie",
+      "Provinz Reggio Emilia"
+    ],
+    "RG": ["Ragusa", "Ragusa", "Ragusa", "Province de Raguse", "Provinz Ragusa"],
+    "RI": ["Rieti", "Rieti", "Rieti", "Province de Rieti", "Provinz Rieti"],
+    "RM": ["Rome", "Roma", "Roma", "Province de Rome", "Provinz Rom"],
+    "RN": ["Rimini", "Rimini", "Rímini", "Province de Rimini", "Provinz Rimini"],
+    "RO": ["Rovigo", "Rovigo", "Rovigo", "province de Rovigo", "Provinz Rovigo"],
+    "SA": ["Salerno", "Salerno", "Salerno", "Province de Salerne", "Provinz Salerno"],
+    "SI": ["Siena", "Siena", "Siena", "province de Sienne", "Provinz Siena"],
+    "SO": ["Sondrio", "Sondrio", "Sondrio", "province de Sondrio", "Provinz Sondrio"],
+    "SP": ["La Spezia", "Spezia", "La Spezia", "Province de La Spezia", "Provinz La Spezia"],
+    "SR": ["Syracuse", "Siracusa", "Siracusa", "province de Syracuse", "Provinz Syrakus"],
+    "SS": ["Sassari", "Sassari", "Sassari", "Province de Sassari", "Provinz Sassari"],
+    "SU": [
+      "Sud Sardegna",
+      "Sardenha do Sul",
+      "Provincia de Cerdeña del Sur",
+      "province de Sardaigne du Sud",
+      "Provinz Südsardinien"
+    ],
+    "SV": ["Savona", "Savona", "Savona", "Province de Savone", "Provinz Savona"],
+    "TA": ["Taranto", "Taranto", "Tarento", "province de Tarente", "Provinz Tarent"],
+    "TE": ["Teramo", "Téramo", "Teramo", "province de Teramo", "Provinz Teramo"],
+    "TN": ["Trentino", "Província autónoma de Trento", "Trento", "province autonome de Trente"],
+    "TO": ["Turin", "Turim", "Turín", "province de Turin", "Provinz Turin"],
+    "TP": ["Trapani", "Trapani", "Trapani", "province de Trapani", "Provinz Trapani"],
+    "TR": ["Terni", "Terni", "Terni", "province de Terni", "Provinz Terni"],
+    "TS": ["Trieste", "Trieste", "Trieste", "Province de Trieste", "Provinz Triest"],
+    "TV": ["Treviso", "Treviso", "Treviso", "Province de Trévise", "Provinz Treviso"],
+    "UD": ["Udine", "Udine", "Udine", "Province d’Udine", "Provinz Udine"],
+    "VA": ["Varese", "Varese", "Varese", "Province de Varèse", "Provinz Varese"],
+    "VB": [
+      "Verbano-Cusio-Ossola",
+      "Verbano Cusio Ossola",
+      "Verbano-Cusio-Ossola",
+      "province du Verbano-Cusio-Ossola",
+      "Provinz Verbano-Cusio-Ossola"
+    ],
+    "VC": ["Vercelli", "Vercelli", "Vercelli", "Province de Verceil", "Provinz Vercelli"],
+    "VE": ["Venice", "Veneza", "Venecia", "province de Venise", "Provinz Venedig"],
+    "VI": ["Vicenza", "Vicenza", "Vicenza", "province de Vicence", "Provinz Vicenza"],
+    "VR": ["Verona", "Verona", "Verona", "province de Vérone", "Provinz Verona"],
+    "VS": [
+      "Medio Campidano",
+      "Medio Campidano",
+      "Medio Campidano",
+      "Province du Medio Campidano",
+      "Provinz Medio Campidano"
+    ],
+    "VT": ["Viterbo", "Viterbo", "Viterbo", "province de Viterbe", "Provinz Viterbo"],
+    "VV": [
+      "Vibo Valentia",
+      "Vibo Valentia",
+      "Vibo Valentia",
+      "province de Vibo Valentia",
+      "Provinz Vibo Valentia"
+    ]
+  },
+  "MX": {
+    "AGU": ["Aguascalientes"],
+    "BCN": ["Baja California", "Baja California", "Baja California", "Basse-Californie"],
+    "BCS": [
+      "Baja California Sur",
+      "Baja California Sur",
+      "Baja California Sur",
+      "Basse-Californie du Sud"
+    ],
+    "CAM": ["Campeche"],
+    "CHH": ["Chihuahua"],
+    "CHP": ["Chiapas"],
+    "CMX": ["Ciudad de Mexico", "Cidade do México", "Ciudad de México", "Mexico", "Mexiko-Stadt"],
+    "COA": ["Coahuila", "Coahuila de Zaragoza", "Coahuila de Zaragoza"],
+    "COL": ["Colima"],
+    "DIF": ["Mexico City"],
+    "DUR": ["Durango"],
+    "GRO": ["Guerrero", "Guerrero", "Estado de Guerrero"],
+    "GUA": ["Guanajuato"],
+    "HID": ["Hidalgo", "Hidalgo", "Estado de Hidalgo"],
+    "JAL": ["Jalisco"],
+    "MEX": ["Mexico State", "México", "Estado de México", "État de Mexico", "México"],
+    "MIC": ["Michoacán"],
+    "MOR": ["Morelos"],
+    "NAY": ["Nayarit"],
+    "NLE": ["Nuevo León"],
+    "OAX": ["Oaxaca"],
+    "PUE": ["Puebla"],
+    "QUE": ["Querétaro"],
+    "ROO": ["Quintana Roo"],
+    "SIN": ["Sinaloa"],
+    "SLP": ["San Luis Potosí"],
+    "SON": ["Sonora"],
+    "TAB": ["Tabasco"],
+    "TAM": ["Tamaulipas"],
+    "TLA": ["Tlaxcala"],
+    "VER": ["Veracruz"],
+    "YUC": ["Yucatán", "Iucatã"],
+    "ZAC": ["Zacatecas"]
+  },
+  "US": {
+    "AK": ["Alaska", "Alasca"],
+    "AL": ["Alabama"],
+    "AR": ["Arkansas"],
+    "AZ": ["Arizona"],
+    "CA": ["California", "Califórnia", "California", "Californie", "Kalifornien"],
+    "CO": ["Colorado"],
+    "CT": ["Connecticut"],
+    "DC": ["Washington DC", "Washington", "Washington D. C.", "Washington", "Washington, D.C."],
+    "DE": ["Delaware"],
+    "FL": ["Florida", "Flórida", "Florida", "Floride"],
+    "GA": ["Georgia", "Geórgia", "Georgia", "Géorgie"],
+    "HI": ["Hawaii", "Havaí", "Hawái", "Hawaï"],
+    "IA": ["Iowa"],
+    "ID": ["Idaho"],
+    "IL": ["Illinois"],
+    "IN": ["Indiana"],
+    "KS": ["Kansas"],
+    "KY": ["Kentucky"],
+    "LA": ["Louisiana", "Luisiana", "Luisiana", "Louisiane"],
+    "MA": ["Massachusetts"],
+    "MD": ["Maryland"],
+    "ME": ["Maine"],
+    "MI": ["Michigan", "Michigan", "Míchigan"],
+    "MN": ["Minnesota"],
+    "MO": ["Missouri", "Missouri", "Misuri"],
+    "MS": ["Mississippi", "Mississippi", "Misisipi"],
+    "MT": ["Montana"],
+    "NC": ["North Carolina", "Carolina do Norte", "Carolina del Norte", "Caroline du Nord"],
+    "ND": ["North Dakota", "Dakota do Norte", "Dakota del Norte", "Dakota du Nord"],
+    "NE": ["Nebraska"],
+    "NH": ["New Hampshire", "Nova Hampshire", "Nuevo Hampshire"],
+    "NJ": ["New Jersey", "Nova Jérsia", "Nueva Jersey"],
+    "NM": ["New Mexico", "Novo México", "Nuevo México", "Nouveau-Mexique"],
+    "NV": ["Nevada"],
+    "NY": ["New York", "Nova Iorque", "Nueva York"],
+    "OH": ["Ohio"],
+    "OK": ["Oklahoma"],
+    "OR": ["Oregon", "Oregon", "Oregón"],
+    "PA": ["Pennsylvania", "Pensilvânia", "Pensilvania", "Pennsylvanie"],
+    "RI": ["Rhode Island"],
+    "SC": ["South Carolina", "Carolina do Sul", "Carolina del Sur", "Caroline du Sud"],
+    "SD": ["South Dakota", "Dakota do Sul", "Dakota del Sur", "Dakota du Sud"],
+    "TN": ["Tennessee"],
+    "TX": ["Texas"],
+    "UT": ["Utah"],
+    "VA": ["Virginia", "Virgínia", "Virginia", "Virginie"],
+    "VT": ["Vermont"],
+    "WA": ["Washington", "Washington²", "Washington", "État de Washington"],
+    "WI": ["Wisconsin"],
+    "WV": ["West Virginia", "Virgínia Ocidental", "Virginia Occidental", "Virginie-Occidentale"],
+    "WY": ["Wyoming"]
+  }
+}

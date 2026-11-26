@@ -9,6 +9,9 @@ type PrintOperation =
   | 'getPremiumEdition'
   | 'createStaffProof'
   | 'createAdminOrder'
+  | 'createAdminOrderV2'
+  | 'recoverAdminOrder'
+  | 'findAdminOrderMatches'
   | 'get'
   | 'select'
   | 'prepare'
@@ -27,6 +30,7 @@ export class PrintDomainError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message);
   }
@@ -66,7 +70,15 @@ export async function callPrintDomain<T>(
       url,
       method: 'POST',
       data: { operation, input, actor: { email } },
-      timeout: ['submit', 'reconcile', 'prepare', 'createAdminOrder', 'cancel'].includes(operation)
+      timeout: [
+        'submit',
+        'reconcile',
+        'prepare',
+        'createAdminOrder',
+        'createAdminOrderV2',
+        'recoverAdminOrder',
+        'cancel',
+      ].includes(operation)
         ? 240000
         : 30000,
       retry: false,
@@ -78,12 +90,16 @@ export async function callPrintDomain<T>(
   } catch (error) {
     const response =
       error && typeof error === 'object' && 'response' in error
-        ? (error.response as { status?: number; data?: { error?: { message?: string } | string } })
+        ? (error.response as {
+            status?: number;
+            data?: { error?: { message?: string; code?: string } | string };
+          })
         : undefined;
     const detail = response?.data?.error;
     throw new PrintDomainError(
       response?.status || 502,
       typeof detail === 'string' ? detail : detail?.message || 'Print service request failed',
+      typeof detail === 'object' ? detail.code : undefined,
     );
   }
 }

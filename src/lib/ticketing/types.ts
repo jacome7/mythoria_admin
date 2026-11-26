@@ -28,6 +28,13 @@ export interface TicketMetadata {
   creditPackages?: TicketPaymentPackage[];
   storyId?: string;
   printRequestId?: string;
+  printOwner?: string;
+  legacyPrintDispatch?: {
+    reservationId: string;
+    fingerprint: string;
+    status: 'dispatching' | 'sent' | 'uncertain';
+    updatedAt: string;
+  };
   proofOnly?: { revision: string; requestedBy: string };
   adminPrintOrder?: boolean;
   orderKind?: 'staff_proof' | 'admin_order';
