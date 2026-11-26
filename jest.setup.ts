@@ -101,6 +101,8 @@ jest.mock('next/link', () => {
 // Mock Next.js Image component
 jest.mock('next/image', () => {
   return function MockImage({ src, alt, ...props }: any) {
+    delete props.fill;
+    delete props.unoptimized;
     return React.createElement('img', { src, alt, ...props });
   };
 });
