@@ -1,6 +1,6 @@
 # Stories management
 
-_Last updated: 2026-11-25_
+_Last updated: 2026-11-26_
 
 ## Context
 
@@ -51,5 +51,5 @@ Story operations include queue-level monitoring (`/stories`), moderation and lif
 - Admin story UI, failed-workflow retry UI, and MCP restarts share one durable dispatcher. A restart is corrective, records zero credits, never debits the author, and does not pre-create a workflow run. Immediate Pub/Sub failure returns a visible `retrying` state for the existing WebApp outbox drain.
 - When the regenerated run completes, SGW sends `story-created` again using the new `runId` as the notification idempotency key. See `storyGenerationRestarts.md` for the cross-service contract and live verification checklist.
 - On mobile, the detail header stacks management actions below the story title, which wraps rather than competing for horizontal space. The restart and return controls use the concise labels `Restart` and `Back`.
-- The audiobook action validates the browser origin against the configured Admin URL (`NEXTAUTH_URL`, then `AUTH_URL`) behind Cloud Run. If neither is configured, it uses the request URL. An origin mismatch returns 403 before any job is queued.
+- The classic PDF and audiobook actions validate the browser origin against the configured Admin URL (`NEXTAUTH_URL`, then `AUTH_URL`) behind Cloud Run. If neither is configured, they use the request URL. An origin mismatch returns 403 before any job is queued.
 - The story detail Author card links both the display name and full author ID to `/users/[authorId]`. Story Actions omits unavailable PDF rows, and Audio Narration uses a compact disclosure that starts collapsed.

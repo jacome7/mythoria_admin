@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { publishPrintRequest } from '@/lib/pubsub';
 import { authenticateAdmin } from '@/lib/api-helpers';
+import { hasTrustedAdminOrigin } from '@/lib/admin-request-origin';
 import { adminService } from '@/db/services';
 import { premiumEditionSummary } from '@/lib/premium-edition';
 import { z } from 'zod';
@@ -12,8 +13,7 @@ export async function POST(
 ) {
   const actor = await authenticateAdmin();
   if ('error' in actor) return actor.error;
-  const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin)
+  if (!hasTrustedAdminOrigin(request))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { storyId } = await params;
   if (!z.uuid().safeParse(storyId).success)

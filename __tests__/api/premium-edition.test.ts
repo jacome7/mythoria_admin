@@ -154,6 +154,37 @@ it('requires the service API key and exactly one hardcover before linking a staf
   });
 });
 
+it('queues classic PDFs for the configured Admin origin behind Cloud Run', async () => {
+  const publicOrigin = 'https://admin.example';
+  const env = jest.replaceProperty(process, 'env', { ...process.env, NEXTAUTH_URL: publicOrigin });
+  const request = (origin: string) =>
+    new NextRequest(`http://localhost:8080/api/stories/${storyId}/generate-pdfs`, {
+      method: 'POST',
+      headers: { origin },
+    });
+
+  try {
+    jest.mocked(adminService.getStoryById).mockResolvedValue({ storyId, features: null } as never);
+    for (const origin of ['https://untrusted.example', 'http://localhost:8080']) {
+      expect((await generateClassicPdfs(request(origin), { params })).status).toBe(403);
+    }
+    expect(publishPrintRequest).not.toHaveBeenCalled();
+
+    const response = await generateClassicPdfs(request(publicOrigin), { params });
+    expect(response.status).toBe(200);
+    const { runId } = await response.json();
+    expect(runId).toEqual(expect.any(String));
+    expect(publishPrintRequest).toHaveBeenCalledWith({
+      storyId,
+      runId,
+      initiatedBy: 'adminPortal',
+      origin: 'admin',
+    });
+  } finally {
+    env.restore();
+  }
+});
+
 it('protects premium books from chapter and A5 PDF routes and permits metadata-only featuring', async () => {
   const premiumEdition = { state: 'published', revision };
   const story = {
